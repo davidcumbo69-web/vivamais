@@ -301,8 +301,16 @@ export default function Profile() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-bold text-xl">{user.username}</h1>
         <div className="flex items-center space-x-4">
-          <Link to="/settings" className="text-gray-700 hover:text-black transition-colors">
-            <Stethoscope className="w-6 h-6" />
+          <Link 
+            to="/settings" 
+            className="group relative p-2.5 bg-[#ffb7b2] rounded-full shadow-[inset_-2px_-4px_8px_rgba(0,0,0,0.1),inset_2px_4px_8px_rgba(255,255,255,0.4)] border-2 border-[#ff9aa2] hover:scale-110 active:scale-95 transition-all duration-300 overflow-hidden"
+            title="Definições"
+          >
+            {/* Glossy overlay effect to mimic organic tissue */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
+            <div className="absolute -inset-4 bg-gradient-to-r from-transparent via-white/30 to-transparent -rotate-45 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000" />
+            
+            <Stethoscope className="w-5 h-5 text-rose-900 drop-shadow-sm relative z-10" />
           </Link>
         </div>
       </div>
