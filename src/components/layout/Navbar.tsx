@@ -14,10 +14,6 @@ export function Navbar() {
     { icon: Stethoscope, label: 'Feed', path: '/' },
     { icon: Microscope, label: 'Explorar', path: '/explore' },
     { icon: Film, label: 'Reels', path: '/reels' },
-    { icon: Trophy, label: 'Desafios', path: '/challenges' },
-    ...(!profile?.is_professional ? [
-      { icon: ShoppingBag, label: 'Encomendas', path: '/my-orders' }
-    ] : []),
     { icon: CalendarCheck, label: 'Consultas', path: '/appointments' },
     { icon: MessageSquare, label: 'Mensagens', path: '/messages' },
     ...(profile?.is_professional ? [
