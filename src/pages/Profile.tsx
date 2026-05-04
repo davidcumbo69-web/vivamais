@@ -31,9 +31,11 @@ export default function Profile() {
   useEffect(() => {
     const effectiveUserId = userId || myProfile?.id;
     
-    if (effectiveUserId) {
+    if (effectiveUserId && effectiveUserId !== 'undefined') {
       setLoadingProfile(true);
       fetchProfile(effectiveUserId);
+    } else if (!userId && !myProfile?.id) {
+      setLoadingProfile(false);
     }
   }, [userId, myProfile]);
 
