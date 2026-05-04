@@ -64,6 +64,45 @@ export default function CommunityDetail() {
     }
   }, [group, user]);
 
+  useEffect(() => {
+    if (!selectedTopic) return;
+
+    const channel = supabase
+      .channel(`topic:${selectedTopic.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'health_topic_messages',
+          filter: `topic_id=eq.${selectedTopic.id}`
+        },
+        async (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const { data } = await supabase
+              .from('health_topic_messages')
+              .select('*, profiles:user_id(*), parent:reply_to_id(*, profiles:user_id(*))')
+              .eq('id', payload.new.id)
+              .single();
+            
+            if (data) {
+              setMessages(prev => {
+                if (prev.some(m => m.id === data.id)) return prev;
+                return [...prev, data];
+              });
+            }
+          } else if (payload.eventType === 'DELETE') {
+            setMessages(prev => prev.filter(m => m.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedTopic]);
+
   const fetchGroup = async () => {
     const { data, error } = await supabase
       .from('health_groups')
