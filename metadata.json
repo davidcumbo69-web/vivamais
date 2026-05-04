@@ -1,0 +1,13 @@
+{
+  "name": "VIVA+",
+  "description": "Portuguese Health & Wellness Social Network - SNS Portugal's clinical wellness and social experience.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "Health",
+    "Social Networking",
+    "Marketplace"
+  ]
+}

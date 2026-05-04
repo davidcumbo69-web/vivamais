@@ -1,0 +1,145 @@
+import { createClient } from '@supabase/supabase-js';
+
+// Helper to safely get environment variables and clean project URL
+const getEnv = (key: string): string => {
+  const value = (import.meta as any).env?.[key] || (process as any).env?.[key] || '';
+  let trimmed = value.trim();
+  
+  if (key === 'VITE_SUPABASE_URL') {
+    // Se o utilizador colou o URL do dashboard (com /rest/v1/), removemos isso
+    trimmed = trimmed.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+  }
+  
+  return trimmed;
+};
+
+const supabaseUrl = getEnv('VITE_SUPABASE_URL');
+const supabaseAnonKey = getEnv('VITE_SUPABASE_ANON_KEY');
+
+export const isConfigured = Boolean(
+  supabaseUrl && 
+  supabaseUrl.startsWith('https://') && 
+  !supabaseUrl.includes('your-project-id') &&
+  supabaseAnonKey
+);
+
+// Diagnostic log (safe, only shows start of URL)
+if (isConfigured) {
+  console.log('✅ Supabase configurado corretamente:', supabaseUrl.substring(0, 15) + '...');
+} else {
+  console.warn('⚠️ Supabase NÃO configurado. Verifique as Secrets no AI Studio.');
+}
+
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder-viva.supabase.co', 
+  supabaseAnonKey || 'placeholder'
+);
+
+export type Profile = {
+  id: string;
+  username: string;
+  full_name?: string;
+  email?: string;
+  bio?: string;
+  avatar_url?: string;
+  vitus_balance: number;
+  is_professional: boolean;
+  specialty?: string;
+  license_number?: string;
+  is_verified: boolean;
+  xp_level: number;
+  created_at: string;
+};
+
+export type ProfessionalVerification = {
+  id: string;
+  user_id: string;
+  professional_order: string;
+  license_number: string;
+  specialty: string;
+  academic_degree?: string;
+  phone_business?: string;
+  workplace_name?: string;
+  workplace_address?: string;
+  image_url?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_notes?: string;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+};
+
+export type HealthProfessional = {
+  id: string;
+  professional_order: string;
+  license_number: string;
+  workplace_name?: string;
+  workplace_address?: string;
+  specialty: string;
+  academic_degree?: string;
+  phone_business?: string;
+  image_url?: string;
+  is_verified: boolean;
+  verified_at?: string;
+  created_at: string;
+};
+
+export type HealthGroup = {
+  id: string;
+  creator_id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  avatar_url?: string;
+  theme_color: string;
+  is_private: boolean;
+  member_count: number;
+  created_at: string;
+};
+
+export type HealthGroupMember = {
+  group_id: string;
+  user_id: string;
+  role: string;
+  joined_at: string;
+};
+
+export type Post = {
+  id: string;
+  user_id: string;
+  group_id?: string;
+  content_url: string;
+  image_url?: string;
+  caption?: string;
+  category?: string;
+  likes_count: number;
+  is_approved: boolean;
+  created_at: string;
+  profiles?: Profile;
+};
+
+export type WellnessService = {
+  id: string;
+  name: string;
+  provider_id: string;
+  provider_name: string;
+  category: string;
+  location: string;
+  image_url?: string;
+  description?: string;
+  base_price: number;
+  vitus_discount_cap: number;
+  rating: number;
+  created_at: string;
+};
+
+export type Booking = {
+  id: string;
+  user_id: string;
+  service_id: string;
+  status: 'pendente' | 'confirmado' | 'concluído' | 'cancelado';
+  vitus_spent: number;
+  total_price: number;
+  scheduled_at: string;
+  created_at: string;
+};
