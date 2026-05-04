@@ -1,10 +1,9 @@
-import { ShieldCheck, Brain, Syringe, ClipboardList, Dna } from 'lucide-react';
+import { ShieldCheck, Brain, Syringe, ClipboardList, Dna, HeartPulse } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useVitus } from '../../hooks/useVitus';
-import { AnatomicalHeartIcon } from '../icons/AnatomicalHeart';
 
 type FeedPostProps = {
   key?: string | number;
@@ -71,7 +70,7 @@ export function FeedPost({ post }: FeedPostProps) {
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
             >
               <div className="filter drop-shadow-2xl">
-                <AnatomicalHeartIcon className="w-24 h-24 text-red-500" />
+                <HeartPulse className="w-24 h-24 text-red-500" />
               </div>
             </motion.div>
           )}
@@ -86,7 +85,7 @@ export function FeedPost({ post }: FeedPostProps) {
               onClick={handleLike} 
               className={cn("transition-all active:scale-125 flex items-center justify-center", isLiked ? "text-red-500" : "text-gray-800 hover:text-gray-400")}
             >
-              <AnatomicalHeartIcon className="w-6 h-6" />
+              <HeartPulse className={cn("w-6 h-6", isLiked && "fill-current")} />
             </button>
             <button className="text-gray-800 hover:text-gray-400">
               <Brain className="w-6 h-6" />

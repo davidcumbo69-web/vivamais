@@ -2,14 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import React from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Brain, Syringe, Music, Share2, ShieldCheck, Plus, Play, Pause, Loader2, Camera, X } from 'lucide-react';
+import { HeartPulse, Brain, Syringe, Music, Share2, ShieldCheck, Plus, Play, Pause, Loader2, Camera, X } from 'lucide-react';
 import { useVitus } from '../hooks/useVitus';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
 import { ReelsCarousel } from '../components/feed/ReelsCarousel';
 import { CreateReelModal } from '../components/feed/CreateReelModal';
-import { AnatomicalHeartIcon } from '../components/icons/AnatomicalHeart';
 
 export default function Reels() {
   const [searchParams] = useSearchParams();
@@ -288,7 +287,7 @@ export default function Reels() {
                         : "text-white border-white/10 group-hover:bg-red-500/20 group-hover:border-red-500/50"
                     )}
                   >
-                    <AnatomicalHeartIcon className={cn("w-6 h-6", userLikes[reel.id] && "fill-current")} />
+                    <HeartPulse className={cn("w-6 h-6", userLikes[reel.id] && "fill-current")} />
                   </button>
                   <span className="text-white text-[10px] mt-2 font-black drop-shadow-lg">{reel.likes_count}</span>
                 </div>

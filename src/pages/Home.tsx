@@ -6,13 +6,12 @@ import { StoriesBar } from '../components/feed/StoriesBar';
 import { CreateReelModal } from '../components/feed/CreateReelModal';
 import { FeedPost } from '../components/feed/FeedPost';
 import { cn } from '../lib/utils';
-import { ShieldCheck, Plus, ImagePlus, Syringe, Loader2, Trophy, TrendingUp, Coins } from 'lucide-react';
+import { ShieldCheck, Plus, ImagePlus, Syringe, Loader2, Trophy, TrendingUp, Coins, HeartPulse } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase, type Post } from '../lib/supabase';
 import CreateCommunityModal from '../components/modals/CreateCommunityModal';
-import { AnatomicalHeartIcon } from '../components/icons/AnatomicalHeart';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<any>('para_ti');
@@ -547,7 +546,7 @@ export default function Home() {
            {/* Gamification Section - Vitus Balance */}
            <div className="bg-gradient-to-br from-[#006747] to-emerald-800 rounded-3xl p-6 mb-6 shadow-xl shadow-emerald-900/10 text-white relative overflow-hidden group">
               <div className="absolute top-0 right-0 -translate-y-4 translate-x-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                 <AnatomicalHeartIcon className="w-32 h-32 text-white" />
+                 <HeartPulse className="w-32 h-32 text-white" />
               </div>
               
               <div className="relative z-10">
