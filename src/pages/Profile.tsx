@@ -10,6 +10,7 @@ import { cn } from '../lib/utils';
 export default function Profile() {
   const { userId } = useParams<{ userId: string }>();
   const { profile: myProfile } = useAuth();
+  const isOwnProfile = !userId || userId === myProfile?.id;
   const [profile, setProfile] = useState<any>(null);
   const { balance } = useVitus();
   const [proData, setProData] = useState<HealthProfessional | null>(null);
@@ -20,13 +21,18 @@ export default function Profile() {
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [loadingReels, setLoadingReels] = useState(false);
   const [loadingCommunities, setLoadingCommunities] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services'>('posts');
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [services, setServices] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   useEffect(() => {
     const effectiveUserId = userId || myProfile?.id;
@@ -51,17 +57,16 @@ export default function Profile() {
       if (pData) {
         setProfile(pData);
         
-        if (!pData.is_professional) {
-          setActiveTab('appointments');
-        }
-        
         if (pData.is_professional) {
+          setActiveTab('posts');
           supabase
             .from('health_professionals')
             .select('*')
             .eq('id', targetUserId)
             .single()
             .then(({ data }) => setProData(data));
+        } else {
+          setActiveTab(isOwnProfile ? 'appointments' : 'posts');
         }
         
         fetchUserPosts(targetUserId);
@@ -69,11 +74,93 @@ export default function Profile() {
         fetchUserCommunities(targetUserId);
         fetchUserAppointments(targetUserId);
         fetchUserOrders(targetUserId);
+        if (pData.is_professional) {
+          fetchUserServices(targetUserId);
+        }
+        
+        fetchFollowData(targetUserId);
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
     } finally {
       setLoadingProfile(false);
+    }
+  };
+
+  const fetchUserServices = async (targetUserId: string) => {
+    setLoadingServices(true);
+    const { data } = await supabase
+      .from('wellness_services')
+      .select('*')
+      .eq('provider_id', targetUserId)
+      .order('created_at', { ascending: false });
+    
+    if (data) setServices(data);
+    setLoadingServices(false);
+  };
+
+  const fetchFollowData = async (targetUserId: string) => {
+    // Check if following
+    if (myProfile?.id) {
+      const { data: followData } = await supabase
+        .from('professional_followers')
+        .select('*')
+        .eq('follower_id', myProfile.id)
+        .eq('professional_id', targetUserId)
+        .single();
+      
+      setIsFollowing(!!followData);
+    }
+
+    // Get followers count
+    const { count: fCount } = await supabase
+      .from('professional_followers')
+      .select('*', { count: 'exact', head: true })
+      .eq('professional_id', targetUserId);
+    
+    // Get following count
+    const { count: fingCount } = await supabase
+      .from('professional_followers')
+      .select('*', { count: 'exact', head: true })
+      .eq('follower_id', targetUserId);
+
+    if (fCount !== null) setFollowersCount(fCount);
+    if (fingCount !== null) setFollowingCount(fingCount);
+  };
+
+  const handleFollow = async () => {
+    if (!myProfile) {
+      alert('Por favor, faça login para seguir profissionais.');
+      return;
+    }
+
+    const targetUserId = profile.id;
+    
+    try {
+      if (isFollowing) {
+        const { error } = await supabase
+          .from('professional_followers')
+          .delete()
+          .eq('follower_id', myProfile.id)
+          .eq('professional_id', targetUserId);
+        
+        if (error) throw error;
+        setIsFollowing(false);
+        setFollowersCount(prev => Math.max(0, prev - 1));
+      } else {
+        const { error } = await supabase
+          .from('professional_followers')
+          .insert({
+            follower_id: myProfile.id,
+            professional_id: targetUserId
+          });
+        
+        if (error) throw error;
+        setIsFollowing(true);
+        setFollowersCount(prev => prev + 1);
+      }
+    } catch (err) {
+      console.error('Error toggling follow:', err);
     }
   };
 
@@ -201,14 +288,12 @@ export default function Profile() {
     username: profile.username || 'utilizador_viva',
     name: profile.full_name || 'VIVA User',
     bio: profile.bio || 'O meu percurso rumo a um estilo de vida saudável com o SNS.',
-    followers: profile.is_professional ? '2.4K' : '---',
-    following: '450',
+    followers: followersCount.toLocaleString(),
+    following: followingCount.toLocaleString(),
     posts: profile.is_professional ? posts.length : posts.length || '24',
     streak: 12,
     level: profile.xp_level || 5
   };
-
-  const isOwnProfile = !userId || userId === myProfile?.id;
 
   return (
     <div className="pb-20 max-w-4xl mx-auto md:pb-10 pt-4 px-4">
@@ -251,7 +336,17 @@ export default function Profile() {
               </>
             ) : (
               <div className="flex items-center space-x-2">
-                <button className="bg-[#006747] text-white px-8 py-1.5 rounded-lg text-sm font-semibold transition-all hover:bg-emerald-800 shadow-sm shadow-emerald-100">Seguir</button>
+                <button 
+                  onClick={handleFollow}
+                  className={cn(
+                    "px-8 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm",
+                    isFollowing 
+                      ? "bg-gray-100 text-gray-700 hover:bg-gray-200" 
+                      : "bg-[#006747] text-white hover:bg-emerald-800 shadow-emerald-100"
+                  )}
+                >
+                  {isFollowing ? 'A seguir' : 'Seguir'}
+                </button>
                 <Link 
                   to={`/messages?userId=${profile.id}`}
                   className="bg-white border-2 border-emerald-50 text-[#006747] px-4 py-1.5 rounded-lg text-sm font-bold transition-all hover:bg-emerald-50 flex items-center space-x-2"
@@ -293,7 +388,17 @@ export default function Profile() {
                </>
              ) : (
                <div className="flex w-full space-x-2">
-                 <button className="flex-1 bg-[#006747] text-white py-2 rounded-lg text-sm font-bold text-center">Seguir</button>
+                 <button 
+                   onClick={handleFollow}
+                   className={cn(
+                     "flex-1 py-2 rounded-lg text-sm font-bold text-center transition-all",
+                     isFollowing 
+                       ? "bg-gray-100 text-gray-700" 
+                       : "bg-[#006747] text-white"
+                   )}
+                 >
+                   {isFollowing ? 'A seguir' : 'Seguir'}
+                 </button>
                  <Link 
                    to={`/messages?userId=${profile.id}`}
                    className="flex-1 bg-white border-2 border-emerald-50 text-[#006747] py-2 rounded-lg text-sm font-bold text-center flex items-center justify-center space-x-2"
@@ -367,6 +472,16 @@ export default function Profile() {
         <div className="flex overflow-x-auto scrollbar-hide px-4 md:px-0 space-x-8 md:space-x-12 md:justify-center">
           {profile.is_professional && (
             <button 
+              onClick={() => setActiveTab('services')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'services' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            >
+              <HeartPulse className="w-4 h-4" />
+              <span>Serviços</span>
+            </button>
+          )}
+
+          {profile.is_professional && (
+            <button 
               onClick={() => setActiveTab('posts')}
               className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'posts' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
             >
@@ -375,13 +490,15 @@ export default function Profile() {
             </button>
           )}
 
-          <button 
-            onClick={() => setActiveTab('appointments')}
-            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'appointments' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-          >
-            <CalendarCheck2 className="w-4 h-4" />
-            <span>Agenda</span>
-          </button>
+          {isOwnProfile && (
+            <button 
+              onClick={() => setActiveTab('appointments')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'appointments' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            >
+              <CalendarCheck2 className="w-4 h-4" />
+              <span>Agenda</span>
+            </button>
+          )}
 
           {profile.is_professional && (
             <button 
@@ -393,33 +510,77 @@ export default function Profile() {
             </button>
           )}
 
-          <button 
-            onClick={() => setActiveTab('orders')}
-            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'orders' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-          >
-            <ShoppingBag className="w-4 h-4" />
-            <span>Encomendas</span>
-          </button>
+          {isOwnProfile && (
+            <button 
+              onClick={() => setActiveTab('orders')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'orders' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>Encomendas</span>
+            </button>
+          )}
           
-          <button 
-            onClick={() => setActiveTab('communities')}
-            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'communities' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Meus Grupos</span>
-          </button>
+          {isOwnProfile && (
+            <button 
+              onClick={() => setActiveTab('communities')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'communities' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Meus Grupos</span>
+            </button>
+          )}
 
-          <button 
-            onClick={() => setActiveTab('saved')}
-            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'saved' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-          >
-            <ClipboardList className="w-4 h-4" />
-            <span>Guardado</span>
-          </button>
+          {isOwnProfile && (
+            <button 
+              onClick={() => setActiveTab('saved')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'saved' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            >
+              <ClipboardList className="w-4 h-4" />
+              <span>Guardado</span>
+            </button>
+          )}
         </div>
 
         {/* Post Grid or Other Content */}
         <div className="mt-4">
+          {activeTab === 'services' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
+              {loadingServices ? (
+                <div className="col-span-full flex justify-center py-12">
+                   <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
+                </div>
+              ) : services.length > 0 ? (
+                services.map(svc => (
+                  <Link 
+                    key={svc.id} 
+                    to={`/marketplace/service/${svc.id}`}
+                    className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm hover:border-[#006747]/20 hover:shadow-md transition-all group flex items-center space-x-4"
+                  >
+                    <div className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
+                      <img src={svc.image_url || 'https://images.unsplash.com/photo-1576091160550-2173599bd14e?auto=format&fit=crop&q=80&w=200'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 group-hover:text-[#006747] transition-colors truncate">{svc.name}</h4>
+                      <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">{svc.category}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="font-bold text-[#006747]">{svc.base_price}€</span>
+                        <div className="flex items-center space-x-1">
+                          <Award className="w-3 h-3 text-yellow-500 fill-current" />
+                          <span className="text-[10px] font-bold text-gray-600">{svc.rating}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                   <HeartPulse className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                   <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Sem serviços listados</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'orders' && (
             <div className="space-y-4 px-2">
               {loadingOrders ? (

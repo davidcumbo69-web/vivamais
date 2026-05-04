@@ -536,3 +536,16 @@ using (
   auth.role() = 'authenticated'
 );
 
+-- 14. Professional Followers Table (Relationships)
+create table if not exists professional_followers (
+  id uuid default gen_random_uuid() primary key,
+  professional_id uuid references profiles(id) on delete cascade not null,
+  follower_id uuid references profiles(id) on delete cascade not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(professional_id, follower_id)
+);
+
+alter table professional_followers enable row level security;
+create policy "Followers viewable by everyone" on professional_followers for select using (true);
+create policy "Users can follow/unfollow" on professional_followers for all using (auth.uid() = follower_id);
+
