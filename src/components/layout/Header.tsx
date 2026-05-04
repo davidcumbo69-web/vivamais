@@ -1,5 +1,6 @@
-import { HeartPulse, Brain, Hospital } from 'lucide-react';
+import { HeartPulse, Brain, Hospital, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { Link } from 'react-router-dom';
 
 export function Header() {
   const { profile } = useAuth();
@@ -10,6 +11,10 @@ export function Header() {
         <h1 className="text-xl font-bold text-[#006747]">VIVA+</h1>
         
         <div className="flex items-center space-x-5">
+          <Link to="/messages" className="relative text-gray-700 hover:text-[#006747] transition-colors">
+            <MessageSquare className="w-6 h-6" />
+            <span className="absolute -top-1 -right-1 bg-red-500 w-2 h-2 rounded-full border border-white" />
+          </Link>
           {profile?.is_professional && (
             <button className="text-gray-700 hover:text-[#006747] transition-colors">
               <Hospital className="w-6 h-6" />

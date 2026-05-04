@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { Navbar } from './components/layout/Navbar';
 import Home from './pages/Home';
@@ -20,9 +20,14 @@ import Appointments from './pages/Appointments';
 import Messages from './pages/Messages';
 import ProfessionalDashboard from './pages/ProfessionalDashboard';
 import Login from './pages/Login';
+import { cn } from './lib/utils';
 
 function AppContent() {
   const { user, loading } = useAuth();
+
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const isChatOpenOnMobile = location.pathname === '/messages' && searchParams.has('userId');
 
   if (loading) {
     return (
