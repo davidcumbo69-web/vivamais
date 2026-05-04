@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { StoriesBar } from '../components/feed/StoriesBar';
 import { CreateReelModal } from '../components/feed/CreateReelModal';
@@ -16,6 +16,7 @@ import { AnatomicalHeartIcon } from '../components/icons/AnatomicalHeart';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<any>('para_ti');
+  const navigate = useNavigate();
   const { profile, user } = useAuth();
   const { balance, addVitus } = useVitus();
   const [posts, setPosts] = useState<any[]>([]);
@@ -359,7 +360,11 @@ export default function Home() {
                       </div>
                     ) : groups.length > 0 ? (
                       groups.map(group => (
-                        <div key={group.id} className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:border-emerald-200 transition-all hover:shadow-md group">
+                        <div 
+                          key={group.id} 
+                          onClick={() => navigate(`/c/${encodeURIComponent(group.name)}`)}
+                          className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:border-emerald-200 transition-all hover:shadow-md group cursor-pointer"
+                        >
                           <div className="flex items-center space-x-4">
                             <div 
                               className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-inner"
@@ -369,8 +374,7 @@ export default function Home() {
                             </div>
                             <div>
                                <h4 
-                                 onClick={() => window.location.href = `/c/${group.name}`}
-                                 className="font-bold text-base text-gray-900 group-hover:text-[#006747] cursor-pointer transition-colors"
+                                 className="font-bold text-base text-gray-900 group-hover:text-[#006747] transition-colors"
                                >
                                  g/{group.name}
                                </h4>

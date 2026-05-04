@@ -312,10 +312,10 @@ export default function Profile() {
 
       {/* Tabs */}
       <div className="border-t border-gray-200">
-        <div className="flex justify-center space-x-12">
+        <div className="flex overflow-x-auto scrollbar-hide px-4 md:px-0 space-x-8 md:space-x-12 md:justify-center">
           <button 
             onClick={() => setActiveTab('posts')}
-            className={`flex items-center space-x-2 py-4 border-t transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'posts' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'posts' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
           >
             <Dna className="w-4 h-4" />
             <span>Publicações</span>
@@ -323,7 +323,7 @@ export default function Profile() {
 
           <button 
             onClick={() => setActiveTab('appointments')}
-            className={`flex items-center space-x-2 py-4 border-t transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'appointments' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'appointments' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
           >
             <CalendarCheck2 className="w-4 h-4" />
             <span>Agenda</span>
@@ -331,7 +331,7 @@ export default function Profile() {
 
           <button 
             onClick={() => setActiveTab('reels')}
-            className={`flex items-center space-x-2 py-4 border-t transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'reels' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'reels' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
           >
             <ShieldCheck className="w-4 h-4" />
             <span>Reels</span>
@@ -339,29 +339,27 @@ export default function Profile() {
 
           <button 
             onClick={() => setActiveTab('orders')}
-            className={`flex items-center space-x-2 py-4 border-t transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'orders' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'orders' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
           >
             <ShoppingBag className="w-4 h-4" />
             <span>Encomendas</span>
           </button>
           
-          {profile.is_professional ? (
-            <button 
-              onClick={() => setActiveTab('communities')}
-              className={`flex items-center space-x-2 py-4 border-t transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'communities' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Comunidade</span>
-            </button>
-          ) : (
-            <button 
-              onClick={() => setActiveTab('saved')}
-              className={`flex items-center space-x-2 py-4 border-t transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'saved' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-            >
-              <ClipboardList className="w-4 h-4" />
-              <span>Guardado</span>
-            </button>
-          )}
+          <button 
+            onClick={() => setActiveTab('communities')}
+            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'communities' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Meus Grupos</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('saved')}
+            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'saved' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+          >
+            <ClipboardList className="w-4 h-4" />
+            <span>Guardado</span>
+          </button>
         </div>
 
         {/* Post Grid or Other Content */}
