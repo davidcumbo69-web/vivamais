@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { StoriesBar } from '../components/feed/StoriesBar';
 import { CreateReelModal } from '../components/feed/CreateReelModal';
@@ -148,6 +149,7 @@ export default function Home() {
       .select(`
         *,
         profiles (
+          id,
           username,
           avatar_url,
           is_professional
@@ -160,6 +162,7 @@ export default function Home() {
       const formattedPosts = data.map(p => ({
         id: p.id,
         user: {
+          id: p.profiles?.id,
           username: p.profiles?.username || 'viva_user',
           avatar: p.profiles?.avatar_url || 'https://i.pravatar.cc/150',
           isProf: p.profiles?.is_professional || false
@@ -518,13 +521,13 @@ export default function Home() {
         {/* Right Sidebar - Desktop Only Suggestions */}
         <aside className="hidden lg:block w-[320px] ml-12 py-4">
            {/* Current User Info */}
-           <div className="flex items-center justify-between mb-6">
+           <Link to="/profile" className="flex items-center justify-between mb-6 group">
               <div className="flex items-center space-x-3">
-                 <div className="w-11 h-11 rounded-full overflow-hidden border border-gray-100">
+                 <div className="w-11 h-11 rounded-full overflow-hidden border border-gray-100 group-hover:scale-105 transition-transform">
                     <img src={profile?.avatar_url || "https://i.pravatar.cc/150?u=me"} alt="" className="w-full h-full object-cover" />
                  </div>
                  <div>
-                    <p className="text-sm font-bold leading-none">{profile?.username || 'viva_user'}</p>
+                    <p className="text-sm font-bold leading-none group-hover:text-[#006747] transition-colors">{profile?.username || 'viva_user'}</p>
                     <p className="text-[11px] text-gray-400 mt-1">
                       {profile?.is_professional ? (
                         <span className="text-[#006747] font-bold">Profissional de Saúde</span>
@@ -534,8 +537,8 @@ export default function Home() {
                     </p>
                  </div>
               </div>
-              <button className="text-[10px] uppercase font-bold text-[#006747] hover:text-emerald-800">Mudar</button>
-           </div>
+              <span className="text-[10px] uppercase font-bold text-[#006747]">Perfil</span>
+           </Link>
 
            {/* Gamification Section - Vitus Balance */}
            <div className="bg-gradient-to-br from-[#006747] to-emerald-800 rounded-3xl p-6 mb-6 shadow-xl shadow-emerald-900/10 text-white relative overflow-hidden group">
@@ -579,18 +582,18 @@ export default function Home() {
            <div className="space-y-4">
               {SUGGESTIONS.map((sug) => (
                 <div key={sug.username} className="flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full overflow-hidden">
+                    <Link to="/explore" className="flex items-center space-x-3 group">
+                        <div className="w-8 h-8 rounded-full overflow-hidden group-hover:scale-105 transition-transform">
                             <img src={sug.avatar} alt="" className="w-full h-full object-cover" />
                         </div>
                         <div>
                             <div className="flex items-center">
-                              <p className="text-sm font-bold leading-none">{sug.username}</p>
+                              <p className="text-sm font-bold leading-none group-hover:text-[#006747] transition-colors">{sug.username}</p>
                               {sug.isProf && <ShieldCheck className="w-3 h-3 text-[#006747] ml-1 fill-current" />}
                             </div>
                             <p className="text-[10px] text-gray-400 mt-1">{sug.isProf ? 'Profissional SNS' : 'Sugerido'}</p>
                         </div>
-                    </div>
+                    </Link>
                     {sug.isProf ? (
                       <button className="text-xs font-bold text-[#006747] hover:text-emerald-800">Seguir</button>
                     ) : (

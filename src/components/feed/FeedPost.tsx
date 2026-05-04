@@ -1,6 +1,7 @@
 import { ShieldCheck, Brain, Syringe, ClipboardList, Dna } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useVitus } from '../../hooks/useVitus';
 import { AnatomicalHeartIcon } from '../icons/AnatomicalHeart';
@@ -10,6 +11,7 @@ type FeedPostProps = {
   post: {
     id: string;
     user: {
+      id: string;
       username: string;
       avatar: string;
       isProf: boolean;
@@ -46,14 +48,16 @@ export function FeedPost({ post }: FeedPostProps) {
         
         {/* User Info Overlay - Bottom Center */}
         <div className="absolute bottom-0 left-0 right-0 pb-2 md:pb-6 pt-12 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col items-center justify-end pointer-events-none">
-           <div className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 border-white overflow-hidden shadow-2xl mb-2 pointer-events-auto cursor-pointer active:scale-95 transition-transform">
-              <img src={post.user.avatar} className="w-full h-full object-cover" alt="" />
-           </div>
-           <div className="flex items-center space-x-1 mb-0.5">
-              <span className="text-white font-bold text-sm leading-none drop-shadow-lg">{post.user.username}</span>
-              {post.user.isProf && <ShieldCheck className="w-4 h-4 text-[#006747] fill-white" />}
-           </div>
-           <span className="text-white/70 text-[9px] font-black uppercase tracking-widest drop-shadow-md">{post.category}</span>
+           <Link to={`/profile/${post.user.id}`} className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 border-white overflow-hidden shadow-2xl mb-2 pointer-events-auto cursor-pointer active:scale-95 transition-transform group">
+              <img src={post.user.avatar} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="" />
+           </Link>
+           <Link to={`/profile/${post.user.id}`} className="flex flex-col items-center group pointer-events-auto">
+              <div className="flex items-center space-x-1 mb-0.5">
+                 <span className="text-white font-bold text-sm leading-none drop-shadow-lg group-hover:text-emerald-400 transition-colors">{post.user.username}</span>
+                 {post.user.isProf && <ShieldCheck className="w-4 h-4 text-[#006747] fill-white" />}
+              </div>
+              <span className="text-white/70 text-[9px] font-black uppercase tracking-widest drop-shadow-md">{post.category}</span>
+           </Link>
         </div>
         
         {/* Like feedback animation */}
@@ -103,7 +107,7 @@ export function FeedPost({ post }: FeedPostProps) {
         </div>
 
         <div className="text-sm leading-relaxed mb-1">
-          <span className="font-semibold mr-2">{post.user.username}</span>
+          <Link to={`/profile/${post.user.id}`} className="font-semibold mr-2 hover:text-[#006747] transition-colors">{post.user.username}</Link>
           {post.caption}
         </div>
         

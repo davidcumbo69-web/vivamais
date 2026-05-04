@@ -1,19 +1,22 @@
 import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
-import { Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase, type HealthProfessional, type HealthGroup } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 import CreateCommunityModal from '../components/modals/CreateCommunityModal';
 import { cn } from '../lib/utils';
 
 export default function Profile() {
-  const { profile } = useAuth();
+  const { userId } = useParams<{ userId: string }>();
+  const { profile: myProfile } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
   const { balance } = useVitus();
   const [proData, setProData] = useState<HealthProfessional | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [reels, setReels] = useState<any[]>([]);
   const [communities, setCommunities] = useState<HealthGroup[]>([]);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [loadingReels, setLoadingReels] = useState(false);
   const [loadingCommunities, setLoadingCommunities] = useState(false);
@@ -26,31 +29,54 @@ export default function Profile() {
   const [loadingOrders, setLoadingOrders] = useState(false);
 
   useEffect(() => {
-    if (profile) {
-      if (profile.is_professional) {
-        supabase
-          .from('health_professionals')
-          .select('*')
-          .eq('id', profile.id)
-          .single()
-          .then(({ data }) => setProData(data));
-      }
-      
-      fetchUserPosts();
-      fetchUserReels();
-      fetchUserCommunities();
-      fetchUserAppointments();
-      fetchUserOrders();
+    const effectiveUserId = userId || myProfile?.id;
+    
+    if (effectiveUserId) {
+      setLoadingProfile(true);
+      fetchProfile(effectiveUserId);
     }
-  }, [profile]);
+  }, [userId, myProfile]);
 
-  const fetchUserOrders = async () => {
-    if (!profile) return;
+  const fetchProfile = async (targetUserId: string) => {
+    try {
+      const { data: pData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', targetUserId)
+        .single();
+      
+      if (error) throw error;
+      if (pData) {
+        setProfile(pData);
+        
+        if (pData.is_professional) {
+          supabase
+            .from('health_professionals')
+            .select('*')
+            .eq('id', targetUserId)
+            .single()
+            .then(({ data }) => setProData(data));
+        }
+        
+        fetchUserPosts(targetUserId);
+        fetchUserReels(targetUserId);
+        fetchUserCommunities(targetUserId);
+        fetchUserAppointments(targetUserId);
+        fetchUserOrders(targetUserId);
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const fetchUserOrders = async (targetUserId: string) => {
     setLoadingOrders(true);
     const { data } = await supabase
       .from('product_orders')
       .select('*, product:product_id(*)')
-      .eq('buyer_id', profile.id)
+      .eq('buyer_id', targetUserId)
       .order('created_at', { ascending: false });
     
     if (data) setOrders(data);
@@ -65,30 +91,28 @@ export default function Profile() {
 
     if (!error) {
         alert('Compra concluída com sucesso!');
-        fetchUserOrders();
+        fetchUserOrders(profile.id);
     }
   };
 
-  const fetchUserAppointments = async () => {
-    if (!profile) return;
+  const fetchUserAppointments = async (targetUserId: string) => {
     setLoadingAppointments(true);
     const { data } = await supabase
       .from('bookings')
       .select('*, service:service_id(*)')
-      .eq('user_id', profile.id)
+      .eq('user_id', targetUserId)
       .order('scheduled_at', { ascending: false });
     
     if (data) setAppointments(data);
     setLoadingAppointments(false);
   };
 
-  const fetchUserPosts = async () => {
-    if (!profile) return;
+  const fetchUserPosts = async (targetUserId: string) => {
     setLoadingPosts(true);
     const { data } = await supabase
       .from('posts')
       .select('*')
-      .eq('user_id', profile.id)
+      .eq('user_id', targetUserId)
       .neq('category', 'Reels')
       .order('created_at', { ascending: false });
     
@@ -96,21 +120,19 @@ export default function Profile() {
     setLoadingPosts(false);
   };
 
-  const fetchUserReels = async () => {
-    if (!profile) return;
+  const fetchUserReels = async (targetUserId: string) => {
     setLoadingReels(true);
     const { data } = await supabase
       .from('reels')
       .select('*')
-      .eq('user_id', profile.id)
+      .eq('user_id', targetUserId)
       .order('created_at', { ascending: false });
     
     if (data) setReels(data);
     setLoadingReels(false);
   };
 
-  const fetchUserCommunities = async () => {
-    if (!profile) return;
+  const fetchUserCommunities = async (targetUserId: string) => {
     setLoadingCommunities(true);
     
     try {
@@ -119,7 +141,7 @@ export default function Profile() {
       const { data: membershipData, error: mError } = await supabase
         .from('health_group_members')
         .select('group_id')
-        .eq('user_id', profile.id);
+        .eq('user_id', targetUserId);
       
       if (!mError && membershipData) {
         membershipIds = membershipData.map(m => m.group_id);
@@ -128,7 +150,7 @@ export default function Profile() {
       const { data: createdData } = await supabase
         .from('health_groups')
         .select('id')
-        .eq('creator_id', profile.id);
+        .eq('creator_id', targetUserId);
 
       const createdIds = createdData?.map(g => g.id) || [];
       const allIds = Array.from(new Set([...membershipIds, ...createdIds]));
@@ -151,16 +173,36 @@ export default function Profile() {
     }
   };
 
+  if (loadingProfile) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#006747]" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center">
+        <UserIcon className="w-16 h-16 text-gray-200 mb-4" />
+        <h2 className="text-xl font-bold text-gray-900">Utilizador não encontrado</h2>
+        <Link to="/" className="mt-4 text-[#006747] font-bold">Voltar ao Início</Link>
+      </div>
+    );
+  }
+
   const user = {
-    username: profile?.username || 'utilizador_viva',
-    name: profile?.full_name || 'VIVA User',
-    bio: profile?.bio || 'O meu percurso rumo a um estilo de vida saudável com o SNS.',
-    followers: profile?.is_professional ? '2.4K' : '---',
+    username: profile.username || 'utilizador_viva',
+    name: profile.full_name || 'VIVA User',
+    bio: profile.bio || 'O meu percurso rumo a um estilo de vida saudável com o SNS.',
+    followers: profile.is_professional ? '2.4K' : '---',
     following: '450',
-    posts: profile?.is_professional ? posts.length : '24',
+    posts: profile.is_professional ? posts.length : posts.length || '24',
     streak: 12,
-    level: profile?.xp_level || 5
+    level: profile.xp_level || 5
   };
+
+  const isOwnProfile = !userId || userId === myProfile?.id;
 
   return (
     <div className="pb-20 max-w-4xl mx-auto md:pb-10 pt-4 px-4">
@@ -179,12 +221,12 @@ export default function Profile() {
         <div className="relative">
              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-2 border-[#006747] p-1 shadow-sm">
                 <img 
-                    src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user.username}`} 
+                    src={profile.avatar_url || `https://i.pravatar.cc/150?u=${user.username}`} 
                     className="w-full h-full rounded-full object-cover" 
                     alt="" 
                 />
              </div>
-             {profile?.is_professional && (
+             {profile.is_professional && (
                 <div className="absolute -bottom-1 -right-1 bg-[#006747] rounded-full p-1.5 border-2 border-white shadow-md">
                     <ShieldCheck className="w-5 h-5 text-white fill-current" />
                 </div>
@@ -194,16 +236,28 @@ export default function Profile() {
         <div className="flex-1">
           <div className="hidden md:flex items-center space-x-4 mb-4">
             <h2 className="text-xl font-semibold">{user.username}</h2>
-            <Link to="/settings" className="bg-gray-100 hover:bg-gray-200 px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors font-sans">Editar Perfil</Link>
-            {profile?.is_professional && (
-              <Link to="/professional/dashboard" className="bg-[#006747] text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-all hover:bg-emerald-800 shadow-sm shadow-emerald-100">Área Profissional</Link>
+            {isOwnProfile ? (
+              <>
+                <Link to="/settings" className="bg-gray-100 hover:bg-gray-200 px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors font-sans">Editar Perfil</Link>
+                {profile.is_professional && (
+                  <Link to="/professional/dashboard" className="bg-[#006747] text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-all hover:bg-emerald-800 shadow-sm shadow-emerald-100">Área Profissional</Link>
+                )}
+              </>
+            ) : (
+              <button className="bg-[#006747] text-white px-8 py-1.5 rounded-lg text-sm font-semibold transition-all hover:bg-emerald-800 shadow-sm shadow-emerald-100">Seguir</button>
             )}
           </div>
           
           <div className="flex md:hidden items-center space-x-2 mb-6">
-             <Link to="/settings" className="flex-1 bg-gray-100 py-2 rounded-lg text-sm font-bold text-center">Editar Perfil</Link>
-             {profile?.is_professional && (
-                <Link to="/professional/dashboard" className="flex-1 bg-[#006747] text-white py-2 rounded-lg text-sm font-bold text-center">Área Pro</Link>
+             {isOwnProfile ? (
+               <>
+                 <Link to="/settings" className="flex-1 bg-gray-100 py-2 rounded-lg text-sm font-bold text-center">Editar Perfil</Link>
+                 {profile.is_professional && (
+                    <Link to="/professional/dashboard" className="flex-1 bg-[#006747] text-white py-2 rounded-lg text-sm font-bold text-center">Área Pro</Link>
+                 )}
+               </>
+             ) : (
+               <button className="flex-1 bg-[#006747] text-white py-2 rounded-lg text-sm font-bold text-center">Seguir</button>
              )}
           </div>
           
@@ -234,7 +288,7 @@ export default function Profile() {
       </div>
 
       {/* Gamification Stats (Hide if Professional) */}
-      {!profile?.is_professional && (
+      {!profile.is_professional && (
         <div className="grid grid-cols-3 gap-2 mb-10">
           <div className="bg-emerald-50 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
               <Apple className="w-6 h-6 text-[#006747] mb-2" />
@@ -289,7 +343,7 @@ export default function Profile() {
             <span>Encomendas</span>
           </button>
           
-          {profile?.is_professional ? (
+          {profile.is_professional ? (
             <button 
               onClick={() => setActiveTab('communities')}
               className={`flex items-center space-x-2 py-4 border-t transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'communities' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
@@ -458,7 +512,7 @@ export default function Profile() {
 
           {activeTab === 'communities' && (
             <div className="space-y-4">
-                {profile?.is_professional && (
+                {isOwnProfile && profile.is_professional && (
                   <div className="py-12 text-center bg-white rounded-3xl border border-dashed border-gray-200 mb-8 shadow-sm">
                      <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Users className="w-8 h-8 text-[#006747]" />
@@ -526,7 +580,7 @@ export default function Profile() {
       <CreateCommunityModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onCreated={fetchUserCommunities}
+        onCreated={() => fetchUserCommunities(profile.id)}
       />
     </div>
   );

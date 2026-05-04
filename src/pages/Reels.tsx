@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import React from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, Brain, Syringe, Music, Share2, ShieldCheck, Plus, Play, Pause, Loader2, Camera, X } from 'lucide-react';
 import { useVitus } from '../hooks/useVitus';
@@ -82,6 +82,7 @@ export default function Reels() {
           id: p.id,
           content_url: p.video_url,
           user: {
+            id: p.profiles?.id,
             username: p.profiles?.username || 'viva_user',
             avatar: p.profiles?.avatar_url || 'https://i.pravatar.cc/150',
             isProf: p.profiles?.is_professional || false
@@ -248,16 +249,18 @@ export default function Reels() {
             <div className="relative z-10 px-4 pb-20 md:pb-12 flex justify-between items-end w-full">
               <div className="flex-1 mr-6">
                 <div className="flex items-center mb-4">
-                  <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden mr-3 shadow-lg">
-                    <img src={reel.user.avatar} className="w-full h-full object-cover" alt="" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-sm flex items-center drop-shadow-md">
-                      {reel.user.username}
-                      {reel.user.isProf && <ShieldCheck className="ml-1.5 w-4 h-4 text-[#006747] fill-white" />}
-                    </span>
-                    <span className="text-[10px] text-white/60 font-medium tracking-wider uppercase">Membro VIVA+ Health</span>
-                  </div>
+                  <Link to={`/profile/${reel.user.id}`} className="flex items-center group pointer-events-auto">
+                    <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden mr-3 shadow-lg group-hover:scale-105 transition-transform">
+                      <img src={reel.user.avatar} className="w-full h-full object-cover" alt="" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-white font-bold text-sm flex items-center drop-shadow-md group-hover:text-emerald-400 transition-colors">
+                        {reel.user.username}
+                        {reel.user.isProf && <ShieldCheck className="ml-1.5 w-4 h-4 text-[#006747] fill-white" />}
+                      </span>
+                      <span className="text-[10px] text-white/60 font-medium tracking-wider uppercase group-hover:text-white transition-colors">Membro VIVA+ Health</span>
+                    </div>
+                  </Link>
                   <button className="ml-4 px-4 py-1.5 bg-white text-black text-[10px] rounded-full font-black uppercase tracking-wider hover:bg-gray-200 transition-colors shadow-lg">
                     Seguir
                   </button>

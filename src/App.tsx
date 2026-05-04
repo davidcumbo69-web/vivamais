@@ -51,6 +51,7 @@ function AppContent() {
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:userId" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/gamification" element={<Gamification />} />

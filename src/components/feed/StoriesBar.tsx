@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShieldCheck, Plus, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { CreateReelModal } from './CreateReelModal';
 
@@ -23,6 +23,7 @@ export function StoriesBar() {
         .select(`
           *,
           profiles (
+            id,
             username,
             avatar_url,
             is_professional
@@ -102,9 +103,13 @@ export function StoriesBar() {
                   </div>
                 )}
               </div>
-              <span className="text-[11px] mt-1 max-w-[64px] truncate text-gray-800 font-medium">
+              <Link 
+                to={`/profile/${reel.profiles?.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-[11px] mt-1 max-w-[64px] truncate text-gray-800 font-bold hover:text-[#006747] transition-colors"
+              >
                 {reel.profiles?.username}
-              </span>
+              </Link>
             </div>
           ))
         )}
