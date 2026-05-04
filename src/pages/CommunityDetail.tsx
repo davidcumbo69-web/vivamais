@@ -237,6 +237,22 @@ export default function CommunityDetail() {
     if (data) setMessages(data);
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!window.confirm('Queres apagar esta mensagem?')) return;
+    try {
+      const { error } = await supabase
+        .from('health_topic_messages')
+        .delete()
+        .eq('id', messageId);
+      
+      if (error) throw error;
+      
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+    } catch (err) {
+      console.error('Error deleting message:', err);
+    }
+  };
+
   const handleDeleteTopic = async (topicId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (!window.confirm('Tens a certeza que queres apagar este tema? Todos os comentários serão removidos.')) return;
@@ -616,7 +632,17 @@ export default function CommunityDetail() {
              <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 <div className="max-w-3xl mx-auto">
                    {/* Opener */}
-                   <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-10 text-left">
+                   <div 
+                     className="p-6 rounded-3xl shadow-sm border-2 text-left mb-10 relative overflow-hidden"
+                     style={{ 
+                       backgroundColor: group.color + '08',
+                       borderColor: group.color
+                     }}
+                   >
+                      <div 
+                        className="absolute top-0 left-0 w-1.5 h-full"
+                        style={{ backgroundColor: group.color }}
+                      />
                       <div className="flex items-center space-x-3 mb-4">
                          <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm">
                             <img src={selectedTopic.profiles?.avatar_url || 'https://i.pravatar.cc/150'} alt="" />
@@ -640,13 +666,26 @@ export default function CommunityDetail() {
                            </div>
                            <div className="bg-white px-5 py-4 rounded-3xl shadow-sm border border-gray-100 flex-1">
                               <div className="flex justify-between items-center mb-1">
-                                 <p className="font-black text-gray-900 text-xs text-left">u/{msg.profiles?.username}</p>
+                                 <div className="flex items-center space-x-2">
+                                    <p className="font-black text-gray-900 text-xs text-left">u/{msg.profiles?.username}</p>
+                                    {user?.id === msg.user_id && (
+                                       <button 
+                                         onClick={() => handleDeleteMessage(msg.id)}
+                                         className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-all"
+                                       >
+                                         <Trash2 className="w-3 h-3" />
+                                       </button>
+                                    )}
+                                 </div>
                                  <span className="text-[9px] text-gray-300 font-bold uppercase">{new Date(msg.created_at).toLocaleTimeString()}</span>
                               </div>
                               <p className="text-gray-700 text-sm leading-relaxed text-left">{msg.content}</p>
                               
                               {msg.parent && (
-                                <div className="mt-2 mb-2 p-2 bg-gray-50 rounded-xl border-l-4 border-emerald-500 text-xs text-gray-500">
+                                <div 
+                                  className="mt-2 mb-2 p-2 bg-gray-50 rounded-xl border-l-4 text-xs text-gray-500"
+                                  style={{ borderLeftColor: group.color }}
+                                >
                                    <p className="font-bold mb-1">Reposta a u/{msg.parent.profiles?.username}</p>
                                    <p className="line-clamp-1 italic">"{msg.parent.content}"</p>
                                 </div>
@@ -659,7 +698,8 @@ export default function CommunityDetail() {
                                      const input = document.getElementById('topic-message-input');
                                      if (input) input.focus();
                                    }}
-                                   className="flex items-center space-x-1.5 text-[10px] font-black text-[#006747] uppercase tracking-widest hover:bg-emerald-50 px-2 py-1 rounded transition-colors"
+                                   className="flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded transition-colors"
+                                   style={{ color: group.color }}
                                  >
                                     <Reply className="w-3 h-3" />
                                     <span>Responder</span>
@@ -676,12 +716,15 @@ export default function CommunityDetail() {
              <div className="p-4 bg-white border-t border-gray-200 sticky bottom-0 safe-bottom">
                 <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto space-y-3">
                    {replyingTo && (
-                      <div className="flex items-center justify-between bg-emerald-50 px-4 py-2 rounded-xl text-emerald-800">
+                      <div 
+                        className="flex items-center justify-between px-4 py-2 rounded-xl"
+                        style={{ backgroundColor: group.color + '15', color: group.color }}
+                      >
                          <div className="flex items-center space-x-2 text-xs font-bold">
                             <Reply className="w-3.5 h-3.5" />
                             <span>A responder a u/{replyingTo.profiles?.username || replyingTo.username}</span>
                          </div>
-                         <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-emerald-100 rounded-full">
+                         <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-black/5 rounded-full transition-colors">
                             <X className="w-3.5 h-3.5" />
                          </button>
                       </div>
@@ -694,7 +737,11 @@ export default function CommunityDetail() {
                            value={newMessage}
                            onChange={(e) => setNewMessage(e.target.value)}
                            placeholder={replyingTo ? "Escreve a tua resposta..." : "Adiciona a tua opinião ao debate..."}
-                           className="w-full bg-gray-50 border-2 border-gray-100 rounded-full py-4 px-6 focus:outline-none focus:border-[#006747] transition-all font-bold pr-12 text-left"
+                           className="w-full bg-gray-50 border-2 border-gray-100 rounded-full py-4 px-6 focus:outline-none transition-all font-bold pr-12 text-left"
+                           style={{ 
+                             '--tw-ring-color': group.color,
+                             borderColor: newMessage.trim() ? group.color + '40' : undefined 
+                           } as any}
                          />
                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
                             <BadgeCheck className="w-5 h-5 text-gray-200" />
@@ -703,7 +750,11 @@ export default function CommunityDetail() {
                       <button 
                         type="submit"
                         disabled={sendingMessage || !newMessage.trim()}
-                        className="bg-[#006747] text-white p-4 rounded-full shadow-lg shadow-emerald-100 disabled:opacity-30 transition-all hover:scale-110 active:scale-95"
+                        className="text-white p-4 rounded-full shadow-lg disabled:opacity-30 transition-all hover:scale-110 active:scale-95"
+                        style={{ 
+                          backgroundColor: group.color,
+                          shadowColor: group.color + '33'
+                        }}
                       >
                         <Send className="w-6 h-6" />
                       </button>
