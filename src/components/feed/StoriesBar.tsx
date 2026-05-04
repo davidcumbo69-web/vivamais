@@ -90,11 +90,14 @@ export function StoriesBar() {
               className="flex flex-col items-center flex-shrink-0 cursor-pointer group"
             >
               <div className="relative p-[2px] bg-gradient-to-tr from-[#006747] to-emerald-400 rounded-full group-hover:scale-105 transition-transform duration-200">
-                <div className="w-14 h-14 rounded-full border-2 border-white overflow-hidden bg-white">
-                  <img 
-                    src={reel.profiles?.avatar_url || 'https://i.pravatar.cc/150'} 
-                    alt={reel.profiles?.username} 
-                    className="w-full h-full object-cover shadow-inner" 
+                <div className="w-14 h-14 rounded-full border-2 border-white overflow-hidden bg-black">
+                  <video 
+                    src={reel.video_url} 
+                    className="w-full h-full object-cover shadow-inner opacity-90 group-hover:opacity-100 transition-opacity" 
+                    autoPlay 
+                    muted 
+                    loop 
+                    playsInline 
                   />
                 </div>
                 {reel.profiles?.is_professional && (
