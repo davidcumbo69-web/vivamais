@@ -51,6 +51,10 @@ export default function Profile() {
       if (pData) {
         setProfile(pData);
         
+        if (!pData.is_professional) {
+          setActiveTab('appointments');
+        }
+        
         if (pData.is_professional) {
           supabase
             .from('health_professionals')
@@ -361,13 +365,15 @@ export default function Profile() {
       {/* Tabs */}
       <div className="border-t border-gray-200">
         <div className="flex overflow-x-auto scrollbar-hide px-4 md:px-0 space-x-8 md:space-x-12 md:justify-center">
-          <button 
-            onClick={() => setActiveTab('posts')}
-            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'posts' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-          >
-            <Dna className="w-4 h-4" />
-            <span>Publicações</span>
-          </button>
+          {profile.is_professional && (
+            <button 
+              onClick={() => setActiveTab('posts')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'posts' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            >
+              <Dna className="w-4 h-4" />
+              <span>Publicações</span>
+            </button>
+          )}
 
           <button 
             onClick={() => setActiveTab('appointments')}
@@ -377,13 +383,15 @@ export default function Profile() {
             <span>Agenda</span>
           </button>
 
-          <button 
-            onClick={() => setActiveTab('reels')}
-            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'reels' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Reels</span>
-          </button>
+          {profile.is_professional && (
+            <button 
+              onClick={() => setActiveTab('reels')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'reels' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Reels</span>
+            </button>
+          )}
 
           <button 
             onClick={() => setActiveTab('orders')}
