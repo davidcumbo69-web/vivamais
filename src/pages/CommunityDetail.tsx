@@ -49,7 +49,7 @@ export default function CommunityDetail() {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [replyingTo, setReplyingTo] = useState<any | null>(null);
+  const [replyingTo, setReplyingTo] = useState<any | null>(null); // Now stores the message object being replied to
 
   useEffect(() => {
     if (name) {
@@ -191,7 +191,7 @@ export default function CommunityDetail() {
   const fetchMessages = async (topicId: string) => {
     const { data } = await supabase
       .from('health_topic_messages')
-      .select('*, profiles:user_id(*)')
+      .select('*, profiles:user_id(*), parent:reply_to_id(*, profiles:user_id(*))')
       .eq('topic_id', topicId)
       .order('created_at', { ascending: true });
     
@@ -227,18 +227,15 @@ export default function CommunityDetail() {
 
     setSendingMessage(true);
     try {
-      const finalContent = replyingTo 
-        ? `*Reposta a @${replyingTo.username}:* ${newMessage}` 
-        : newMessage;
-
       const { data, error } = await supabase
         .from('health_topic_messages')
         .insert({
           topic_id: selectedTopic.id,
           user_id: user.id,
-          content: finalContent
+          content: newMessage,
+          reply_to_id: replyingTo?.id || null
         })
-        .select('*, profiles:user_id(*)')
+        .select('*, profiles:user_id(*), parent:reply_to_id(*, profiles:user_id(*))')
         .single();
       
       if (data) {
@@ -609,10 +606,17 @@ export default function CommunityDetail() {
                               </div>
                               <p className="text-gray-700 text-sm leading-relaxed text-left">{msg.content}</p>
                               
+                              {msg.parent && (
+                                <div className="mt-2 mb-2 p-2 bg-gray-50 rounded-xl border-l-4 border-emerald-500 text-xs text-gray-500">
+                                   <p className="font-bold mb-1">Reposta a u/{msg.parent.profiles?.username}</p>
+                                   <p className="line-clamp-1 italic">"{msg.parent.content}"</p>
+                                </div>
+                              )}
+                              
                               <div className="mt-3 pt-2 border-t border-gray-50 flex items-center">
                                  <button 
                                    onClick={() => {
-                                     setReplyingTo(msg.profiles);
+                                     setReplyingTo(msg);
                                      const input = document.getElementById('topic-message-input');
                                      if (input) input.focus();
                                    }}
@@ -636,7 +640,7 @@ export default function CommunityDetail() {
                       <div className="flex items-center justify-between bg-emerald-50 px-4 py-2 rounded-xl text-emerald-800">
                          <div className="flex items-center space-x-2 text-xs font-bold">
                             <Reply className="w-3.5 h-3.5" />
-                            <span>A responder a u/{replyingTo.username}</span>
+                            <span>A responder a u/{replyingTo.profiles?.username || replyingTo.username}</span>
                          </div>
                          <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-emerald-100 rounded-full">
                             <X className="w-3.5 h-3.5" />
