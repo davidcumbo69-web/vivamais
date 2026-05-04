@@ -28,6 +28,7 @@ export function Navbar() {
   const bottomNavItems = [
     { icon: Stethoscope, label: 'Início', path: '/' },
     { icon: Microscope, label: 'Explorar', path: '/explore' },
+    { icon: Pill, label: 'Mercado', path: '/marketplace' },
     { icon: CalendarCheck, label: 'Agenda', path: '/appointments' },
     { icon: UserIcon, label: 'Perfil', path: '/profile' },
   ];
@@ -71,7 +72,7 @@ export function Navbar() {
                 to={item.path}
                 className={({ isActive }) =>
                   cn(
-                    "flex flex-col items-center justify-center py-1 transition-all h-full px-4 relative",
+                    "flex flex-col items-center justify-center py-1 transition-all h-full px-1 relative",
                     isActive ? "text-[#006747]" : "text-gray-400"
                   )
                 }
