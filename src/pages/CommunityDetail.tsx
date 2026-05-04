@@ -18,6 +18,9 @@ import {
   Clock,
   Hash,
   Send,
+  Trash2,
+  Reply,
+  X,
   Plus,
   MoreHorizontal
 } from 'lucide-react';
@@ -28,13 +31,12 @@ export default function CommunityDetail() {
   const { name } = useParams<{ name: string }>();
   const { user, profile } = useAuth();
   const [group, setGroup] = useState<HealthGroup | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingTopics, setLoadingTopics] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [joining, setJoining] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'temas'>('posts');
+  const [activeTab, setActiveTab] = useState<'temas'>('temas');
   
   // Topic Creation State
   const [showCreateTopic, setShowCreateTopic] = useState(false);
@@ -47,6 +49,7 @@ export default function CommunityDetail() {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<any | null>(null);
 
   useEffect(() => {
     if (name) {
@@ -57,7 +60,6 @@ export default function CommunityDetail() {
   useEffect(() => {
     if (group && user) {
       checkMembership();
-      fetchPosts();
       fetchTopics();
     }
   }, [group, user]);
@@ -92,20 +94,6 @@ export default function CommunityDetail() {
       setIsMember(!!data);
     } catch (err) {
       console.error('Error checking membership:', err);
-    }
-  };
-
-  const fetchPosts = async () => {
-    if (!group) return;
-    const { data } = await supabase
-      .from('posts')
-      .select('*, profiles(*)')
-      .eq('group_id', group.id)
-      .neq('category', 'Reels')
-      .order('created_at', { ascending: false });
-    
-    if (data) {
-      setPosts(data);
     }
   };
 
@@ -210,18 +198,45 @@ export default function CommunityDetail() {
     if (data) setMessages(data);
   };
 
+  const handleDeleteTopic = async (topicId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!window.confirm('Tens a certeza que queres apagar este tema? Todos os comentários serão removidos.')) return;
+
+    try {
+      // First delete messages
+      await supabase.from('health_topic_messages').delete().eq('topic_id', topicId);
+      
+      const { error } = await supabase
+        .from('health_group_topics')
+        .delete()
+        .eq('id', topicId);
+      
+      if (error) throw error;
+
+      setTopics(prev => prev.filter(t => t.id !== topicId));
+      if (selectedTopic?.id === topicId) setSelectedTopic(null);
+    } catch (err) {
+      console.error('Error deleting topic:', err);
+      alert('Erro ao apagar o tema.');
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !selectedTopic || !newMessage.trim()) return;
 
     setSendingMessage(true);
     try {
+      const finalContent = replyingTo 
+        ? `*Reposta a @${replyingTo.username}:* ${newMessage}` 
+        : newMessage;
+
       const { data, error } = await supabase
         .from('health_topic_messages')
         .insert({
           topic_id: selectedTopic.id,
           user_id: user.id,
-          content: newMessage
+          content: finalContent
         })
         .select('*, profiles:user_id(*)')
         .single();
@@ -229,6 +244,7 @@ export default function CommunityDetail() {
       if (data) {
         setMessages([...messages, data]);
         setNewMessage('');
+        setReplyingTo(null);
       }
     } catch (err) {
       console.error('Error sending message:', err);
@@ -305,24 +321,14 @@ export default function CommunityDetail() {
           </div>
 
           <div className="flex items-center space-x-8 mt-4 border-t border-gray-100 pt-1 text-left">
-             {[
-               { id: 'posts', label: 'Feed', icon: Clock },
-               { id: 'temas', label: 'Temas Discussion', icon: Hash }
-             ].map(tab => (
-               <button 
-                 key={tab.id}
-                 onClick={() => setActiveTab(tab.id as any)}
-                 className={cn(
-                   "flex items-center space-x-2 py-3 px-1 border-b-4 transition-all font-black text-xs uppercase tracking-widest",
-                   activeTab === tab.id 
-                    ? "border-[#006747] text-gray-900" 
-                    : "border-transparent text-gray-400 hover:text-gray-600"
-                 )}
-               >
-                 <tab.icon className="w-4 h-4" />
-                 <span>{tab.label}</span>
-               </button>
-             ))}
+             <button 
+               className={cn(
+                 "flex items-center space-x-2 py-3 px-1 border-b-4 transition-all font-black text-xs uppercase tracking-widest border-[#006747] text-gray-900"
+               )}
+             >
+               <Hash className="w-4 h-4" />
+               <span>Temas Discussion</span>
+             </button>
           </div>
         </div>
       </div>
@@ -330,87 +336,6 @@ export default function CommunityDetail() {
       <main className="max-w-5xl mx-auto px-4 pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
         {/* Main Content Area */}
         <div className="lg:col-span-8 space-y-4">
-           {activeTab === 'posts' ? (
-             <>
-               {/* New Post Input Style Reddit */}
-               <div className="bg-white p-3 rounded-md border border-gray-300 flex items-center space-x-3 shadow-sm">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden border border-gray-100">
-                     <img src={profile?.avatar_url || 'https://i.pravatar.cc/150'} alt="" />
-                  </div>
-                  <input 
-                    type="text" 
-                    placeholder="Criar publicação na comunidade..." 
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-md py-2 px-4 text-sm font-medium focus:bg-white focus:outline-none focus:border-emerald-500"
-                  />
-                  <PlusSquare className="w-6 h-6 text-gray-400 cursor-pointer hover:text-gray-600" />
-               </div>
-
-               <div className="flex items-center space-x-4 bg-white p-2.5 rounded-md border border-gray-300 mb-4 shadow-sm">
-                  <button className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-gray-100 text-[#006747] text-xs font-black">
-                     <Flame className="w-4 h-4" />
-                     <span>Popular</span>
-                  </button>
-                  <button className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-gray-500 text-xs font-black hover:bg-gray-50">
-                     <Clock className="w-4 h-4" />
-                     <span>Novo</span>
-                  </button>
-                  <button className="flex items-center space-x-2 px-3 py-1.5 rounded-full text-gray-500 text-xs font-black hover:bg-gray-50">
-                     <ArrowBigUp className="w-4 h-4" />
-                     <span>Top</span>
-                  </button>
-               </div>
-
-               {posts.length === 0 ? (
-                 <div className="bg-white p-20 rounded-md border border-gray-300 text-center shadow-sm">
-                    <MessageSquare className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Sem Atividade</p>
-                    <p className="text-gray-400 text-sm mt-1">Sê o primeiro a interagir!</p>
-                 </div>
-               ) : (
-                 posts.map((post) => (
-                   <div key={post.id} className="bg-white rounded-md border border-gray-300 hover:border-gray-400 transition-all cursor-pointer flex shadow-sm group">
-                      {/* Side Votes Panel */}
-                      <div className="bg-gray-50/50 w-12 flex flex-col items-center py-3 space-y-1 group-hover:bg-gray-50 transition-colors text-left">
-                         <ArrowBigUp className="w-7 h-7 text-gray-400 hover:text-orange-600" />
-                         <span className="text-xs font-black text-gray-700">{post.likes_count}</span>
-                         <ArrowBigDown className="w-7 h-7 text-gray-400 hover:text-blue-600" />
-                      </div>
-                      {/* Content Area */}
-                      <div className="flex-1 p-4">
-                         <div className="flex items-center space-x-2 mb-3">
-                            <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-100">
-                               <img src={post.profiles?.avatar_url || 'https://i.pravatar.cc/150'} alt="" />
-                            </div>
-                            <span className="text-xs font-black text-gray-700 hover:underline">u/{post.profiles?.username}</span>
-                            <span className="text-[10px] text-gray-400 font-medium">• {new Date(post.created_at).toLocaleDateString()}</span>
-                            {post.profiles?.is_professional && (
-                              <BadgeCheck className="w-3 h-3 text-[#006747]" />
-                            )}
-                         </div>
-                         <p className="text-base text-gray-900 mb-4 leading-normal font-medium whitespace-pre-wrap">{post.caption}</p>
-                         
-                         {post.content_url && (
-                            <div className="rounded-xl overflow-hidden border border-gray-100 max-h-96 mb-4 bg-gray-50">
-                               <img src={post.content_url} alt="" className="w-full h-full object-contain mx-auto" />
-                            </div>
-                         )}
-    
-                         <div className="flex items-center space-x-4 border-t border-gray-50 pt-3">
-                            <button className="flex items-center space-x-2 text-gray-500 hover:bg-gray-100 px-3 py-2 rounded-md text-xs font-black transition-colors">
-                               <MessageSquare className="w-4 h-4" />
-                               <span>24 Comentários</span>
-                            </button>
-                            <button className="flex items-center space-x-2 text-gray-500 hover:bg-gray-100 px-3 py-2 rounded-md text-xs font-black transition-colors">
-                               <Share2 className="w-4 h-4" />
-                               <span>Partilhar</span>
-                            </button>
-                         </div>
-                      </div>
-                   </div>
-                 ))
-               )}
-             </>
-           ) : (
              <div className="space-y-4">
                 <div className="flex justify-between items-center mb-6 px-1">
                    <h2 className="text-xl font-black text-gray-900 tracking-tight">Temas de Discussão</h2>
@@ -458,15 +383,27 @@ export default function CommunityDetail() {
                                <div className="flex items-center space-x-1 text-[10px] font-black text-[#006747] tracking-widest uppercase bg-emerald-50 px-2 py-0.5 rounded-full">
                                   <MessageSquare className="w-3 h-3" />
                                   <span>Discussão Ativa</span>
-                               </div>
-                            </div>
-                         </div>
-                         <ArrowBigUp className="w-6 h-6 text-gray-200 group-hover:text-orange-500" />
+                                </div>
+                             </div>
+                          </div>
+                          <div className="flex flex-col items-center justify-between self-stretch py-1">
+                             <ArrowBigUp className="w-6 h-6 text-gray-200 group-hover:text-orange-500" />
+                             {user?.id === topic.creator_id && (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteTopic(topic.id);
+                                  }}
+                                  className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                             )}
+                          </div>
                       </div>
                    ))
                 )}
              </div>
-           )}
         </div>
 
         {/* Sidebar Info Area */}
@@ -507,8 +444,12 @@ export default function CommunityDetail() {
                        <Clock className="w-4 h-4" />
                        <span>Criada em {new Date(group.created_at).toLocaleDateString()}</span>
                     </div>
-                    <button className="w-full bg-[#006747] text-white py-4 rounded-full font-black text-sm shadow-xl shadow-emerald-100 hover:scale-105 active:scale-95 transition-all">
-                       Criar Publicação
+                    <button 
+                      onClick={() => setShowCreateTopic(true)}
+                      disabled={!isMember}
+                      className="w-full bg-[#006747] text-white py-4 rounded-full font-black text-sm shadow-xl shadow-emerald-100 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                    >
+                       Iniciar Discussão
                     </button>
                     <button className="w-full bg-white text-[#006747] border-2 border-[#006747] py-3.5 rounded-full font-black text-sm hover:bg-emerald-50 transition-all">
                        Ver Regras
@@ -623,7 +564,17 @@ export default function CommunityDetail() {
                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Discussão em g/{group.name}</p>
                    </div>
                 </div>
-                <MoreHorizontal className="w-6 h-6 text-gray-400" />
+                <div className="flex items-center space-x-2">
+                   {user?.id === selectedTopic.creator_id && (
+                      <button 
+                        onClick={() => handleDeleteTopic(selectedTopic.id)}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                   )}
+                   <MoreHorizontal className="w-6 h-6 text-gray-400" />
+                </div>
              </div>
 
              <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -657,6 +608,20 @@ export default function CommunityDetail() {
                                  <span className="text-[9px] text-gray-300 font-bold uppercase">{new Date(msg.created_at).toLocaleTimeString()}</span>
                               </div>
                               <p className="text-gray-700 text-sm leading-relaxed text-left">{msg.content}</p>
+                              
+                              <div className="mt-3 pt-2 border-t border-gray-50 flex items-center">
+                                 <button 
+                                   onClick={() => {
+                                     setReplyingTo(msg.profiles);
+                                     const input = document.getElementById('topic-message-input');
+                                     if (input) input.focus();
+                                   }}
+                                   className="flex items-center space-x-1.5 text-[10px] font-black text-[#006747] uppercase tracking-widest hover:bg-emerald-50 px-2 py-1 rounded transition-colors"
+                                 >
+                                    <Reply className="w-3 h-3" />
+                                    <span>Responder</span>
+                                 </button>
+                              </div>
                            </div>
                         </div>
                       ))}
@@ -666,26 +631,40 @@ export default function CommunityDetail() {
 
              {/* Sticky Message Input */}
              <div className="p-4 bg-white border-t border-gray-200 sticky bottom-0 safe-bottom">
-                <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto flex items-center space-x-3">
-                   <div className="flex-1 relative">
-                      <input 
-                        type="text" 
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Adiciona a tua opinião ao debate..."
-                        className="w-full bg-gray-50 border-2 border-gray-100 rounded-full py-4 px-6 focus:outline-none focus:border-[#006747] transition-all font-bold pr-12 text-left"
-                      />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                         <BadgeCheck className="w-5 h-5 text-gray-200" />
+                <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto space-y-3">
+                   {replyingTo && (
+                      <div className="flex items-center justify-between bg-emerald-50 px-4 py-2 rounded-xl text-emerald-800">
+                         <div className="flex items-center space-x-2 text-xs font-bold">
+                            <Reply className="w-3.5 h-3.5" />
+                            <span>A responder a u/{replyingTo.username}</span>
+                         </div>
+                         <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-emerald-100 rounded-full">
+                            <X className="w-3.5 h-3.5" />
+                         </button>
                       </div>
+                   )}
+                   <div className="flex items-center space-x-3">
+                      <div className="flex-1 relative">
+                         <input 
+                           id="topic-message-input"
+                           type="text" 
+                           value={newMessage}
+                           onChange={(e) => setNewMessage(e.target.value)}
+                           placeholder={replyingTo ? "Escreve a tua resposta..." : "Adiciona a tua opinião ao debate..."}
+                           className="w-full bg-gray-50 border-2 border-gray-100 rounded-full py-4 px-6 focus:outline-none focus:border-[#006747] transition-all font-bold pr-12 text-left"
+                         />
+                         <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            <BadgeCheck className="w-5 h-5 text-gray-200" />
+                         </div>
+                      </div>
+                      <button 
+                        type="submit"
+                        disabled={sendingMessage || !newMessage.trim()}
+                        className="bg-[#006747] text-white p-4 rounded-full shadow-lg shadow-emerald-100 disabled:opacity-30 transition-all hover:scale-110 active:scale-95"
+                      >
+                        <Send className="w-6 h-6" />
+                      </button>
                    </div>
-                   <button 
-                     type="submit"
-                     disabled={sendingMessage || !newMessage.trim()}
-                     className="bg-[#006747] text-white p-4 rounded-full shadow-lg shadow-emerald-100 disabled:opacity-30 transition-all hover:scale-110 active:scale-95"
-                   >
-                     <Send className="w-6 h-6" />
-                   </button>
                 </form>
              </div>
           </div>
