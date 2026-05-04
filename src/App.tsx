@@ -17,6 +17,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Gamification from './pages/Gamification';
 import CommunityDetail from './pages/CommunityDetail';
 import Appointments from './pages/Appointments';
+import Messages from './pages/Messages';
 import ProfessionalDashboard from './pages/ProfessionalDashboard';
 import Login from './pages/Login';
 
@@ -56,6 +57,7 @@ function AppContent() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/gamification" element={<Gamification />} />
           <Route path="/appointments" element={<Appointments />} />
+          <Route path="/messages" element={<Messages />} />
           <Route path="/professional/dashboard" element={<ProfessionalDashboard />} />
           <Route path="/c/:name" element={<CommunityDetail />} />
           <Route path="/professional/settings" element={<ProfessionalSettings />} />

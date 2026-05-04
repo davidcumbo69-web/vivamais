@@ -1,4 +1,4 @@
-import { Heart, Microscope, Pill, Hospital, Stethoscope, Film, UserCircle as UserIcon, Apple, Trophy, CalendarCheck, ShoppingBag, LogOut } from 'lucide-react';
+import { Heart, Microscope, Pill, Hospital, Stethoscope, Film, UserCircle as UserIcon, Apple, Trophy, CalendarCheck, ShoppingBag, LogOut, MessageSquare } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
@@ -15,6 +15,7 @@ export function Navbar() {
       { icon: ShoppingBag, label: 'Encomendas', path: '/my-orders' }
     ] : []),
     { icon: CalendarCheck, label: 'Consultas', path: '/appointments' },
+    { icon: MessageSquare, label: 'Mensagens', path: '/messages' },
     ...(profile?.is_professional ? [
       { icon: Hospital, label: 'Criar', path: '/create' }
     ] : [

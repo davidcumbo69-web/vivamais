@@ -1,4 +1,4 @@
-import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock } from 'lucide-react';
+import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock, MessageSquare } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
 import { useParams, Link } from 'react-router-dom';
@@ -246,7 +246,16 @@ export default function Profile() {
                 )}
               </>
             ) : (
-              <button className="bg-[#006747] text-white px-8 py-1.5 rounded-lg text-sm font-semibold transition-all hover:bg-emerald-800 shadow-sm shadow-emerald-100">Seguir</button>
+              <div className="flex items-center space-x-2">
+                <button className="bg-[#006747] text-white px-8 py-1.5 rounded-lg text-sm font-semibold transition-all hover:bg-emerald-800 shadow-sm shadow-emerald-100">Seguir</button>
+                <Link 
+                  to={`/messages?userId=${profile.id}`}
+                  className="bg-white border-2 border-emerald-50 text-[#006747] px-4 py-1.5 rounded-lg text-sm font-bold transition-all hover:bg-emerald-50 flex items-center space-x-2"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Mensagem</span>
+                </Link>
+              </div>
             )}
           </div>
           
@@ -259,7 +268,16 @@ export default function Profile() {
                  )}
                </>
              ) : (
-               <button className="flex-1 bg-[#006747] text-white py-2 rounded-lg text-sm font-bold text-center">Seguir</button>
+               <div className="flex w-full space-x-2">
+                 <button className="flex-1 bg-[#006747] text-white py-2 rounded-lg text-sm font-bold text-center">Seguir</button>
+                 <Link 
+                   to={`/messages?userId=${profile.id}`}
+                   className="flex-1 bg-white border-2 border-emerald-50 text-[#006747] py-2 rounded-lg text-sm font-bold text-center flex items-center justify-center space-x-2"
+                 >
+                   <MessageSquare className="w-4 h-4" />
+                   <span>Mensagem</span>
+                 </Link>
+               </div>
              )}
           </div>
           
