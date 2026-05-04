@@ -219,9 +219,9 @@ export default function Profile() {
       </div>
 
       {/* Profile Bio */}
-      <div className="flex flex-col md:flex-row md:items-start space-y-6 md:space-y-0 md:space-x-12 mb-10">
-        <div className="relative">
-             <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-2 border-[#006747] p-1 shadow-sm">
+      <div className="flex flex-row items-center md:items-start space-x-6 md:space-x-12 mb-10">
+        <div className="relative flex-shrink-0">
+             <div className="w-20 h-20 md:w-32 md:h-32 rounded-full border-2 border-[#006747] p-1 shadow-sm">
                 <img 
                     src={profile.avatar_url || `https://i.pravatar.cc/150?u=${user.username}`} 
                     className="w-full h-full rounded-full object-cover" 
@@ -235,7 +235,7 @@ export default function Profile() {
              )}
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="hidden md:flex items-center space-x-4 mb-4">
             <h2 className="text-xl font-semibold">{user.username}</h2>
             {isOwnProfile ? (
@@ -258,8 +258,28 @@ export default function Profile() {
               </div>
             )}
           </div>
-          
-          <div className="flex md:hidden items-center space-x-2 mb-6">
+
+          <div className="md:hidden space-y-1">
+            <h3 className="font-black text-lg text-gray-900">{user.name}</h3>
+            {profile?.is_professional && (
+               <div className="flex flex-col">
+                  <p className="text-xs font-bold text-[#006747]">
+                    {profile.specialty} Verificado
+                  </p>
+                  {proData?.workplace_name && (
+                    <p className="text-[10px] text-gray-500 font-medium">🏥 {proData.workplace_name}</p>
+                  )}
+               </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Bio and Stats for Mobile (Moved below Avatar+Name row) */}
+      <div className="md:hidden mb-8">
+        <p className="text-sm text-gray-800 whitespace-pre-wrap mb-6">{user.bio}</p>
+        
+        <div className="flex md:hidden items-center space-x-2 mb-6">
              {isOwnProfile ? (
                <>
                  <Link to="/settings" className="flex-1 bg-gray-100 py-2 rounded-lg text-sm font-bold text-center">Editar Perfil</Link>
@@ -279,9 +299,20 @@ export default function Profile() {
                  </Link>
                </div>
              )}
-          </div>
-          
-          <div className="flex justify-between md:justify-start md:space-x-10 mb-4 border-y border-gray-100 py-4 md:border-none md:py-0">
+        </div>
+
+        <div className="flex justify-between border-y border-gray-100 py-4">
+           <div className="text-center"><span className="font-bold block">{user.posts}</span> <span className="text-gray-500 text-[10px] uppercase font-black tracking-widest">publicações</span></div>
+           <div className="text-center">
+              <span className="font-bold block">{user.followers}</span> 
+              <span className="text-gray-500 text-[10px] uppercase font-black tracking-widest"> seguidores</span>
+           </div>
+           <div className="text-center"><span className="font-bold block">{user.following}</span> <span className="text-gray-500 text-[10px] uppercase font-black tracking-widest"> a seguir</span></div>
+        </div>
+      </div>
+
+      <div className="hidden md:block">
+          <div className="flex md:justify-start md:space-x-10 mb-4 md:border-none md:py-0">
              <div className="text-center md:text-left"><span className="font-bold block md:inline">{user.posts}</span> <span className="text-gray-500 text-sm">publicações</span></div>
              <div className="text-center md:text-left">
                 <span className="font-bold block md:inline">{user.followers}</span> 
@@ -304,7 +335,6 @@ export default function Profile() {
             )}
             <p className="text-sm text-gray-800 whitespace-pre-wrap mt-2">{user.bio}</p>
           </div>
-        </div>
       </div>
 
       {/* Gamification Stats (Hide if Professional) */}
