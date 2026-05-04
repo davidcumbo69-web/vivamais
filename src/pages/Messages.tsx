@@ -39,7 +39,7 @@ interface Conversation {
 
 export default function Messages() {
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const targetUserId = searchParams.get('userId');
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -107,6 +107,20 @@ export default function Messages() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    if (targetUserId) {
+      const conv = conversations.find(c => c.user_id === targetUserId);
+      if (conv) {
+        setSelectedConversation(conv);
+      } else if (conversations.length > 0) {
+        // If targetUserId is set but not in conversations, it might be a new virtual one
+        // handled in fetchConversations
+      }
+    } else {
+      setSelectedConversation(null);
+    }
+  }, [targetUserId, conversations]);
 
   const fetchConversations = async () => {
     if (!user) return;
@@ -255,7 +269,10 @@ export default function Messages() {
   );
 
   return (
-    <div className="h-[calc(100vh-64px)] md:h-screen bg-gray-50 flex flex-col md:flex-row overflow-hidden">
+    <div className={cn(
+      "h-[calc(100vh-64px)] md:h-screen bg-gray-50 flex flex-col md:flex-row overflow-hidden",
+      selectedConversation ? "h-screen" : ""
+    )}>
       {/* Conversations List */}
       <div className={cn(
         "w-full md:w-80 lg:w-96 bg-white border-r border-gray-100 flex flex-col",
@@ -290,7 +307,7 @@ export default function Messages() {
             filteredConversations.map((conv) => (
               <button
                 key={conv.user_id}
-                onClick={() => setSelectedConversation(conv)}
+                onClick={() => setSearchParams({ userId: conv.user_id })}
                 className={cn(
                   "w-full p-4 flex items-center space-x-4 hover:bg-emerald-50/30 transition-all border-b border-gray-50",
                   selectedConversation?.user_id === conv.user_id ? "bg-emerald-50/50 border-r-4 border-r-[#006747]" : ""
@@ -345,7 +362,7 @@ export default function Messages() {
             <div className="p-4 md:p-6 border-b border-gray-50 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
               <div className="flex items-center space-x-4">
                 <button 
-                  onClick={() => setSelectedConversation(null)}
+                  onClick={() => setSearchParams({})}
                   className="md:hidden p-2 hover:bg-gray-50 rounded-xl transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5 text-gray-600" />

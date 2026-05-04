@@ -1,10 +1,14 @@
 import { Heart, Microscope, Pill, Hospital, Stethoscope, Film, UserCircle as UserIcon, Apple, Trophy, CalendarCheck, ShoppingBag, LogOut, MessageSquare } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 
 export function Navbar() {
   const { profile, signOut } = useAuth();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  
+  const isChatOpenOnMobile = location.pathname === '/messages' && searchParams.has('userId');
   
   const navItems = [
     { icon: Stethoscope, label: 'Feed', path: '/' },
@@ -26,7 +30,10 @@ export function Navbar() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:top-0 md:left-0 md:bottom-0 md:w-20 lg:w-64 md:border-r md:border-t-0 shadow-lg md:shadow-none">
+    <nav className={cn(
+      "fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:top-0 md:left-0 md:bottom-0 md:w-20 lg:w-64 md:border-r md:border-t-0 shadow-lg md:shadow-none",
+      isChatOpenOnMobile ? "hidden md:flex" : "flex"
+    )}>
       <div className="flex justify-around items-center h-16 md:flex-col md:h-full md:justify-start md:pt-8 md:px-4">
         <div className="hidden md:block mb-10 w-full">
             <h1 className="text-2xl font-black text-[#006747] lg:px-4 tracking-tighter">VIVA+</h1>
