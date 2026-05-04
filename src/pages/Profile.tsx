@@ -702,15 +702,15 @@ export default function Profile() {
           )}
 
           {activeTab === 'reels' && (
-            <div className="grid grid-cols-3 gap-1 md:gap-4">
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-1 md:gap-2">
               {loadingReels ? (
-                <div className="col-span-3 flex justify-center py-10">
+                <div className="col-span-full flex justify-center py-10">
                   <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
                 </div>
               ) : reels.length > 0 ? (
                 reels.map((reel) => (
                   <div key={reel.id} className="aspect-[9/16] bg-black hover:opacity-90 transition-opacity cursor-pointer overflow-hidden rounded-lg relative">
-                    <video src={reel.video_url} className="w-full h-full object-cover" />
+                    <video src={`${reel.video_url}#t=0.1`} className="w-full h-full object-cover" preload="metadata" playsInline />
                     {!reel.is_approved && (
                       <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-2 py-1 rounded text-[8px] font-black text-white uppercase tracking-widest">
                         Pendente
@@ -719,7 +719,7 @@ export default function Profile() {
                   </div>
                 ))
               ) : (
-                <div className="col-span-3 py-20 text-center">
+                <div className="col-span-full py-20 text-center">
                   <ShieldCheck className="w-8 h-8 text-gray-100 mx-auto mb-2" />
                   <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Sem Reels</p>
                 </div>
