@@ -12,10 +12,159 @@ import {
   ChevronRight,
   ShieldCheck,
   Check,
-  CheckCheck
+  CheckCheck,
+  ClipboardList,
+  FileText
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
+import { PrescriptionModal } from '../components/modals/PrescriptionModal';
+
+function ChatMessage({ msg, isMine, user }: { msg: Message, isMine: boolean, user: any }) {
+  const [isSaved, setIsSaved] = useState(false);
+  const [isPrescriptionSummary, setIsPrescriptionSummary] = useState(false);
+  const [prescriptionData, setPrescriptionData] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      checkIfSaved();
+    }
+  }, [user, msg.id]);
+
+  useEffect(() => {
+    // Check if it's a prescription message
+    if (msg.content.startsWith('___PRESCRIPTION:')) {
+      setIsPrescriptionSummary(true);
+      try {
+        const raw = msg.content.replace('___PRESCRIPTION:', '');
+        setPrescriptionData(JSON.parse(raw));
+      } catch (e) {
+        console.error('Error parsing prescription:', e);
+      }
+    }
+  }, [msg.content]);
+
+  const checkIfSaved = async () => {
+    const { data } = await supabase
+      .from('saved_items')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('item_id', msg.id)
+      .eq('item_type', 'direct_message')
+      .maybeSingle();
+    
+    if (data) setIsSaved(true);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    const newState = !isSaved;
+    setIsSaved(newState);
+
+    if (newState) {
+      await supabase.from('saved_items').insert({
+        user_id: user.id,
+        item_id: msg.id,
+        item_type: 'direct_message',
+        metadata: {
+          content: msg.content,
+          sender_id: msg.sender_id,
+          created_at: msg.created_at,
+          title: msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '')
+        }
+      });
+    } else {
+      await supabase.from('saved_items')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('item_id', msg.id)
+        .eq('item_type', 'direct_message');
+    }
+  };
+
+  if (isPrescriptionSummary && prescriptionData) {
+    return (
+      <div className={cn(
+        "flex group animate-in fade-in slide-in-from-bottom-2 duration-300",
+        isMine ? "justify-end" : "justify-start"
+      )}>
+        <div className="max-w-[85%] md:max-w-[70%] bg-white rounded-[2.5rem] border-2 border-[#006747] shadow-xl overflow-hidden">
+           <div className="bg-[#006747] p-4 text-white flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                 <FileText className="w-4 h-4" />
+                 <span className="text-[10px] font-black uppercase tracking-widest">Receita Médica The Cedav</span>
+              </div>
+              <ShieldCheck className="w-4 h-4 text-emerald-300" />
+           </div>
+           <div className="p-6">
+              <h4 className="text-lg font-black text-gray-900 tracking-tighter mb-1">{prescriptionData.medication}</h4>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">u/{prescriptionData.patientUsername}</p>
+              
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                 <div className="bg-gray-50 p-3 rounded-2xl">
+                    <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Dosagem</p>
+                    <p className="text-xs font-bold">{prescriptionData.dosage}</p>
+                 </div>
+                 <div className="bg-gray-50 p-3 rounded-2xl">
+                    <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Frequência</p>
+                    <p className="text-xs font-bold">{prescriptionData.frequency}</p>
+                 </div>
+              </div>
+
+              <Link 
+                to={`/verificar-receita/${prescriptionData.id}`}
+                className="w-full bg-emerald-50 text-[#006747] py-3 rounded-2xl flex items-center justify-center space-x-2 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
+              >
+                <span>Ver Detalhes e Código</span>
+                <ChevronRight className="w-3 h-3" />
+              </Link>
+           </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn(
+      "flex group animate-in fade-in slide-in-from-bottom-2 duration-300",
+      isMine ? "justify-end" : "justify-start"
+    )}>
+      <div className={cn(
+        "max-w-[85%] md:max-w-[70%] px-4 py-3 rounded-2xl shadow-sm relative group/msg",
+        isMine 
+          ? "bg-[#006747] text-white rounded-tr-none" 
+          : "bg-white text-gray-800 border border-gray-100 rounded-tl-none"
+      )}>
+        {/* Save button */}
+        <button 
+          onClick={handleSave}
+          className={cn(
+            "absolute -top-3 transition-all p-1.5 rounded-xl bg-white shadow-md border border-gray-100 z-10 hover:scale-110 active:scale-95",
+            isMine ? "-left-3" : "-right-3",
+            isSaved ? "text-[#006747] opacity-100" : "text-gray-300 opacity-0 group-hover/msg:opacity-100"
+          )}
+          title={isSaved ? "Remover dos guardados" : "Guardar mensagem"}
+        >
+          <ClipboardList className={cn("w-3.5 h-3.5", isSaved && "fill-current")} />
+        </button>
+
+        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+        <div className={cn(
+          "flex items-center space-x-1 mt-1 text-[9px] font-bold uppercase",
+          isMine ? "text-emerald-100/60 justify-end" : "text-gray-400"
+        )}>
+          <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          {isMine && (
+            <span>
+              {msg.is_read ? <CheckCheck className="w-3 h-3" /> : <Check className="w-3 h-3" />}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface Message {
   id: string;
@@ -38,7 +187,7 @@ interface Conversation {
 }
 
 export default function Messages() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const targetUserId = searchParams.get('userId');
   
@@ -50,8 +199,29 @@ export default function Messages() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sending, setSending] = useState(false);
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [professionalInfo, setProfessionalInfo] = useState<any>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (user && profile?.is_professional) {
+      fetchProfessionalInfo();
+    }
+  }, [user, profile]);
+
+  const fetchProfessionalInfo = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('health_professionals')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    
+    if (data) {
+      setProfessionalInfo(data);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -263,6 +433,49 @@ export default function Messages() {
     }
   };
 
+  const onPrescriptionSuccess = async (prescriptionId: string) => {
+    if (!user || !selectedConversation) return;
+
+    // Fetch the prescription details to create a summary
+    const { data: prescription } = await supabase
+      .from('prescriptions')
+      .select('*')
+      .eq('id', prescriptionId)
+      .single();
+
+    if (!prescription) return;
+
+    const summary = {
+      id: prescriptionId,
+      medication: prescription.medication,
+      dosage: prescription.dosage,
+      frequency: prescription.frequency,
+      patientUsername: selectedConversation.username
+    };
+
+    const content = `___PRESCRIPTION:${JSON.stringify(summary)}`;
+
+    try {
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .insert({
+          sender_id: user.id,
+          receiver_id: selectedConversation.user_id,
+          content: content
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setMessages(prev => [...prev, data]);
+        fetchConversations();
+      }
+    } catch (err) {
+      console.error('Error sending prescription message:', err);
+    }
+  };
+
   const filteredConversations = conversations.filter(c => 
     c.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -385,11 +598,41 @@ export default function Messages() {
               </div>
               
               <div className="flex items-center space-x-2">
+                 {profile?.is_professional && (
+                   <button 
+                    onClick={() => setIsPrescriptionModalOpen(true)}
+                    className="flex items-center space-x-2 bg-emerald-50 text-[#006747] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
+                   >
+                     <FileText className="w-3.5 h-3.5" />
+                     <span>Receitar</span>
+                   </button>
+                 )}
                  <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition-colors">
                     <MoreVertical className="w-5 h-5" />
                  </button>
               </div>
             </div>
+            
+            {/* Prescription Modal */}
+            <AnimatePresence>
+              {isPrescriptionModalOpen && (
+                <PrescriptionModal 
+                  isOpen={isPrescriptionModalOpen}
+                  onClose={() => setIsPrescriptionModalOpen(false)}
+                  patient={{
+                    id: selectedConversation.user_id,
+                    full_name: selectedConversation.full_name,
+                    username: selectedConversation.username
+                  }}
+                  professional={{
+                    id: user.id,
+                    full_name: profile.full_name,
+                    license_number: professionalInfo?.license_number || 'SNS-VIVA-001'
+                  }}
+                  onSuccess={onPrescriptionSuccess}
+                />
+              )}
+            </AnimatePresence>
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 bg-[#f8f9fa]">
@@ -419,30 +662,11 @@ export default function Messages() {
                             </span>
                           </div>
                         )}
-                        <div className={cn(
-                          "flex group animate-in fade-in slide-in-from-bottom-2 duration-300",
-                          isMine ? "justify-end" : "justify-start"
-                        )}>
-                          <div className={cn(
-                            "max-w-[85%] md:max-w-[70%] px-4 py-3 rounded-2xl shadow-sm relative",
-                            isMine 
-                              ? "bg-[#006747] text-white rounded-tr-none" 
-                              : "bg-white text-gray-800 border border-gray-100 rounded-tl-none"
-                          )}>
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                            <div className={cn(
-                              "flex items-center space-x-1 mt-1 text-[9px] font-bold uppercase",
-                              isMine ? "text-emerald-100/60 justify-end" : "text-gray-400"
-                            )}>
-                              <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                              {isMine && (
-                                <span>
-                                  {msg.is_read ? <CheckCheck className="w-3 h-3" /> : <Check className="w-3 h-3" />}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        <ChatMessage 
+                          msg={msg} 
+                          isMine={isMine} 
+                          user={user} 
+                        />
                       </React.Fragment>
                     );
                   })}

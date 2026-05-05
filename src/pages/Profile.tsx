@@ -1,15 +1,101 @@
-import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock, MessageSquare } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight } from 'lucide-react';
+import { AdCarousel } from '../components/ads/AdCarousel';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, type HealthProfessional, type HealthGroup } from '../lib/supabase';
-import { useState, useEffect } from 'react';
 import CreateCommunityModal from '../components/modals/CreateCommunityModal';
 import { cn } from '../lib/utils';
 
+function ServiceCard({ svc, user }: { svc: any, user: any, key?: any }) {
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      checkIfSaved();
+    }
+  }, [user, svc.id]);
+
+  const checkIfSaved = async () => {
+    const { data } = await supabase
+      .from('saved_items')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('item_id', svc.id)
+      .eq('item_type', 'service')
+      .maybeSingle();
+    
+    if (data) setIsSaved(true);
+  };
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) return;
+
+    const newState = !isSaved;
+    setIsSaved(newState);
+
+    if (newState) {
+      await supabase.from('saved_items').insert({
+        user_id: user.id,
+        item_id: svc.id,
+        item_type: 'service',
+        metadata: {
+          title: svc.name,
+          image_url: svc.image_url,
+          price: svc.base_price,
+          category: svc.category
+        }
+      });
+    } else {
+      await supabase.from('saved_items')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('item_id', svc.id)
+        .eq('item_type', 'service');
+    }
+  };
+
+  return (
+    <Link 
+      key={svc.id} 
+      to={`/marketplace/service/${svc.id}`}
+      className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm hover:border-[#006747]/20 hover:shadow-md transition-all group flex items-center space-x-4 relative"
+    >
+      <div className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
+        <img src={svc.image_url || 'https://images.unsplash.com/photo-1576091160550-2173599bd14e?auto=format&fit=crop&q=80&w=200'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h4 className="font-bold text-gray-900 group-hover:text-[#006747] transition-colors truncate">{svc.name}</h4>
+        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">{svc.category}</p>
+        <div className="flex items-center justify-between mt-2">
+          <span className="font-bold text-[#006747]">{svc.base_price}€</span>
+          <div className="flex items-center space-x-1">
+            <Award className="w-3 h-3 text-yellow-500 fill-current" />
+            <span className="text-[10px] font-bold text-gray-600">{svc.rating}</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Save Button */}
+      <button 
+        onClick={handleSave}
+        className={cn(
+          "p-2.5 rounded-xl transition-all active:scale-95",
+          isSaved ? "bg-[#006747] text-white" : "bg-gray-50 text-gray-400 hover:text-[#006747]"
+        )}
+      >
+        <ClipboardList className={cn("w-4 h-4", isSaved && "fill-current")} />
+      </button>
+    </Link>
+  );
+}
+
 export default function Profile() {
   const { userId } = useParams<{ userId: string }>();
-  const { profile: myProfile } = useAuth();
+  const { profile: myProfile, signOut } = useAuth();
   const isOwnProfile = !userId || userId === myProfile?.id;
   const [profile, setProfile] = useState<any>(null);
   const { balance } = useVitus();
@@ -21,7 +107,7 @@ export default function Profile() {
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [loadingReels, setLoadingReels] = useState(false);
   const [loadingCommunities, setLoadingCommunities] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services' | 'prescriptions'>('posts');
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,6 +116,10 @@ export default function Profile() {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [services, setServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
+  const [savedItems, setSavedItems] = useState<any[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
@@ -74,8 +164,13 @@ export default function Profile() {
         fetchUserCommunities(targetUserId);
         fetchUserAppointments(targetUserId);
         fetchUserOrders(targetUserId);
+        fetchUserPrescriptions(targetUserId);
         if (pData.is_professional) {
           fetchUserServices(targetUserId);
+        }
+        
+        if (isOwnProfile) {
+          fetchSavedItems(targetUserId);
         }
         
         fetchFollowData(targetUserId);
@@ -97,6 +192,18 @@ export default function Profile() {
     
     if (data) setServices(data);
     setLoadingServices(false);
+  };
+
+  const fetchSavedItems = async (targetUserId: string) => {
+    setLoadingSaved(true);
+    const { data } = await supabase
+      .from('saved_items')
+      .select('*')
+      .eq('user_id', targetUserId)
+      .order('created_at', { ascending: false });
+    
+    if (data) setSavedItems(data);
+    setLoadingSaved(false);
   };
 
   const fetchFollowData = async (targetUserId: string) => {
@@ -200,6 +307,22 @@ export default function Profile() {
     setLoadingAppointments(false);
   };
 
+  const fetchUserPrescriptions = async (targetUserId: string) => {
+    if (!isOwnProfile) return;
+    setLoadingPrescriptions(true);
+    const { data } = await supabase
+      .from('prescriptions')
+      .select(`
+        *,
+        professional:professional_id(full_name, specialty, license_number)
+      `)
+      .eq('patient_id', targetUserId)
+      .order('created_at', { ascending: false });
+    
+    if (data) setPrescriptions(data);
+    setLoadingPrescriptions(false);
+  };
+
   const fetchUserPosts = async (targetUserId: string) => {
     setLoadingPosts(true);
     const { data } = await supabase
@@ -297,20 +420,52 @@ export default function Profile() {
 
   return (
     <div className="pb-20 max-w-4xl mx-auto md:pb-10 pt-4 px-4">
+      {/* Dynamic Ad Cover */}
+      <AdCarousel location="profiles" category={profile?.specialty || 'Geral'} className="mb-8" />
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-bold text-xl">{user.username}</h1>
         <div className="flex items-center space-x-4">
           <Link 
             to="/settings" 
-            className="group relative p-2.5 bg-[#ffb7b2] rounded-full shadow-[inset_-2px_-4px_8px_rgba(0,0,0,0.1),inset_2px_4px_8px_rgba(255,255,255,0.4)] border-2 border-[#ff9aa2] hover:scale-110 active:scale-95 transition-all duration-300 overflow-hidden"
+            className="group relative w-14 h-14 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300"
             title="Definições"
           >
-            {/* Glossy overlay effect to mimic organic tissue */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
-            <div className="absolute -inset-4 bg-gradient-to-r from-transparent via-white/30 to-transparent -rotate-45 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000" />
+            {/* Organic Intestine Illustration */}
+            <svg viewBox="0 20 100 80" className="w-full h-full drop-shadow-md overflow-visible relative z-10">
+              <defs>
+                <linearGradient id="intestineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#ffb7b2" />
+                  <stop offset="100%" stopColor="#ff9aa2" />
+                </linearGradient>
+              </defs>
+              
+              {/* Large Intestine (Stylized outer frame) */}
+              <path 
+                d="M20,35 C15,35 15,75 25,75 L75,75 C85,75 85,35 75,35 L65,35 C60,35 60,40 65,40 L75,40 C80,40 80,70 75,70 L25,70 C20,70 20,40 25,40 L35,40 C40,40 40,35 35,35 Z" 
+                fill="url(#intestineGrad)" 
+                stroke="#ff8289" 
+                strokeWidth="1.5"
+                className="transition-all duration-700 group-hover:scale-105 group-hover:rotate-2"
+              />
+              
+              {/* Small Intestine (Stylized inner coiling) */}
+              <path 
+                d="M40,45 C42,40 48,40 50,45 C52,50 58,50 60,45 C65,40 65,55 60,55 C55,55 50,60 50,65 C50,60 45,55 40,55 C35,55 35,45 40,45" 
+                fill="#ffc1bc" 
+                stroke="#ff8289" 
+                strokeWidth="2" 
+                strokeLinecap="round"
+                className="animate-[pulse_4s_ease-in-out_infinite]"
+              />
+              
+              {/* Texture and Organic gloss effect */}
+              <path d="M22,50 Q25,45 28,50" fill="none" stroke="white" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
+              <path d="M72,55 Q75,60 78,55" fill="none" stroke="#ff8289" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
+            </svg>
             
-            <Stethoscope className="w-5 h-5 text-rose-900 drop-shadow-sm relative z-10" />
+            {/* Sub-text or tiny icon removed as requested for a pure drawing */}
           </Link>
         </div>
       </div>
@@ -454,6 +609,56 @@ export default function Profile() {
           </div>
       </div>
 
+      {/* Quick Access Grid - Mobile Only */}
+      {isOwnProfile && (
+        <div className="mb-6 md:hidden">
+          <div className="flex items-center space-x-2 mb-3 px-1">
+            <LayoutDashboard className="w-3 h-3 text-[#006747]" />
+            <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Atalhos</h3>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <Link to="/" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+               <Stethoscope className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
+            </Link>
+            
+            <Link to="/explore" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+               <Microscope className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
+            </Link>
+
+            <Link to="/reels" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+               <Film className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
+            </Link>
+
+            <Link to="/messages" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+               <MessageSquare className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
+            </Link>
+
+            {profile.is_professional ? (
+              <Link to="/create" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+                <Hospital className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
+              </Link>
+            ) : (
+              <Link to="/gamification" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+                <Apple className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
+              </Link>
+            )}
+
+            <Link to="/appointments" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+               <CalendarCheck2 className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
+            </Link>
+
+            <Link to="/marketplace" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+               <Pill className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
+            </Link>
+
+            <div className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-red-100 hover:bg-red-50/30 transition-all group active:scale-90 cursor-pointer" onClick={() => signOut()}>
+               <LogOut className="w-5 h-5 text-red-400 group-hover:scale-110 transition-transform" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Gamification Stats (Hide if Professional) */}
       {!profile.is_professional && (
         <div className="grid grid-cols-3 gap-2 mb-10">
@@ -520,6 +725,16 @@ export default function Profile() {
 
           {isOwnProfile && (
             <button 
+              onClick={() => setActiveTab('prescriptions')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'prescriptions' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            >
+              <Pill className="w-4 h-4" />
+              <span>Receitas</span>
+            </button>
+          )}
+
+          {isOwnProfile && (
+            <button 
               onClick={() => setActiveTab('orders')}
               className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'orders' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
             >
@@ -559,31 +774,70 @@ export default function Profile() {
                 </div>
               ) : services.length > 0 ? (
                 services.map(svc => (
-                  <Link 
+                  <ServiceCard 
                     key={svc.id} 
-                    to={`/marketplace/service/${svc.id}`}
-                    className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm hover:border-[#006747]/20 hover:shadow-md transition-all group flex items-center space-x-4"
-                  >
-                    <div className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
-                      <img src={svc.image_url || 'https://images.unsplash.com/photo-1576091160550-2173599bd14e?auto=format&fit=crop&q=80&w=200'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-gray-900 group-hover:text-[#006747] transition-colors truncate">{svc.name}</h4>
-                      <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">{svc.category}</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="font-bold text-[#006747]">{svc.base_price}€</span>
-                        <div className="flex items-center space-x-1">
-                          <Award className="w-3 h-3 text-yellow-500 fill-current" />
-                          <span className="text-[10px] font-bold text-gray-600">{svc.rating}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
+                    svc={svc} 
+                    user={myProfile} 
+                  />
                 ))
               ) : (
                 <div className="col-span-full text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
                    <HeartPulse className="w-8 h-8 text-gray-200 mx-auto mb-2" />
                    <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Sem serviços listados</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'prescriptions' && (
+            <div className="space-y-4 px-2">
+              {loadingPrescriptions ? (
+                <div className="flex justify-center py-12">
+                   <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
+                </div>
+              ) : prescriptions.length > 0 ? (
+                prescriptions.map(presc => (
+                  <Link 
+                    key={presc.id} 
+                    to={`/verificar-receita/${presc.id}`}
+                    className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#006747]/20 transition-all"
+                  >
+                    <div className="flex items-center space-x-5">
+                       <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center">
+                          <FileText className="w-6 h-6 text-[#006747]" />
+                       </div>
+                       <div>
+                          <p className="text-[10px] font-black text-[#006747] uppercase tracking-widest mb-1">
+                            Emitida por {presc.professional?.full_name}
+                          </p>
+                          <h4 className="text-lg font-black text-gray-900 tracking-tighter mb-1">{presc.medication}</h4>
+                          <div className="flex items-center space-x-3 text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+                             <span className="flex items-center">
+                                <Clock className="w-3 h-3 mr-1" />
+                                {presc.frequency}
+                             </span>
+                             <span className="flex items-center">
+                                <CalendarCheck2 className="w-3 h-3 mr-1" />
+                                {new Date(presc.created_at).toLocaleDateString('pt-PT')}
+                             </span>
+                          </div>
+                       </div>
+                    </div>
+                    <div className="text-right flex flex-col items-end">
+                       <div className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 mb-2">
+                          <span className="text-[9px] font-mono font-bold text-gray-500">{presc.signature_code}</span>
+                       </div>
+                       <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#006747] transition-colors" />
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                   <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
+                      <Pill className="w-8 h-8 text-gray-200" />
+                   </div>
+                   <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Sem receitas médicas</p>
+                   <p className="text-xs text-gray-400 px-10">As suas receitas médicas digitais aparecerão aqui após serem emitidas por um profissional.</p>
                 </div>
               )}
             </div>
@@ -710,7 +964,7 @@ export default function Profile() {
           )}
 
           {activeTab === 'reels' && (
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-1 md:gap-2">
+            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-1 md:gap-2">
               {loadingReels ? (
                 <div className="col-span-full flex justify-center py-10">
                   <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
@@ -794,9 +1048,66 @@ export default function Profile() {
           )}
 
           {activeTab === 'saved' && (
-            <div className="py-20 text-center">
-              <ClipboardList className="w-12 h-12 text-gray-100 mx-auto mb-4" />
-              <p className="text-gray-400 text-sm">Ainda não guardou nenhuma publicação pública.</p>
+            <div className="grid grid-cols-3 gap-1 md:gap-2">
+              {loadingSaved ? (
+                <div className="col-span-full flex justify-center py-10">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
+                </div>
+              ) : savedItems.length > 0 ? (
+                savedItems.map((item) => (
+                  <Link 
+                    key={item.id} 
+                    to={
+                      item.item_type === 'post' ? '/' :
+                      item.item_type === 'direct_message' ? `/messages?userId=${item.metadata?.sender_id}` :
+                      item.item_type === 'group_message' ? `/communities` : // Topic navigation is complex without more metadata
+                      item.item_type === 'service' ? `/marketplace/service/${item.item_id}` :
+                      item.item_type === 'product' ? `/marketplace` :
+                      item.item_type === 'appointment' ? `/appointments` : '#'
+                    }
+                    className="relative aspect-square bg-gray-100 rounded-sm overflow-hidden group cursor-pointer border border-gray-100"
+                  >
+                    {item.metadata?.image_url ? (
+                      <img 
+                        src={item.metadata.image_url} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                        alt="" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-emerald-50/30">
+                        <MessageSquare className="w-5 h-5 text-[#006747]/20 mb-2" />
+                        <p className="text-[8px] text-gray-400 font-medium text-center line-clamp-3">
+                          {item.metadata?.content || 'Mensagem Guardada'}
+                        </p>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2">
+                      <div className="flex items-center space-x-1 mb-1">
+                        {item.item_type === 'post' && <Film className="w-2.5 h-2.5 text-white" />}
+                        {item.item_type === 'direct_message' && <MessageSquare className="w-2.5 h-2.5 text-white" />}
+                        {item.item_type === 'group_message' && <Users className="w-2.5 h-2.5 text-white" />}
+                        {item.item_type === 'service' && <Stethoscope className="w-2.5 h-2.5 text-white" />}
+                        {item.item_type === 'product' && <ShoppingBag className="w-2.5 h-2.5 text-white" />}
+                        {item.item_type === 'appointment' && <CalendarCheck2 className="w-2.5 h-2.5 text-white" />}
+                        <span className="text-[7px] text-white font-black uppercase tracking-[0.2em]">
+                          {item.item_type === 'direct_message' || item.item_type === 'group_message' ? 'Mensagem' : 
+                           item.item_type === 'service' ? 'Serviço' :
+                           item.item_type === 'post' ? 'Post' :
+                           item.item_type === 'product' ? 'Produto' : 'Consulta'}
+                        </span>
+                      </div>
+                      <p className="text-white text-[9px] font-bold text-center line-clamp-2 px-1">
+                        {item.metadata?.title || (item.item_type.includes('message') ? item.metadata?.content?.substring(0, 20) + '...' : 'Item Guardado')}
+                      </p>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="col-span-full py-20 text-center">
+                  <ClipboardList className="w-12 h-12 text-gray-100 mx-auto mb-4" />
+                  <p className="text-gray-400 text-sm font-medium">Ainda não guardou nada.</p>
+                </div>
+              )}
             </div>
           )}
         </div>

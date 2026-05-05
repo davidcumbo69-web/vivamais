@@ -22,10 +22,119 @@ import {
   Reply,
   X,
   Plus,
-  MoreHorizontal
+  MoreHorizontal,
+  ClipboardList
 } from 'lucide-react';
+import { AdCarousel } from '../components/ads/AdCarousel';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+
+function GroupMessage({ msg, user, group, onDelete, onReply }: { msg: any, user: any, group: any, onDelete: (id: string) => void, onReply: (msg: any) => void, key?: any }) {
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      checkIfSaved();
+    }
+  }, [user, msg.id]);
+
+  const checkIfSaved = async () => {
+    const { data } = await supabase
+      .from('saved_items')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('item_id', msg.id)
+      .eq('item_type', 'group_message')
+      .maybeSingle();
+    
+    if (data) setIsSaved(true);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    const newState = !isSaved;
+    setIsSaved(newState);
+
+    if (newState) {
+      await supabase.from('saved_items').insert({
+        user_id: user.id,
+        item_id: msg.id,
+        item_type: 'group_message',
+        metadata: {
+          content: msg.content,
+          topic_id: msg.topic_id,
+          username: msg.profiles?.username,
+          group_name: group.name,
+          title: msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '')
+        }
+      });
+    } else {
+      await supabase.from('saved_items')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('item_id', msg.id)
+        .eq('item_type', 'group_message');
+    }
+  };
+
+  return (
+    <div className="flex space-x-4 group/msg">
+      <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm border border-white shrink-0">
+        <img src={msg.profiles?.avatar_url || 'https://i.pravatar.cc/150'} alt="" />
+      </div>
+      <div className="bg-white px-5 py-4 rounded-3xl shadow-sm border border-gray-100 flex-1 relative">
+        {/* Save button */}
+        <button 
+          onClick={handleSave}
+          className={cn(
+            "absolute -top-3 -right-3 transition-all p-2 rounded-2xl bg-white shadow-md border border-gray-100 z-10 hover:scale-110 active:scale-95",
+            isSaved ? "text-[#006747] opacity-100" : "text-gray-300 opacity-0 group-hover/msg:opacity-100"
+          )}
+          title={isSaved ? "Remover dos guardados" : "Guardar mensagem"}
+        >
+          <ClipboardList className={cn("w-4 h-4", isSaved && "fill-current")} />
+        </button>
+
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center space-x-2">
+            <p className="font-black text-gray-900 text-xs text-left">u/{msg.profiles?.username}</p>
+            {user?.id === msg.user_id && (
+              <button 
+                onClick={() => onDelete(msg.id)}
+                className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-all"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+          <span className="text-[9px] text-gray-300 font-bold uppercase">{new Date(msg.created_at).toLocaleTimeString()}</span>
+        </div>
+        <p className="text-gray-700 text-sm leading-relaxed text-left">{msg.content}</p>
+        
+        {msg.parent && (
+          <div 
+            className="mt-2 mb-2 p-2 bg-gray-50 rounded-xl border-l-4 text-xs text-gray-500"
+            style={{ borderLeftColor: group.color || group.theme_color }}
+          >
+             <p className="font-bold mb-1">Reposta a u/{msg.parent.profiles?.username}</p>
+             <p className="line-clamp-1 italic">"{msg.parent.content}"</p>
+          </div>
+        )}
+        
+        <div className="mt-3 pt-2 border-t border-gray-50 flex items-center">
+          <button 
+            onClick={() => onReply(msg)}
+            className="flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded transition-colors"
+            style={{ color: group.color || group.theme_color }}
+          >
+            <Reply className="w-3 h-3" />
+            <span>Responder</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function CommunityDetail() {
   const { name } = useParams<{ name: string }>();
@@ -327,8 +436,14 @@ export default function CommunityDetail() {
     <div className="pb-20 min-h-screen bg-[#dae0e6] font-sans">
       <Header />
       
-      {/* Community Header */}
-      <div style={{ backgroundColor: group.theme_color || '#006747' }} className="h-44 md:h-64 shadow-inner" />
+      {/* Community Header with Ads */}
+      <div className="max-w-5xl mx-auto px-4 pt-4">
+        <AdCarousel 
+          location="groups" 
+          category={group.category || 'Geral'} 
+          className="mb-8"
+        />
+      </div>
       
       <div className="bg-white border-b border-gray-300 shadow-sm relative z-10">
         <div className="max-w-4xl mx-auto px-4 pb-4">
@@ -660,53 +775,18 @@ export default function CommunityDetail() {
                    <div className="space-y-4 mb-40 text-left">
                       <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Acompanha o Debate</h3>
                       {messages.map((msg, i) => (
-                        <div key={msg.id} className="flex space-x-4">
-                           <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm border border-white shrink-0">
-                              <img src={msg.profiles?.avatar_url || 'https://i.pravatar.cc/150'} alt="" />
-                           </div>
-                           <div className="bg-white px-5 py-4 rounded-3xl shadow-sm border border-gray-100 flex-1">
-                              <div className="flex justify-between items-center mb-1">
-                                 <div className="flex items-center space-x-2">
-                                    <p className="font-black text-gray-900 text-xs text-left">u/{msg.profiles?.username}</p>
-                                    {user?.id === msg.user_id && (
-                                       <button 
-                                         onClick={() => handleDeleteMessage(msg.id)}
-                                         className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-all"
-                                       >
-                                         <Trash2 className="w-3 h-3" />
-                                       </button>
-                                    )}
-                                 </div>
-                                 <span className="text-[9px] text-gray-300 font-bold uppercase">{new Date(msg.created_at).toLocaleTimeString()}</span>
-                              </div>
-                              <p className="text-gray-700 text-sm leading-relaxed text-left">{msg.content}</p>
-                              
-                              {msg.parent && (
-                                <div 
-                                  className="mt-2 mb-2 p-2 bg-gray-50 rounded-xl border-l-4 text-xs text-gray-500"
-                                  style={{ borderLeftColor: group.color }}
-                                >
-                                   <p className="font-bold mb-1">Reposta a u/{msg.parent.profiles?.username}</p>
-                                   <p className="line-clamp-1 italic">"{msg.parent.content}"</p>
-                                </div>
-                              )}
-                              
-                              <div className="mt-3 pt-2 border-t border-gray-50 flex items-center">
-                                 <button 
-                                   onClick={() => {
-                                     setReplyingTo(msg);
-                                     const input = document.getElementById('topic-message-input');
-                                     if (input) input.focus();
-                                   }}
-                                   className="flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded transition-colors"
-                                   style={{ color: group.color }}
-                                 >
-                                    <Reply className="w-3 h-3" />
-                                    <span>Responder</span>
-                                 </button>
-                              </div>
-                           </div>
-                        </div>
+                        <GroupMessage 
+                          key={msg.id} 
+                          msg={msg} 
+                          user={user} 
+                          group={group} 
+                          onDelete={handleDeleteMessage} 
+                          onReply={(msg) => {
+                            setReplyingTo(msg);
+                            const input = document.getElementById('topic-message-input');
+                            if (input) input.focus();
+                          }} 
+                        />
                       ))}
                    </div>
                 </div>

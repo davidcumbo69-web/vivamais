@@ -8,7 +8,9 @@ export function Header() {
   return (
     <header className="sticky top-0 bg-white border-b border-gray-100 z-40 md:hidden">
       <div className="flex justify-between items-center h-12 px-4 max-w-lg mx-auto">
-        <h1 className="text-xl font-bold text-[#006747]">VIVA+</h1>
+        <Link to="/">
+          <h1 className="text-xl font-bold text-[#006747]">VIVA+</h1>
+        </Link>
         
         <div className="flex items-center space-x-5">
           <Link to="/messages" className="relative text-gray-700 hover:text-[#006747] transition-colors">

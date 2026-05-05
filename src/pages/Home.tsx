@@ -39,7 +39,7 @@ export default function Home() {
     if (user) {
       fetchUserMemberships();
     }
-  }, [user]);
+  }, [user, activeTab]);
 
   const fetchUserMemberships = async () => {
     if (!user) return;
@@ -144,38 +144,73 @@ export default function Home() {
 
   const fetchPosts = async () => {
     setLoadingPosts(true);
-    const { data, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        profiles (
-          id,
-          username,
-          avatar_url,
-          is_professional
-        )
-      `)
-      .neq('category', 'Reels')
-      .order('created_at', { ascending: false });
+    
+    try {
+      let query = supabase
+        .from('posts')
+        .select(`
+          *,
+          profiles (
+            id,
+            username,
+            avatar_url,
+            is_professional
+          ),
+          likes!left (
+            user_id
+          )
+        `)
+        .neq('category', 'Reels')
+        .order('created_at', { ascending: false });
 
-    if (data) {
-      const formattedPosts = data.map(p => ({
-        id: p.id,
-        user: {
-          id: p.profiles?.id,
-          username: p.profiles?.username || 'viva_user',
-          avatar: p.profiles?.avatar_url || 'https://i.pravatar.cc/150',
-          isProf: p.profiles?.is_professional || false
-        },
-        content: p.image_url || p.content_url,
-        caption: p.caption,
-        likes: p.likes_count,
-        category: p.category,
-        time: new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }));
-      setPosts(formattedPosts);
+      if (activeTab === 'a_seguir' && user) {
+        // Fetch IDs of professionals the user follows
+        const { data: followData, error: followError } = await supabase
+          .from('professional_followers')
+          .select('professional_id')
+          .eq('follower_id', user.id);
+
+        if (followError) throw followError;
+        
+        const followedIds = followData.map(f => f.professional_id);
+        
+        if (followedIds.length > 0) {
+          query = query.in('user_id', followedIds);
+        } else {
+          // If not following anyone, clear posts and return early
+          setPosts([]);
+          setLoadingPosts(false);
+          return;
+        }
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedPosts = data.map(p => ({
+          id: p.id,
+          user: {
+            id: p.profiles?.id,
+            username: p.profiles?.username || 'viva_user',
+            avatar: p.profiles?.avatar_url || 'https://i.pravatar.cc/150',
+            isProf: p.profiles?.is_professional || false
+          },
+          content: p.image_url || p.content_url,
+          caption: p.caption,
+          likes: p.likes_count || 0,
+          category: p.category,
+          isLiked: user ? (p.likes || []).some((l: any) => l.user_id === user.id) : false,
+          time: new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }));
+        setPosts(formattedPosts);
+      }
+    } catch (err) {
+      console.error('Error fetching posts:', err);
+    } finally {
+      setLoadingPosts(false);
     }
-    setLoadingPosts(false);
   };
 
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -327,12 +362,25 @@ export default function Home() {
               )}
 
               {activeTab === 'a_seguir' && (
-                <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-                    <div className="w-16 h-16 rounded-full border-2 border-gray-200 flex items-center justify-center mb-4">
-                        <ShieldCheck className="w-8 h-8 text-gray-300" />
+                <div className="md:mt-4">
+                  {loadingPosts ? (
+                    <div className="flex flex-col items-center py-20">
+                      <Loader2 className="w-8 h-8 animate-spin text-[#006747] mb-2" />
+                      <p className="text-gray-400 text-sm">A carregar publicações...</p>
                     </div>
-                    <h3 className="font-bold text-lg">Sem publicações novas</h3>
-                    <p className="text-gray-500 text-sm mt-1">Siga novos profissionais de saúde para ver o conteúdo aqui.</p>
+                  ) : posts.length > 0 ? (
+                    posts.map(post => (
+                      <FeedPost key={post.id} post={post} />
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+                        <div className="w-16 h-16 rounded-full border-2 border-gray-200 flex items-center justify-center mb-4">
+                            <ShieldCheck className="w-8 h-8 text-gray-300" />
+                        </div>
+                        <h3 className="font-bold text-lg">Sem publicações novas</h3>
+                        <p className="text-gray-500 text-sm mt-1">Siga novos profissionais de saúde para ver o conteúdo aqui.</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -542,38 +590,6 @@ export default function Home() {
               </div>
               <span className="text-[10px] uppercase font-bold text-[#006747]">Perfil</span>
            </Link>
-
-           {/* Gamification Section - Vitus Balance */}
-           <div className="bg-gradient-to-br from-[#006747] to-emerald-800 rounded-3xl p-6 mb-6 shadow-xl shadow-emerald-900/10 text-white relative overflow-hidden group">
-              <div className="absolute top-0 right-0 -translate-y-4 translate-x-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                 <HeartPulse className="w-32 h-32 text-white" />
-              </div>
-              
-              <div className="relative z-10">
-                 <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-black uppercase tracking-[2px] opacity-70">O Seu Saldo Viva</span>
-                    <Trophy className="w-4 h-4 text-emerald-300" />
-                 </div>
-                 
-                 <div className="flex items-end space-x-2">
-                    <span className="text-4xl font-black tracking-tighter tabular-nums">{balance.toLocaleString()}</span>
-                    <span className="text-sm font-bold opacity-70 mb-1">VITUS</span>
-                 </div>
-
-                 <div className="mt-6 grid grid-cols-2 gap-2">
-                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-2 flex flex-col items-center">
-                       <TrendingUp className="w-3 h-3 mb-1 text-emerald-300" />
-                       <span className="text-[9px] font-bold opacity-60">Nível</span>
-                       <span className="text-[11px] font-black tracking-tighter">PRATA</span>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-2 flex flex-col items-center">
-                       <Coins className="w-3 h-3 mb-1 text-emerald-300" />
-                       <span className="text-[9px] font-bold opacity-60">Rank</span>
-                       <span className="text-[11px] font-black tracking-tighter">TOP 5%</span>
-                    </div>
-                 </div>
-              </div>
-           </div>
 
            {/* Suggestions Header */}
            <div className="flex justify-between items-center mb-4">

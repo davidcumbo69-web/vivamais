@@ -10,7 +10,8 @@ import {
   ShieldCheck, 
   Activity,
   Smartphone,
-  Watch
+  Watch,
+  Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useVitus } from '../hooks/useVitus';
@@ -62,6 +63,13 @@ export default function Gamification() {
   const [completedToday, setCompletedToday] = useState<string[]>([]);
   const [syncing, setSyncing] = useState(false);
 
+  const [showDevToast, setShowDevToast] = useState(false);
+
+  const showDevMessage = () => {
+    setShowDevToast(true);
+    setTimeout(() => setShowDevToast(false), 3000);
+  };
+
   const simulateSync = () => {
     setSyncing(true);
     setTimeout(() => {
@@ -107,6 +115,14 @@ export default function Gamification() {
                        <p className="text-2xl font-black">{balance} <span className="text-sm font-normal opacity-80">Vitus</span></p>
                     </div>
                  </div>
+                 
+                 <button 
+                  onClick={showDevMessage}
+                  className="bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl px-6 py-4 flex flex-col items-center justify-center transition-all border border-white/5 active:scale-95"
+                 >
+                    <Smartphone className="w-5 h-5 text-emerald-200 mb-1" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-emerald-200">Ranking</span>
+                 </button>
               </div>
            </div>
            
@@ -128,8 +144,7 @@ export default function Gamification() {
                  </div>
               </div>
               <button 
-                onClick={simulateSync}
-                disabled={syncing || synced}
+                onClick={showDevMessage}
                 className={`w-full md:w-auto px-8 py-4 rounded-2xl font-bold transition-all flex items-center justify-center space-x-2 ${
                   synced 
                     ? 'bg-green-50 text-green-600 border border-green-100' 
@@ -190,14 +205,13 @@ export default function Gamification() {
                     </div>
 
                     <button 
-                      onClick={() => handleClaim(challenge)}
-                      disabled={!synced || isCompleted}
+                      onClick={showDevMessage}
                       className={`w-full py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-2 ${
                         isCompleted 
                           ? 'bg-gray-50 text-gray-300' 
                           : synced 
                             ? 'bg-emerald-50 text-[#006747] hover:bg-[#006747] hover:text-white'
-                            : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                            : 'bg-gray-50 text-gray-400'
                       }`}
                     >
                       {isCompleted ? (
@@ -249,8 +263,36 @@ export default function Gamification() {
                 </div>
               ))}
            </div>
+           
+           <button 
+             onClick={showDevMessage}
+             className="w-full mt-8 py-4 border border-emerald-100 rounded-2xl text-[10px] uppercase font-black tracking-[0.2em] text-[#006747] hover:bg-emerald-50 transition-all flex items-center justify-center space-x-2"
+           >
+              <Users className="w-4 h-4" />
+              <span>Ver Ranking Global da Comunidade</span>
+           </button>
         </div>
       </main>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showDevToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 50, x: '-50%' }}
+            className="fixed bottom-10 left-1/2 transform bg-black text-white px-6 py-4 rounded-2xl shadow-2xl z-50 font-bold text-xs border border-white/10 flex items-center space-x-4 max-w-[90vw] w-max"
+          >
+            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shrink-0">
+               <ShieldCheck className="w-6 h-6 text-white" />
+            </div>
+            <p className="leading-tight">
+              Funcionalidade em desenvolvimento pelos magnos CEO’s,<br />
+              <span className="text-emerald-400">em breve entrará no radar...</span>
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

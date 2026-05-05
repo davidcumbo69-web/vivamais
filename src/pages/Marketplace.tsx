@@ -8,11 +8,115 @@ import {
   Plus, 
   Euro,
   XCircle,
-  Zap
+  Zap,
+  ClipboardList,
+  ExternalLink,
+  Trophy
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { AdCarousel } from '../components/ads/AdCarousel';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Header } from '../components/layout/Header';
+
+function ProductCard({ product, user, setSelectedProduct }: { product: any, user: any, setSelectedProduct: any, key?: any }) {
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      checkIfSaved();
+    }
+  }, [user, product.id]);
+
+  const checkIfSaved = async () => {
+    const { data } = await supabase
+      .from('saved_items')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('item_id', product.id)
+      .eq('item_type', 'product')
+      .maybeSingle();
+    
+    if (data) setIsSaved(true);
+  };
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+
+    const newState = !isSaved;
+    setIsSaved(newState);
+
+    if (newState) {
+      await supabase.from('saved_items').insert({
+        user_id: user.id,
+        item_id: product.id,
+        item_type: 'product',
+        metadata: {
+          title: product.name,
+          image_url: product.image_url,
+          price: product.price,
+          category: product.category
+        }
+      });
+    } else {
+      await supabase.from('saved_items')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('item_id', product.id)
+        .eq('item_type', 'product');
+    }
+  };
+
+  return (
+    <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        key={product.id} 
+        className="group"
+    >
+        <div className="aspect-[4/5] bg-[#F8FAFC] rounded-[2.5rem] mb-6 relative overflow-hidden transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-[#006747]/10 group-hover:translate-y-[-8px] border border-gray-100/50">
+            <div className="h-full flex flex-col items-center justify-center">
+                {product.image_url ? (
+                    <img src={product.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={product.name} />
+                ) : (
+                    <ShoppingBag className="w-20 h-20 text-[#006747]/20 group-hover:scale-110 transition-transform duration-500" />
+                )}
+            </div>
+            
+            {/* Save Button */}
+            <button 
+              onClick={handleSave}
+              className={cn(
+                "absolute top-6 right-6 p-3 rounded-2xl transition-all active:scale-95 shadow-sm",
+                isSaved ? "bg-[#006747] text-white" : "bg-white/80 backdrop-blur-md text-gray-400 hover:text-[#006747]"
+              )}
+            >
+              <ClipboardList className={cn("w-4 h-4", isSaved && "fill-current")} />
+            </button>
+
+            <div className="absolute bottom-6 left-6 right-6">
+                <button 
+                    onClick={() => setSelectedProduct(product)}
+                    className="w-full bg-[#006747] text-white py-4 rounded-[1.5rem] font-black uppercase text-[10px] tracking-[0.2em] opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300"
+                >
+                    Comprar
+                </button>
+            </div>
+        </div>
+        <div>
+            <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-black uppercase text-[#006747]/50 tracking-widest">{product.category}</span>
+                <div className="flex items-center text-gray-900 font-black">
+                    <Euro className="w-3 h-3 mr-0.5" />
+                    {product.price}
+                </div>
+            </div>
+            <h3 className="font-bold text-gray-900 text-lg leading-tight group-hover:text-[#006747] transition-colors">{product.name}</h3>
+            <p className="text-[10px] text-gray-400 font-black mt-1 uppercase tracking-wider">{product.seller?.username || 'Profissional VIVA'}</p>
+        </div>
+    </motion.div>
+  );
+}
 
 export default function Marketplace() {
   const { user, profile } = useAuth();
@@ -99,24 +203,34 @@ export default function Marketplace() {
       <Header />
       
       <main className="max-w-6xl mx-auto px-4 pt-24 pb-24">
-        {/* Hero Section */}
-        <div className="bg-[#006747] rounded-[3rem] p-8 md:p-12 mb-12 text-white relative overflow-hidden shadow-2xl shadow-emerald-900/20">
-            <div className="relative z-10 max-w-2xl">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] bg-white/20 px-3 py-1.5 rounded-full mb-6 inline-block">VIVA Marketplace</span>
-                <h1 className="text-4xl md:text-5xl font-black mb-6 leading-[0.95]">Produtos certificados por profissionais.</h1>
-                <div className="flex bg-white rounded-2xl p-2 max-w-md shadow-lg shadow-black/10">
-                    <Search className="w-6 h-6 text-gray-300 ml-3" />
-                    <input 
-                        type="text" 
-                        placeholder="Pesquisar produtos..."
-                        className="flex-1 bg-transparent border-none text-gray-900 font-bold px-4 focus:ring-0"
-                    />
-                </div>
-            </div>
-            <div className="absolute top-8 right-8 bg-white/10 backdrop-blur-xl px-6 py-3 rounded-[2rem] border border-white/20">
-                <p className="text-[10px] uppercase font-black tracking-widest opacity-60">Teu Saldo</p>
-                <p className="text-2xl font-black">{balance} VITUS</p>
-            </div>
+        {/* Hero Publicity Section */}
+        <div className="relative mb-12">
+          <AdCarousel 
+            location="profiles" 
+            category="Geral" 
+            className="!rounded-[3rem] shadow-2xl shadow-emerald-900/20" 
+          />
+          
+          {/* Vitus Glass Card Overlay */}
+          <div className="absolute top-8 right-8 z-10 hidden md:block">
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-[2.5rem] shadow-2xl text-white min-w-[200px]"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-70">Saldo Disponível</span>
+                <Trophy className="w-4 h-4 text-emerald-300" />
+              </div>
+              <div className="flex items-baseline space-x-2 mb-4">
+                <span className="text-4xl font-black tabular-nums tracking-tighter">{balance.toLocaleString()}</span>
+                <span className="text-xs font-bold opacity-60">VITUS</span>
+              </div>
+              <div className="bg-white/20 h-1 w-full rounded-full overflow-hidden">
+                <div className="bg-emerald-400 h-full w-[70%]" />
+              </div>
+            </motion.div>
+          </div>
         </div>
 
         {/* Categories */}
@@ -147,41 +261,12 @@ export default function Marketplace() {
         ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-12">
                 {products.length > 0 ? products.map(product => (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        key={product.id} 
-                        className="group"
-                    >
-                        <div className="aspect-[4/5] bg-[#F8FAFC] rounded-[2.5rem] mb-6 relative overflow-hidden transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-[#006747]/10 group-hover:translate-y-[-8px] border border-gray-100/50">
-                            <div className="h-full flex flex-col items-center justify-center">
-                                {product.image_url ? (
-                                    <img src={product.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={product.name} />
-                                ) : (
-                                    <ShoppingBag className="w-20 h-20 text-[#006747]/20 group-hover:scale-110 transition-transform duration-500" />
-                                )}
-                            </div>
-                            <div className="absolute bottom-6 left-6 right-6">
-                                <button 
-                                    onClick={() => setSelectedProduct(product)}
-                                    className="w-full bg-[#006747] text-white py-4 rounded-[1.5rem] font-black uppercase text-[10px] tracking-[0.2em] opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300"
-                                >
-                                    Comprar
-                                </button>
-                            </div>
-                        </div>
-                        <div>
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] font-black uppercase text-[#006747]/50 tracking-widest">{product.category}</span>
-                                <div className="flex items-center text-gray-900 font-black">
-                                    <Euro className="w-3 h-3 mr-0.5" />
-                                    {product.price}
-                                </div>
-                            </div>
-                            <h3 className="font-bold text-gray-900 text-lg leading-tight group-hover:text-[#006747] transition-colors">{product.name}</h3>
-                            <p className="text-[10px] text-gray-400 font-black mt-1 uppercase tracking-wider">{product.seller?.username || 'Profissional VIVA'}</p>
-                        </div>
-                    </motion.div>
+                    <ProductCard 
+                      key={product.id} 
+                      product={product} 
+                      user={user} 
+                      setSelectedProduct={setSelectedProduct} 
+                    />
                 )) : (
                     <div className="col-span-full py-24 text-center bg-gray-50 rounded-[3rem] border border-dashed border-gray-200">
                         <ShoppingBag className="w-12 h-12 text-gray-200 mx-auto mb-4" />

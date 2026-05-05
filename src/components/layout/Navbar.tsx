@@ -1,5 +1,5 @@
-import { Heart, Microscope, Pill, Hospital, Stethoscope, Film, UserCircle as UserIcon, Apple, Trophy, CalendarCheck, ShoppingBag, LogOut, MessageSquare } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Heart, Microscope, Pill, Hospital, Stethoscope, Film, UserCircle as UserIcon, Apple, CalendarCheck, ShoppingBag, LogOut, MessageSquare, FileText, ShieldCheck } from 'lucide-react';
+import { NavLink, useLocation, Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -12,10 +12,11 @@ export function Navbar() {
   
   const navItems = [
     { icon: Stethoscope, label: 'Feed', path: '/' },
-    { icon: Microscope, label: 'Explorar', path: '/explore' },
+    { icon: ShieldCheck, label: 'Validador', path: '/verificar' },
     { icon: Film, label: 'Reels', path: '/reels' },
     { icon: CalendarCheck, label: 'Consultas', path: '/appointments' },
     { icon: MessageSquare, label: 'Mensagens', path: '/messages' },
+    { icon: FileText, label: 'Receitas', path: '/prescriptions' },
     ...(profile?.is_professional ? [
       { icon: Hospital, label: 'Criar', path: '/create' }
     ] : [
@@ -27,7 +28,7 @@ export function Navbar() {
 
   const bottomNavItems = [
     { icon: Stethoscope, label: 'Início', path: '/' },
-    { icon: Microscope, label: 'Explorar', path: '/explore' },
+    { icon: ShieldCheck, label: 'Validador', path: '/verificar' },
     { icon: Pill, label: 'Mercado', path: '/marketplace' },
     { icon: CalendarCheck, label: 'Agenda', path: '/appointments' },
     { icon: UserIcon, label: 'Perfil', path: '/profile' },
@@ -40,7 +41,9 @@ export function Navbar() {
     )} style={{ transition: 'transform 0.3s ease' }}>
       <div className="flex justify-around items-center h-16 md:flex-col md:h-full md:justify-start md:pt-8 md:px-4 w-full">
           <div className="hidden md:block mb-10 w-full">
-              <h1 className="text-2xl font-black text-[#006747] lg:px-4 tracking-tighter">VIVA+</h1>
+            <Link to="/">
+              <h1 className="text-2xl font-black text-[#006747] lg:px-4 tracking-tighter hover:opacity-80 transition-opacity">VIVA+</h1>
+            </Link>
           </div>
           
           {/* Desktop Nav Items (Hidden on Mobile) */}

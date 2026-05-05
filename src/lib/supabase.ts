@@ -143,3 +143,12 @@ export type Booking = {
   scheduled_at: string;
   created_at: string;
 };
+
+export type SavedItem = {
+  id: string;
+  user_id: string;
+  item_id: string;
+  item_type: 'post' | 'direct_message' | 'group_message' | 'service' | 'product';
+  metadata?: any;
+  created_at: string;
+};

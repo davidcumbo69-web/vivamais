@@ -457,7 +457,92 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger to keep likes_count in sync
+-- Post Like Sync Functions
+CREATE OR REPLACE FUNCTION increment_post_likes(post_id uuid)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.posts
+  SET likes_count = likes_count + 1
+  WHERE id = post_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_post_likes(post_id uuid)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.posts
+  SET likes_count = GREATEST(0, likes_count - 1)
+  WHERE id = post_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to keep likes_count in sync for posts
+CREATE OR REPLACE FUNCTION update_post_likes_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        UPDATE public.posts SET likes_count = likes_count + 1 WHERE id = NEW.post_id;
+    ELSIF (TG_OP = 'DELETE') THEN
+        UPDATE public.posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = OLD.post_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_post_like_change
+AFTER INSERT OR DELETE ON public.likes
+FOR EACH ROW EXECUTE FUNCTION update_post_likes_count();
+
+-- Ad Sync and Management
+CREATE TABLE IF NOT EXISTS public.ads (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    description TEXT,
+    image_url TEXT,
+    link_url TEXT,
+    target_category TEXT DEFAULT 'Geral',
+    ad_type TEXT DEFAULT 'image', -- 'image' or 'text'
+    display_location TEXT DEFAULT 'all', -- 'all', 'groups', 'profiles'
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enable RLS for ads
+ALTER TABLE public.ads ENABLE ROW LEVEL SECURITY;
+
+-- Ad Policies
+CREATE POLICY "Public ads are viewable by everyone" 
+ON public.ads FOR SELECT 
+USING (is_active = true);
+
+CREATE POLICY "Admins can manage all ads" 
+ON public.ads FOR ALL 
+USING (EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND is_admin = true
+));
+
+-- Storage Bucket for Ad Images
+-- Note: You need to create a bucket named 'ad-images' manually in Supabase dashboard or via API
+-- but we define policies here if the bucket is created
+-- CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'ad-images');
+-- CREATE POLICY "Admin Upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'ad-images' AND (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)));
+
+-- Custom function to get ads by location/category
+CREATE OR REPLACE FUNCTION get_active_ads(p_location TEXT, p_category TEXT DEFAULT 'Geral')
+RETURNS SETOF public.ads AS $$
+BEGIN
+    RETURN QUERY
+    SELECT * FROM public.ads
+    WHERE is_active = true
+    AND (display_location = 'all' OR display_location = p_location)
+    AND (target_category = 'Geral' OR target_category = p_category)
+    ORDER BY created_at DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to keep likes_count in sync for reels
 CREATE OR REPLACE FUNCTION update_reel_likes_count()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -548,4 +633,80 @@ create table if not exists professional_followers (
 alter table professional_followers enable row level security;
 create policy "Followers viewable by everyone" on professional_followers for select using (true);
 create policy "Users can follow/unfollow" on professional_followers for all using (auth.uid() = follower_id);
+
+-- 15. Prescriptions Table
+create table if not exists prescriptions (
+  id uuid default uuid_generate_v4() primary key,
+  patient_id uuid references profiles(id) on delete cascade not null,
+  professional_id uuid references profiles(id) on delete cascade not null,
+  medication text not null,
+  dosage text not null,
+  frequency text not null,
+  duration text not null,
+  notes text,
+  diagnosis text,
+  items jsonb default '[]'::jsonb,
+  start_date date default current_date,
+  signature_code text not null unique,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- RPC for public verification
+create or replace function public.get_prescription_by_signature_code(signature_code_in text)
+returns jsonb
+language plpgsql
+security definer -- runs with bypass RLS to allow public validation if code is known
+as $$
+declare
+  result jsonb;
+begin
+  select 
+    jsonb_build_object(
+      'id', p.id,
+      'signature_code', p.signature_code,
+      'patient_id', p.patient_id,
+      'professional_id', p.professional_id,
+      'professional_name', coalesce(prof_profile.full_name, 'Profissional Identificado'),
+      'patient_name', coalesce(pat_profile.full_name, 'Paciente Identificado'),
+      'patient_username', pat_profile.username,
+      'license_number', hp.license_number,
+      'professional_specialty', hp.specialty,
+      'diagnosis', p.diagnosis,
+      'items', p.items,
+      'start_date', coalesce(p.start_date, p.created_at::date),
+      'created_at', p.created_at
+    ) into result
+  from public.prescriptions p
+  left join public.profiles prof_profile on p.professional_id = prof_profile.id
+  left join public.profiles pat_profile on p.patient_id = pat_profile.id
+  left join public.health_professionals hp on p.professional_id = hp.id
+  where (p.signature_code = signature_code_in or p.id::text = signature_code_in)
+  limit 1;
+
+  return result;
+end;
+$$;
+
+alter table prescriptions enable row level security;
+
+create policy "Patients can view their own prescriptions"
+on prescriptions for select
+using (auth.uid() = patient_id);
+
+create policy "Professionals can view prescriptions they issued"
+on prescriptions for select
+using (auth.uid() = professional_id);
+
+create policy "Everyone can view a prescription by ID (for verification)"
+on prescriptions for select
+using (true);
+
+create policy "Professionals can create prescriptions"
+on prescriptions for insert
+with check (
+  exists (
+    select 1 from profiles 
+    where id = auth.uid() and is_professional = true
+  )
+);
 

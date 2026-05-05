@@ -19,15 +19,15 @@ import CommunityDetail from './pages/CommunityDetail';
 import Appointments from './pages/Appointments';
 import Messages from './pages/Messages';
 import ProfessionalDashboard from './pages/ProfessionalDashboard';
+import MyPrescriptions from './pages/MyPrescriptions';
+import PrescriptionVerification from './pages/PrescriptionVerification';
+import PrescriptionSearch from './pages/PrescriptionSearch';
 import Login from './pages/Login';
 import { cn } from './lib/utils';
 
 function AppContent() {
   const { user, loading } = useAuth();
-
   const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const isChatOpenOnMobile = location.pathname === '/messages' && searchParams.has('userId');
 
   if (loading) {
     return (
@@ -42,15 +42,18 @@ function AppContent() {
     );
   }
 
-  // If not logged in, show login page
-  if (!user) {
+  // If not logged in and not on verification page, show login page
+  const isPublicRoute = location.pathname === '/verificar' || 
+                       location.pathname.startsWith('/verificar-receita/');
+
+  if (!user && !isPublicRoute) {
     return <Login />;
   }
 
   return (
     <div className="min-h-screen bg-[#dae0e6] flex flex-col md:flex-row">
-      <Navbar />
-      <main className="flex-1 md:ml-20 lg:ml-64 overflow-y-auto">
+      {user && <Navbar />}
+      <main className={cn("flex-1 overflow-y-auto", user && "md:ml-20 lg:ml-64")}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/reels" element={<Reels />} />
@@ -63,7 +66,10 @@ function AppContent() {
           <Route path="/gamification" element={<Gamification />} />
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/prescriptions" element={<MyPrescriptions />} />
           <Route path="/professional/dashboard" element={<ProfessionalDashboard />} />
+          <Route path="/verificar" element={<PrescriptionSearch />} />
+          <Route path="/verificar-receita/:id" element={<PrescriptionVerification />} />
           <Route path="/c/:name" element={<CommunityDetail />} />
           <Route path="/professional/settings" element={<ProfessionalSettings />} />
           <Route path="/explore" element={<Home />} /> {/* Mock redirect */}
