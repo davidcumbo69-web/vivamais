@@ -21,7 +21,7 @@ interface PrescriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
   patient: { id: string; full_name: string; username: string };
-  professional: { id: string; full_name: string; license_number: string };
+  professional: { id: string; full_name: string; username: string; license_number: string };
   onSuccess: (prescriptionId: string) => void;
 }
 
@@ -209,26 +209,32 @@ export function PrescriptionModal({ isOpen, onClose, patient, professional, onSu
               )}
 
               {/* Medical Header Context */}
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="p-5 bg-emerald-50/30 rounded-3xl border border-emerald-100/50">
-                    <div className="flex items-center space-x-3">
-                       <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center">
-                          <Stethoscope className="w-5 h-5 text-[#006747]" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="p-6 bg-emerald-50/50 rounded-[2rem] border border-emerald-100/50 shadow-sm transition-all hover:bg-emerald-50">
+                    <div className="flex items-center space-x-4">
+                       <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center border border-emerald-100/50">
+                          <Stethoscope className="w-6 h-6 text-[#006747]" />
                        </div>
-                       <div>
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Responsável</p>
-                          <p className="text-sm font-black text-gray-900 leading-tight">{professional.full_name}</p>
+                       <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black text-[#006747]/60 uppercase tracking-[0.2em] leading-none mb-1.5">Médico Responsável</p>
+                          <h4 className="text-sm font-black text-gray-900 leading-tight truncate">
+                            {professional.full_name || `Dr. ${professional.username || 'Identificado'}`}
+                          </h4>
+                          <p className="text-[9px] font-bold text-[#006747] mt-1 uppercase tracking-widest">Registrado • {professional.license_number}</p>
                        </div>
                     </div>
                  </div>
-                 <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100">
-                    <div className="flex items-center space-x-3">
-                       <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue-500">
-                          <User className="w-5 h-5" />
+                 <div className="p-6 bg-gray-50/80 rounded-[2rem] border border-gray-100 shadow-sm transition-all hover:bg-gray-100/50">
+                    <div className="flex items-center space-x-4">
+                       <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center border border-gray-200/50">
+                          <User className="w-6 h-6 text-blue-500" />
                        </div>
-                       <div>
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Paciente</p>
-                          <p className="text-sm font-black text-gray-900 leading-tight">{patient.full_name}</p>
+                       <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] leading-none mb-1.5">Paciente Atendido</p>
+                          <h4 className="text-sm font-black text-gray-900 leading-tight truncate">
+                            {patient.full_name || `u/${patient.username}`}
+                          </h4>
+                          <p className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-widest">Verificado no Sistema</p>
                        </div>
                     </div>
                  </div>

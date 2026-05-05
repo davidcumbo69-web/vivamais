@@ -16,6 +16,7 @@ import {
   Stethoscope,
   User,
   Printer,
+  Pill,
   Sunrise,
   Sun,
   CloudSun,
@@ -137,6 +138,12 @@ export default function PrescriptionVerification() {
 
   const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-orange-500', 'bg-purple-500', 'bg-pink-500'];
   const dotColors = ['#3b82f6', '#10b981', '#f97316', '#a855f7', '#ec4899'];
+
+  const items = prescription.items || [];
+  const maxDurationDays = Math.max(...items.map(item => parseDurationDays(item.duration)));
+  const startDate = new Date(prescription.created_at);
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + maxDurationDays);
 
   const periods = [
     { id: 'rising', name: 'Sol nascente', icon: Sunrise, hour: '06:00' },

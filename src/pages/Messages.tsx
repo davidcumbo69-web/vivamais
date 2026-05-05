@@ -627,6 +627,7 @@ export default function Messages() {
                   professional={{
                     id: user.id,
                     full_name: profile.full_name,
+                    username: profile.username,
                     license_number: professionalInfo?.license_number || 'SNS-VIVA-001'
                   }}
                   onSuccess={onPrescriptionSuccess}
