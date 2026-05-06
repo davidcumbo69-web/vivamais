@@ -26,6 +26,84 @@ export default function Home() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateReelModal, setShowCreateReelModal] = useState(false);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [userPrescriptions, setUserPrescriptions] = useState<any[]>([]);
+  const [loadingPrescriptions, setLoadingPrescriptions] = useState(true);
+
+  // Helper to check if a medication is active at a certain hour
+  const isPeriodActiveAt = (freqStr: string, hour: number) => {
+    const f = (freqStr || "").toLowerCase();
+    if (f === '1x' || f.includes('24/24')) return hour === 8;
+    if (f === '2x' || f.includes('12/12')) return [8, 20].includes(hour);
+    if (f === '3x' || f.includes('8/8')) return [8, 16, 0].includes(hour);
+    if (f === '4x' || f.includes('6/6')) return [6, 12, 18, 0].includes(hour);
+    if (f === '6x' || f.includes('4/4')) return [4, 8, 12, 16, 20, 0].includes(hour);
+    return false;
+  };
+
+  const getTodaySchedule = () => {
+    const todaySchedule: any[] = [];
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    userPrescriptions.forEach(presc => {
+        const startDate = presc.start_date ? new Date(presc.start_date) : new Date(presc.created_at);
+        // Reseting hours to start of day for accurate day count
+        const startDay = new Date(startDate);
+        startDay.setHours(0, 0, 0, 0);
+        const todayDay = new Date(now);
+        todayDay.setHours(0, 0, 0, 0);
+        
+        const daysSinceStart = Math.floor((todayDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (presc.items && Array.isArray(presc.items)) {
+          presc.items.forEach((item: any, idx: number) => {
+              const durationDays = parseInt(item.duration) || 0;
+              if (daysSinceStart >= 0 && daysSinceStart < durationDays) {
+                  // Check all possible hours used in our app
+                  [0, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22].forEach(hour => {
+                      if (isPeriodActiveAt(item.frequency, hour)) {
+                          const doseKey = `${idx}-${daysSinceStart}-${hour}`;
+                          const isTaken = presc.taken_doses?.[doseKey] || false;
+                          todaySchedule.push({
+                              medication: item.medication,
+                              hour,
+                              isTaken,
+                              dosage: item.dosage || '1',
+                              form: item.form || 'Comp.',
+                              prescId: presc.id,
+                              doseKey,
+                              isUpcoming: hour >= currentHour
+                          });
+                      }
+                  });
+              }
+          });
+        }
+    });
+    
+    return todaySchedule.sort((a, b) => a.hour - b.hour);
+  };
+
+  const todaySchedule = getTodaySchedule();
+
+  const handleToggleDoseInFeed = async (prescId: string, doseKey: string) => {
+    const presc = userPrescriptions.find(p => p.id === prescId);
+    if (!presc) return;
+
+    const newTakenDoses = { ...(presc.taken_doses || {}), [doseKey]: true };
+    
+    try {
+      const { error } = await supabase
+        .from('prescriptions')
+        .update({ taken_doses: newTakenDoses })
+        .eq('id', prescId);
+      
+      if (error) throw error;
+      fetchUserPrescriptions();
+    } catch (err) {
+      console.error('Error recording dose from feed:', err);
+    }
+  };
 
   // Post Form State
   const [newPostCaption, setNewPostCaption] = useState('');
@@ -38,8 +116,28 @@ export default function Home() {
     fetchGroups();
     if (user) {
       fetchUserMemberships();
+      fetchUserPrescriptions();
     }
   }, [user, activeTab]);
+
+  const fetchUserPrescriptions = async () => {
+    if (!user) return;
+    setLoadingPrescriptions(true);
+    try {
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .select('*')
+        .eq('patient_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      if (data) setUserPrescriptions(data);
+    } catch (err) {
+      console.error('Error fetching prescriptions:', err);
+    } finally {
+      setLoadingPrescriptions(false);
+    }
+  };
 
   const fetchUserMemberships = async () => {
     if (!user) return;
@@ -590,6 +688,51 @@ export default function Home() {
               </div>
               <span className="text-[10px] uppercase font-bold text-[#006747]">Perfil</span>
            </Link>
+
+           {/* Meus Medicamentos / Schedule (Only if prescriptions exist) */}
+           {!profile?.is_professional && todaySchedule.length > 0 && (
+             <div className="mb-8 bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                   <div className="flex items-center space-x-2">
+                      <div className="bg-[#006747] p-1.5 rounded-lg text-white">
+                         <Syringe className="w-3 h-3" />
+                      </div>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Meus Medicamentos</h4>
+                   </div>
+                   <Link to="/my-prescriptions" className="text-[9px] font-bold text-[#006747] uppercase hover:underline">Ver todas</Link>
+                </div>
+                
+                <div className="space-y-4">
+                   {todaySchedule.filter(s => s.isUpcoming || !s.isTaken).slice(0, 3).map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between group">
+                         <div className="flex items-center space-x-3">
+                            <div className={cn(
+                              "w-1.5 h-1.5 rounded-full",
+                              item.isTaken ? "bg-gray-200" : "bg-[#006747]"
+                            )} />
+                            <div className="flex flex-col">
+                               <p className={cn(
+                                 "text-[11px] font-bold text-gray-700",
+                                 item.isTaken && "line-through text-gray-400"
+                               )}>{item.medication}</p>
+                               <p className="text-[9px] text-gray-400 font-bold uppercase">{item.dosage} {item.form} • {item.hour.toString().padStart(2, '0')}:00</p>
+                            </div>
+                         </div>
+                         {item.isTaken ? (
+                           <div className="text-[9px] font-black text-gray-300 uppercase">Tomado</div>
+                         ) : (
+                           <button 
+                             onClick={() => handleToggleDoseInFeed(item.prescId, item.doseKey)}
+                             className="text-[9px] font-black text-[#006747] uppercase hover:bg-emerald-50 px-2 py-1 rounded-lg transition-colors"
+                           >
+                             Tomar
+                           </button>
+                         )}
+                      </div>
+                   ))}
+                </div>
+             </div>
+           )}
 
            {/* Suggestions Header */}
            <div className="flex justify-between items-center mb-4">

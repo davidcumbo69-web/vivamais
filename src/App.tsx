@@ -18,6 +18,7 @@ import Gamification from './pages/Gamification';
 import CommunityDetail from './pages/CommunityDetail';
 import Appointments from './pages/Appointments';
 import Messages from './pages/Messages';
+import CreatePrescription from './pages/CreatePrescription';
 import ProfessionalDashboard from './pages/ProfessionalDashboard';
 import MyPrescriptions from './pages/MyPrescriptions';
 import PrescriptionVerification from './pages/PrescriptionVerification';
@@ -66,6 +67,7 @@ function AppContent() {
           <Route path="/gamification" element={<Gamification />} />
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/prescrever/:patientId" element={<CreatePrescription />} />
           <Route path="/prescriptions" element={<MyPrescriptions />} />
           <Route path="/professional/dashboard" element={<ProfessionalDashboard />} />
           <Route path="/verificar" element={<PrescriptionSearch />} />

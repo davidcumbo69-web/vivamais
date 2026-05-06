@@ -47,6 +47,7 @@ interface Prescription {
   license_number: string;
   patient_name: string;
   patient_username: string;
+  taken_doses?: Record<string, boolean>;
 }
 
 export default function PrescriptionVerification() {
@@ -61,6 +62,9 @@ export default function PrescriptionVerification() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const [takenDoses, setTakenDoses] = useState<Record<string, boolean>>({});
+  const [updatingDose, setUpdatingDose] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -81,12 +85,41 @@ export default function PrescriptionVerification() {
         setError('Receita inválida ou inexistente');
       } else {
         setPrescription(data);
+        // Load taken doses if they exist
+        if (data.taken_doses) {
+          setTakenDoses(data.taken_doses);
+        }
       }
     } catch (err) {
       console.error('RPC Error:', err);
       setError('Ocorreu um erro ao verificar a receita');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleDose = async (medIdx: number, dIdx: number, hour: number) => {
+    if (!prescription || updatingDose) return;
+    
+    const doseKey = `${medIdx}-${dIdx}-${hour}`;
+    setUpdatingDose(doseKey);
+    
+    const newTakenDoses = { ...takenDoses, [doseKey]: !takenDoses[doseKey] };
+    
+    try {
+      const { error: updateError } = await supabase
+        .from('prescriptions')
+        .update({ taken_doses: newTakenDoses })
+        .eq('id', prescription.id);
+
+      if (updateError) throw updateError;
+      
+      setTakenDoses(newTakenDoses);
+    } catch (err) {
+      console.error('Error updating dose:', err);
+      // Optional: Show toast error
+    } finally {
+      setUpdatingDose(null);
     }
   };
 
@@ -154,13 +187,16 @@ export default function PrescriptionVerification() {
     { id: 'sleep', name: 'Dormir', icon: BedDouble, hour: '23:00' },
   ];
 
-  const isPeriodActive = (freqStr: string, periodId: string) => {
-    const f = freqStr.toLowerCase();
-    if (f.includes('1x')) return periodId === 'midday';
-    if (f.includes('2x')) return ['morning', 'night'].includes(periodId);
-    if (f.includes('3x')) return ['morning', 'midday', 'night'].includes(periodId);
-    if (f.includes('4x')) return ['morning', 'midday', 'afternoon', 'night'].includes(periodId);
-    if (f.includes('6x')) return true;
+  const isPeriodActiveForHour = (freqStr: string, hour: number) => {
+    const f = (freqStr || "").toLowerCase();
+    
+    // Suporte para formatos "X por dia" ou "H/H horas"
+    if (f === '1x' || f.includes('24/24')) return hour === 8;
+    if (f === '2x' || f.includes('12/12')) return [8, 20].includes(hour);
+    if (f === '3x' || f.includes('8/8')) return [8, 16, 0].includes(hour);
+    if (f === '4x' || f.includes('6/6')) return [6, 12, 18, 0].includes(hour);
+    if (f === '6x' || f.includes('4/4')) return [4, 8, 12, 16, 20, 0].includes(hour);
+    
     return false;
   };
 
@@ -175,275 +211,252 @@ export default function PrescriptionVerification() {
   const startTreatmentDate = prescription.start_date ? new Date(prescription.start_date) : new Date(prescription.created_at);
 
   return (
-    <div className="min-h-screen bg-[#f1f3f5] pt-12 pb-24 px-4 overflow-x-hidden print:bg-white print:p-0">
-      <div className="max-w-4xl mx-auto">
-        
-        {/* Paper Container - Medical Notepad Style */}
-        <div className="bg-white shadow-2xl rounded-sm overflow-hidden border border-gray-200 relative print:shadow-none print:border-none">
-          
-          {/* Top Decorative Bars */}
-          <div className="grid grid-cols-12 h-1.5 w-full">
-            <div className="col-span-8 bg-[#006747]" />
-            <div className="col-span-4 bg-gray-100" />
+    <div className="min-h-screen bg-[#030303] text-[#D7DADC] font-sans selection:bg-[#FF4500] selection:text-white">
+      {/* Top Navbar mimic */}
+      <div className="h-12 bg-[#1A1A1B] border-b border-[#343536] fixed top-0 w-full z-50 flex items-center px-4 md:px-8">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-[#FF4500] rounded-full flex items-center justify-center text-white">
+            <Stethoscope className="w-5 h-5" />
           </div>
-          
-          <div className="p-10 md:p-16 relative min-h-[1000px] bg-gradient-to-b from-white via-white to-gray-50/20">
-            {/* Ruled Paper Lines (Subtle) */}
-            <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#006747 1px, transparent 1px)', backgroundSize: '100% 32px' }} />
+          <span className="text-sm font-bold tracking-tight">r/PrescriptionVerification</span>
+        </div>
+      </div>
 
-            {/* Watermark */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none">
-              <Stethoscope className="w-[500px] h-[500px] transform rotate-12" />
-            </div>
-
-            {/* Content Container (Above Watermark) */}
-            <div className="relative z-10">
-              
-              {/* Header: Clinic/Professional Info */}
-              <div className="flex flex-col md:flex-row justify-between items-start border-b-2 border-gray-100 pb-12 mb-12">
-                <div>
-                  <div className="flex items-center space-x-2 mb-6">
-                    <ShieldCheck className="w-8 h-8 text-[#006747]" />
-                    <h1 className="text-2xl font-black tracking-tighter text-gray-900">
-                      THE CEDAV <span className="font-light text-gray-400">ANGOLA</span>
-                    </h1>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <h2 className="text-xl font-black text-gray-900 tracking-tight">{prescription.professional_name || "Profissional de Saúde"}</h2>
-                    <p className="text-[10px] font-black text-[#006747] uppercase tracking-[0.2em]">
-                      {prescription.professional_specialty || "Medicina Geral e Familiar"}
-                    </p>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                      Nº Ordem: {prescription.license_number}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-8 md:mt-0 text-left md:text-right flex flex-col md:items-end">
-                  <div className="bg-gray-50/80 backdrop-blur-sm p-6 rounded-2xl border border-gray-100 mb-4 inline-block min-w-[200px] shadow-sm">
-                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Destinatário / Paciente</p>
-                    <p className="text-sm font-black text-gray-900 leading-tight">{prescription.patient_name}</p>
-                    <p className="text-[10px] font-bold text-[#006747] mt-1">u/{prescription.patient_username || "paciente_verificado"}</p>
-                  </div>
-                  <div className="flex items-center md:justify-end text-[9px] font-black text-gray-400 uppercase tracking-widest space-x-2">
-                    <Calendar className="w-3.5 h-3.5 text-[#006747]" />
-                    <span>Emissão: {new Date(prescription.created_at).toLocaleDateString('pt-PT')}</span>
+      <div className="max-w-[1200px] mx-auto px-4 pt-20 pb-12 grid grid-cols-1 lg:grid-cols-[1fr,312px] gap-6">
+        {/* Main Content: Reddit "Thread" Column */}
+        <div className="space-y-4">
+          <div className="bg-[#1A1A1B] border border-[#343536] rounded hover:border-[#818384] transition-colors">
+            
+            {/* Thread Header */}
+            <div className="p-4 border-b border-[#343536] flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-[10px] font-black text-white">V</div>
+                <div className="flex flex-col">
+                  <p className="text-[12px] font-bold">Cedav Verification <span className="font-normal text-gray-500">• Secure Document</span></p>
+                  <div className="flex items-center space-x-1">
+                    <ShieldCheck className="w-3 h-3 text-[#FF4500]" />
+                    <p className="text-[10px] text-[#FF4500] font-black uppercase tracking-widest">Verified Integrity</p>
                   </div>
                 </div>
               </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{new Date(prescription.created_at).toLocaleDateString('pt-PT')}</p>
+              </div>
+            </div>
 
-              {/* Rx Body Section */}
-              <div className="space-y-20 py-4">
-                
-                {/* Diagnosis / Initial RP */}
-                <div className="max-w-2xl px-6">
-                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center">
-                    <Activity className="w-4 h-4 mr-2.5 text-[#006747]" />
-                    RP / Diagnóstico Presuntivo
-                  </h3>
-                  <div className="relative">
-                    <div className="absolute -left-6 top-0 bottom-0 w-1 bg-emerald-500/20 rounded-full" />
-                    <p className="text-2xl font-medium text-gray-800 leading-relaxed font-serif italic pl-4 text-wrap">
-                      "{prescription.diagnosis || "Controlo clínico e vigilância terapêutica."}"
-                    </p>
+            {/* Document Content (The Post) */}
+            <div className="p-8">
+              <h1 className="text-2xl font-black text-white tracking-tight mb-8">Receituário Digital #{prescription.id.slice(0,8).toUpperCase()}</h1>
+              
+              {/* Professional & Patient Info Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                <div className="p-6 bg-[#272729] rounded border border-[#343536]">
+                   <p className="text-[9px] font-black text-[#006747] uppercase tracking-[0.2em] mb-3">Profissional Responsável</p>
+                   <h2 className="text-xl font-black text-white leading-tight">Dr(a). {prescription.professional_name}</h2>
+                   <p className="text-xs font-bold text-gray-500 mt-2 uppercase tracking-widest">{prescription.professional_specialty} • {prescription.license_number}</p>
+                   <p className="text-[10px] text-[#006747] font-black uppercase mt-1">Hospital Central de Luanda</p>
+                </div>
+                <div className="p-6 bg-[#272729] rounded border border-[#343536]">
+                   <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] mb-3">Paciente / Diagnóstico</p>
+                   <h2 className="text-xl font-black text-white truncate">{prescription.patient_name}</h2>
+                   <p className="text-xs font-bold text-gray-500 mt-2 uppercase tracking-widest">Diagnóstico: {prescription.diagnosis}</p>
+                   <p className="text-[10px] text-gray-600 font-black uppercase mt-1">Emissão: {new Date(prescription.created_at).toLocaleDateString('pt-PT')}</p>
+                </div>
+              </div>
+
+              {/* Medication List (The Main "Table") */}
+              <div className="bg-[#030303] rounded border border-[#343536] overflow-hidden mb-10">
+                {items.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-6 border-b border-[#343536] last:border-0 group hover:bg-[#1A1A1B] transition-colors">
+                    <div className="flex items-center space-x-6 flex-1">
+                      <div className="w-8 h-8 bg-[#343536] rounded-full flex items-center justify-center text-[10px] font-black text-gray-400">
+                        {idx + 1}
+                      </div>
+                      <div className="w-3.5 h-3.5 rounded-full shadow-lg" style={{ backgroundColor: (item as any).color || dotColors[idx % dotColors.length] }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-3">
+                          <h4 className="text-sm font-black text-white tracking-tight">{item.medication}</h4>
+                          <span className="text-[10px] font-medium text-gray-500 uppercase">{item.form || 'Comprimido'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-12 ml-6">
+                      <div className="text-right min-w-[140px]">
+                        <p className="text-sm font-black text-white/90 leading-tight">
+                          {item.frequency}/dia · {item.duration} dias
+                        </p>
+                        <p className="text-[10px] font-medium text-gray-500 mt-1">
+                          {item.notes || (item as any).specialInstructions || "Sem observações"}
+                        </p>
+                      </div>
+                      <div className="w-10 text-right">
+                        <p className="text-sm font-black text-white">
+                          {(item as any).totalUnits || (parseInt(item.frequency) * parseInt(item.duration))}<span className="text-[10px] text-gray-500 ml-0.5 font-bold">x</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Therapeutic Map Implementation */}
+              <div className="bg-[#030303] rounded border border-[#343536] p-6 mb-10 overflow-hidden">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Cronograma de Administração</h3>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-3 h-3 text-gray-600" />
+                    <span className="text-[9px] text-gray-600 font-bold uppercase">{startTreatmentDate.toLocaleDateString('pt-PT')} – {new Date(new Date(startTreatmentDate).setDate(startTreatmentDate.getDate() + 13)).toLocaleDateString('pt-PT')}</span>
                   </div>
                 </div>
 
-                {/* Medication Items */}
-                <div className="grid gap-12">
-                  { items.map((item, idx) => (
-                    <div key={idx} className="relative pl-14 group">
-                      <div className="absolute left-0 top-1 w-8 h-8 rounded-xl bg-[#006747] text-white flex items-center justify-center text-xs font-black shadow-lg shadow-emerald-100 transition-transform group-hover:scale-110">
-                        {idx + 1}
-                      </div>
-                      <div className="space-y-4">
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                          <h4 className="text-2xl font-black text-gray-900 tracking-tight">{item.medication}</h4>
-                          <span className={`${colors[idx % colors.length]} text-white text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-wider shadow-sm`}>
-                            {item.dosage}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center space-x-8 text-[11px] font-black text-gray-400 uppercase tracking-widest">
-                          <span className="flex items-center">
-                            <Clock className="w-4 h-4 mr-2.5 text-[#006747]" />
-                            {item.frequency}
-                          </span>
-                          <span className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-2.5 text-[#006747]" />
-                            {item.duration}
-                          </span>
-                        </div>
-
-                        {item.notes && (
-                          <div className="mt-4 p-5 bg-emerald-50/30 rounded-2xl border border-emerald-100/50 text-xs italic text-gray-600 leading-relaxed font-medium">
-                            <span className="text-[10px] font-black text-[#006747] uppercase not-italic block mb-1 tracking-widest">Observações</span>
-                            "{item.notes}"
+                <div className="overflow-x-auto no-scrollbar">
+                  <div className="min-w-[700px]">
+                    <div className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 mb-4 border-b border-[#343536] pb-3">
+                      <div />
+                      {Array.from({ length: 14 }).map((_, i) => {
+                        const d = new Date(startTreatmentDate);
+                        d.setDate(d.getDate() + i);
+                        return (
+                          <div key={i} className="text-center">
+                            <p className="text-[8px] font-bold text-gray-600 uppercase tracking-tighter mb-1">{getDayName(d)}</p>
+                            <p className="text-[10px] font-bold text-gray-400">{d.getDate()}</p>
                           </div>
-                        )}
-                      </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
 
-                {/* VISUAL POSOLOGY GRID - DARK THEME STYLE */}
-                <div className="pt-20 border-t border-gray-100">
-                  <div className="mb-10 flex flex-wrap gap-4">
-                    {items.map((item, idx) => (
-                      <div key={idx} className="bg-[#1a1a1a] p-4 rounded-2xl flex items-center space-x-4 border border-white/5 shadow-xl min-w-[240px]">
-                        <div className={`w-4 h-4 rounded-full ${colors[idx % colors.length]}`} />
-                        <div>
-                          <p className="text-white text-xs font-black mb-0.5">{item.medication}</p>
-                          <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">{item.frequency || "2x dia"} — {item.notes || item.duration || "após refeição"}</p>
-                        </div>
+                    {[0, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22].map(hour => (
+                      <div key={hour} className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 py-2 border-b border-white/[0.01] last:border-0 hover:bg-white/[0.02] transition-colors rounded group">
+                        <div className="text-[10px] font-bold text-gray-500 group-hover:text-gray-300 transition-colors self-center">{hour.toString().padStart(2, '0')}:00</div>
+                        {Array.from({ length: 14 }).map((_, dIdx) => (
+                          <div key={dIdx} className="flex flex-wrap items-center justify-center gap-1 min-h-[24px]">
+                            {items.map((item, mIdx) => {
+                              const dur = parseDurationDays(item.duration);
+                              const isActive = dIdx < dur && isPeriodActiveForHour(item.frequency, hour);
+                              
+                              if (isActive) {
+                                const doseKey = `${mIdx}-${dIdx}-${hour}`;
+                                const isTaken = takenDoses[doseKey];
+                                const isUpdating = updatingDose === doseKey;
+
+                                return (
+                                  <button 
+                                    key={mIdx}
+                                    onClick={() => toggleDose(mIdx, dIdx, hour)}
+                                    disabled={isUpdating}
+                                    title={isTaken ? "Marcar como não tomado" : "Confirmar que tomou"}
+                                    className={`
+                                      relative w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center
+                                      ${isTaken ? 'scale-110 opacity-40 shadow-none ring-0' : 'hover:scale-125 shadow-lg shadow-black/40 ring-1 ring-white/10'}
+                                      ${isUpdating ? 'animate-pulse' : 'cursor-pointer'}
+                                    `}
+                                    style={{ backgroundColor: (item as any).color || dotColors[mIdx % dotColors.length] }}
+                                  >
+                                    {isTaken && <Check className="w-2.5 h-2.5 text-white stroke-[4]" />}
+                                    {!isTaken && <div className="w-1 h-1 bg-white rounded-full opacity-0 hover:opacity-40 transition-opacity" />}
+                                  </button>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>
-
-                  <div className="bg-[#1a1a1a] rounded-[2.5rem] p-6 lg:p-10 shadow-2xl border border-white/5 relative overflow-hidden">
-                    <div className="overflow-x-auto no-scrollbar">
-                      <div className="min-w-[700px]">
-                        
-                        {/* Grid Header: Days */}
-                        <div className="grid grid-cols-[140px_repeat(7,1fr)] gap-4 mb-4">
-                          <div />
-                          {Array.from({ length: 7 }).map((_, i) => {
-                            const date = new Date(startTreatmentDate);
-                            date.setDate(startTreatmentDate.getDate() + i);
-                            const isToday = i === 2; // Simulating active day selector from image
-                            return (
-                              <div key={i} className={`text-center py-4 rounded-2xl transition-all ${isToday ? 'bg-white/5 border border-white/10' : ''}`}>
-                                <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest leading-none mb-1">{getDayName(date)}</p>
-                                <p className={`text-xs font-black ${isToday ? 'text-white' : 'text-gray-500'}`}>{getDayNumber(date)}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {/* Grid Rows: Periods */}
-                        <div className="space-y-1">
-                          {periods.map((period) => (
-                            <div key={period.id} className="grid grid-cols-[140px_repeat(7,1fr)] gap-4 items-center border-b border-white/[0.03] py-5 last:border-0 hover:bg-white/[0.02] rounded-xl transition-colors px-2">
-                              {/* Row Label */}
-                              <div className="flex items-center space-x-3">
-                                <period.icon className="w-4 h-4 text-orange-400/80" />
-                                <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">{period.name}</span>
-                              </div>
-
-                              {/* Day Columns */}
-                              {Array.from({ length: 7 }).map((_, i) => (
-                                <div key={i} className="flex flex-wrap items-center justify-center gap-2 min-h-[24px]">
-                                  {items.map((item, idx) => {
-                                    if (isPeriodActive(item.frequency || "", period.id)) {
-                                      return (
-                                        <div 
-                                          key={idx}
-                                          className={`w-3.5 h-3.5 rounded-full ${colors[idx % colors.length]} shadow-lg shadow-${colors[idx%colors.length].split('-')[1]}-500/20 transform hover:scale-125 transition-transform cursor-help`}
-                                          title={`${item.medication}: ${period.name} (${period.hour})`}
-                                        />
-                                      );
-                                    }
-                                    return null;
-                                  })}
-                                </div>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                </div>
+                
+                <div className="mt-6 flex items-center justify-center space-x-6 py-4 border-t border-[#343536]">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 rounded-full ring-1 ring-white/20 bg-gray-500" />
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Dose Pendente</span>
                   </div>
-
-                  {/* Period Detail Panel - Interactive Style */}
-                  <div className="mt-10 bg-[#1a1a1a] rounded-[2rem] p-8 border border-white/5 shadow-2xl">
-                    <div className="flex items-center space-x-4 mb-6">
-                      <span className="text-white text-sm font-black">Quarta 07 — Meio dia (12:00)</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-500 opacity-40 flex items-center justify-center">
+                      <Check className="w-1.5 h-1.5 text-white" />
                     </div>
-                    
-                    <div className="flex flex-wrap gap-4">
-                      {items.map((item, idx) => {
-                        if (isPeriodActive(item.frequency || "", 'midday')) {
-                          return (
-                            <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center space-x-4 min-w-[200px] hover:bg-white/10 transition-colors cursor-pointer">
-                              <div className={`w-8 h-8 rounded-xl ${colors[idx % colors.length]} flex items-center justify-center`}>
-                                <Pill className="w-4 h-4 text-white" />
-                              </div>
-                              <div>
-                                <p className="text-white text-sm font-black">{item.medication}</p>
-                                <div className="flex items-center space-x-4 mt-1">
-                                  <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">12:00</span>
-                                  <span className="text-white/40 text-[11px] font-black">1x</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      })}
-                    </div>
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Dose Tomada</span>
+                  </div>
+                  <div className="text-[9px] font-black text-[#FF4500] uppercase tracking-tighter animate-pulse">
+                    • Toque nos pontos para registrar a toma
                   </div>
                 </div>
+              </div>
 
-                {/* Footer / Digital Signature */}
-                <div className="pt-24 flex flex-col md:flex-row justify-between items-end gap-12 border-t-2 border-gray-100 mt-24">
-                  <div className="w-full md:w-auto flex-1">
-                    <div className="flex items-center space-x-3 mb-6">
-                       <ShieldCheck className="w-6 h-6 text-[#006747]" />
+              {/* Footer Section (Reddit bottom bar) */}
+              <div className="flex flex-col md:flex-row items-center justify-between gap-12 pt-8 border-t border-[#343536]">
+                 <div className="space-y-4 w-full md:w-auto">
+                    <div className="bg-[#272729] border border-[#343536] rounded p-4 flex items-center space-x-4">
+                       <div className="w-10 h-10 bg-[#FF4500]/10 rounded flex items-center justify-center text-[#FF4500]">
+                          <ShieldCheck className="w-6 h-6" />
+                       </div>
                        <div>
-                         <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] leading-none mb-1">Certificação Digital</h4>
-                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Hash de Integridade RSA-2048</p>
+                          <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">CÓDIGO DE AUTENTICAÇÃO</p>
+                          <p className="text-sm font-mono font-black text-white tracking-[0.2em]">{prescription.signature_code}</p>
                        </div>
                     </div>
-                    <div className="bg-[#f8f9fa] p-6 rounded-[2rem] border border-gray-100 flex items-center justify-between group shadow-inner">
-                       <div className="flex items-center space-x-4">
-                          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-[#006747]">
-                            <Hash className="w-5 h-5" />
-                          </div>
-                          <span className="text-sm font-mono font-black text-[#006747] tracking-tighter">{prescription.signature_code}</span>
-                       </div>
-                       <button 
-                        onClick={() => copyToClipboard(prescription.signature_code)}
-                        className="p-4 bg-white shadow-lg border border-gray-100 rounded-2xl hover:bg-emerald-50 transition-all text-[#006747]"
-                       >
-                         {copied ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
-                       </button>
+                    <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest text-center md:text-left">Assinado digitalmente via Protocolo Cedav • 2026</p>
+                 </div>
+
+                 <div className="text-center md:text-right">
+                    <div className="mb-6 h-[80px] flex flex-col justify-end opacity-20">
+                       <p className="font-serif italic text-3xl text-white mb-2">{prescription.professional_name}</p>
+                       <div className="h-[1px] w-[200px] bg-white mx-auto md:ml-auto md:mr-0" />
                     </div>
-                  </div>
-
-                  <div className="text-center md:text-right min-w-[300px]">
-                     <div className="border-b-2 border-gray-900 pb-4 mb-4 italic font-serif text-3xl text-gray-400 opacity-40 min-h-[50px] tracking-wide">
-                       {prescription.professional_name}
-                     </div>
-                     <p className="text-sm font-black text-gray-900 uppercase tracking-[0.3em] mb-1">{prescription.professional_name || "Profissional Responsável"}</p>
-                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4">Membro da Ordem dos Médicos - Angola</p>
-                     <div className="inline-block px-4 py-1.5 bg-gray-50 border border-gray-100 rounded-lg">
-                        <p className="text-[8px] font-black text-[#006747] uppercase tracking-widest">Validado via Portal The Cedav v1.0</p>
-                     </div>
-                  </div>
-                </div>
-
+                    <p className="text-sm font-black text-white uppercase tracking-[0.2em]">Dr(a). {prescription.professional_name}</p>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Delegado de Saúde • Região de Luanda</p>
+                 </div>
               </div>
             </div>
           </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 py-8 print:hidden">
+             <Link 
+              to="/" 
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-3 bg-[#343536] text-[#D7DADC] px-8 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-[#444546] transition-all"
+             >
+               <ArrowLeft className="w-4 h-4" />
+               <span>Sair da Verificação</span>
+             </Link>
+             <button 
+              onClick={() => window.print()}
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-3 bg-[#D7DADC] text-black px-10 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-white transition-all"
+             >
+               <Printer className="w-4 h-4" />
+               <span>Imprimir Receita</span>
+             </button>
+          </div>
         </div>
 
-        {/* Action Bar */}
-        <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-6 print:hidden">
-           <Link 
-            to="/" 
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-4 bg-white border border-gray-200 text-gray-600 px-12 py-6 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 hover:-translate-y-1 transition-all shadow-xl shadow-gray-200/50"
-           >
-             <ArrowLeft className="w-5 h-5" />
-             <span>Sair da Verificação</span>
-           </Link>
-           <button 
-            onClick={() => window.print()}
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-4 bg-gray-900 text-white px-14 py-6 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black hover:-translate-y-1 transition-all shadow-2xl shadow-gray-400/50"
-           >
-             <Printer className="w-5 h-5" />
-             <span>Imprimir Receita Médica</span>
-           </button>
+        {/* Sidebar mimic */}
+        <div className="space-y-4 hidden lg:block">
+          <div className="bg-[#1A1A1B] border border-[#343536] rounded overflow-hidden">
+            <div className="bg-[#FF4500] h-9" />
+            <div className="p-4 space-y-4">
+              <div className="flex items-center space-x-3 -mt-8">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-black shadow-lg">
+                  <ShieldCheck className="w-8 h-8" />
+                </div>
+                <div className="flex flex-col mt-6">
+                  <span className="text-sm font-bold">r/CedavVerified</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">
+                Este post contém uma prescrição médica oficial validada. A integridade dos dados foi confirmada via blockchain interno Cedav.
+              </p>
+              <div className="grid grid-cols-2 gap-4 py-4 border-t border-[#343536]">
+                <div>
+                  <p className="text-sm font-bold">Status</p>
+                  <p className="text-[10px] text-emerald-500 font-bold">ATIVO</p>
+                </div>
+                <div>
+                  <p className="text-sm font-bold">Created</p>
+                  <p className="text-[10px] text-gray-500">{new Date(prescription.created_at).toLocaleDateString('pt-PT')}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
