@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, MapPin, Calendar } from 'lucide-react';
+import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, MapPin, Calendar, ChevronDown, ChevronUp, Activity, Thermometer, Droplet, Ruler } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
@@ -120,6 +120,7 @@ export default function Profile() {
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
   const [clinicalHistories, setClinicalHistories] = useState<any[]>([]);
   const [loadingHistories, setLoadingHistories] = useState(false);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
   const [savedItems, setSavedItems] = useState<any[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -379,7 +380,10 @@ export default function Profile() {
         .eq('patient_id', targetUserId)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+      
       setClinicalHistories(data || []);
     } catch (err) {
       console.error('Error fetching clinical histories:', err);
@@ -435,8 +439,10 @@ export default function Profile() {
           .maybeSingle();
 
         const status = statusAsPatient || statusAsProf;
+        
         setPatientStatus(status);
-        setIsPatientOfProf(status?.status === 'accepted');
+        const accepted = status?.status === 'accepted';
+        setIsPatientOfProf(accepted);
       }
     } catch (err) {
       console.error('Error fetching patient data:', err);
@@ -945,13 +951,21 @@ export default function Profile() {
       {/* Tabs */}
       <div className="border-t border-gray-200">
         <div className="flex overflow-x-auto scrollbar-hide px-4 md:px-0 space-x-8 md:space-x-12 md:justify-center">
-          {profile.is_professional && (
+          <button 
+            onClick={() => setActiveTab('posts')}
+            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'posts' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            <span>Publicações</span>
+          </button>
+
+          {(isOwnProfile || (myProfile?.is_professional && isPatientOfProf)) && (
             <button 
-              onClick={() => setActiveTab('services')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'services' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+              onClick={() => setActiveTab('clinical_history')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'clinical_history' ? 'border-[#006747] text-[#006747] -mt-[1px]' : 'border-transparent text-gray-400'}`}
             >
-              <HeartPulse className="w-4 h-4" />
-              <span>Serviços</span>
+              <HeartPulse className="w-4 h-4 text-[#006747]" />
+              <span className={activeTab === 'clinical_history' ? "text-[#006747]" : ""}>História Clínica</span>
             </button>
           )}
 
@@ -967,11 +981,11 @@ export default function Profile() {
 
           {profile.is_professional && (
             <button 
-              onClick={() => setActiveTab('posts')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'posts' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+              onClick={() => setActiveTab('services')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'services' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
             >
-              <Dna className="w-4 h-4" />
-              <span>Publicações</span>
+              <HeartPulse className="w-4 h-4" />
+              <span>Serviços</span>
             </button>
           )}
 
@@ -1002,16 +1016,6 @@ export default function Profile() {
             >
               <Pill className="w-4 h-4" />
               <span>Receitas</span>
-            </button>
-          )}
-
-          {(isOwnProfile || (myProfile?.is_professional && isPatientOfProf)) && (
-            <button 
-              onClick={() => setActiveTab('clinical_history')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'clinical_history' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-            >
-              <HeartPulse className="w-4 h-4" />
-              <span>Histórico Clínico</span>
             </button>
           )}
 
@@ -1156,7 +1160,7 @@ export default function Profile() {
                              <ClipboardList className="w-6 h-6" />
                           </div>
                           <div>
-                            <h4 className="font-black text-gray-900 text-base leading-none mb-1.5">{history.primaryDiagnosis}</h4>
+                            <h4 className="font-black text-gray-900 text-base leading-none mb-1.5">{history.primary_diagnosis || history.primaryDiagnosis}</h4>
                             <div className="flex items-center space-x-3 text-gray-400">
                                <p className="text-[10px] font-black uppercase tracking-widest flex items-center">
                                  <Calendar className="w-3 h-3 mr-1.5" />
@@ -1169,11 +1173,19 @@ export default function Profile() {
                             </div>
                           </div>
                         </div>
-                        <div className={cn(
-                          "px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest",
-                          history.referral === 'Sem referenciação' ? "bg-gray-100 text-gray-500" : "bg-amber-100 text-amber-700"
-                        )}>
-                          {history.referral}
+                        <div className="flex items-center space-x-2">
+                          <div className={cn(
+                            "px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest",
+                            (history.referral === 'Sem referenciação' || !history.referral) ? "bg-gray-100 text-gray-500" : "bg-amber-100 text-amber-700"
+                          )}>
+                            {history.referral || 'Geral'}
+                          </div>
+                          <button 
+                            onClick={() => setExpandedHistoryId(expandedHistoryId === history.id ? null : history.id)}
+                            className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 hover:text-black"
+                          >
+                            {expandedHistoryId === history.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
                         </div>
                       </div>
 
@@ -1188,7 +1200,7 @@ export default function Profile() {
                          </div>
                          <div className="p-3 bg-gray-50 rounded-2xl">
                             <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">T. Arterial</p>
-                            <p className="text-xs font-black text-gray-900">{history.bloodPressure}</p>
+                            <p className="text-xs font-black text-gray-900">{history.bloodPressure || history.blood_pressure}</p>
                          </div>
                          <div className="p-3 bg-gray-50 rounded-2xl">
                             <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">SpO2</p>
@@ -1199,12 +1211,108 @@ export default function Profile() {
                       <div className="space-y-3">
                          <div>
                             <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Queixa Principal</p>
-                            <p className="text-xs text-gray-600 line-clamp-2">{history.mainComplaint}</p>
+                            <p className="text-xs text-gray-600 line-clamp-2">{history.mainComplaint || history.main_complaint}</p>
                          </div>
-                         <div className="pt-3 border-t border-gray-50">
-                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Notas Clínicas</p>
-                            <p className="text-xs text-gray-600 whitespace-pre-wrap">{history.clinicalNotes}</p>
-                         </div>
+                         
+                         {expandedHistoryId === history.id && (
+                           <div className="pt-6 space-y-6 border-t border-gray-100 mt-6 animate-in fade-in slide-in-from-top-4 duration-300">
+                             {/* Section 1: Detailed Physical Exam */}
+                             <div>
+                               <h5 className="text-[8px] font-black text-[#006747] uppercase tracking-[0.2em] mb-4">Exame Físico Detalhado</h5>
+                               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                 <div className="p-3 bg-emerald-50/30 rounded-2xl border border-emerald-50">
+                                   <p className="text-[8px] font-black text-emerald-600/70 uppercase mb-1">Peso / Altura</p>
+                                   <p className="text-[11px] font-bold text-gray-700">{history.weight}kg / {history.height}m</p>
+                                 </div>
+                                 <div className="p-3 bg-emerald-50/30 rounded-2xl border border-emerald-50">
+                                   <p className="text-[8px] font-black text-emerald-600/70 uppercase mb-1">Frequência</p>
+                                   <p className="text-[11px] font-bold text-gray-700">{history.heart_rate || history.heartRate} bpm / {history.respiratory_rate || history.respiratoryRate} rpm</p>
+                                 </div>
+                                 <div className="p-3 bg-emerald-50/30 rounded-2xl border border-emerald-50 col-span-2 md:col-span-1">
+                                   <p className="text-[8px] font-black text-emerald-600/70 uppercase mb-1">Duração Sintomas</p>
+                                   <p className="text-[11px] font-bold text-gray-700">{history.duration}</p>
+                                 </div>
+                               </div>
+                               {history.physical_exam_observations && (
+                                 <div className="mt-3 p-4 bg-gray-50 rounded-2xl">
+                                   <p className="text-[8px] font-black text-gray-400 uppercase mb-1.5 ml-1">Observações do Exame</p>
+                                   <p className="text-[11px] text-gray-600 leading-relaxed">{history.physical_exam_observations}</p>
+                                 </div>
+                               )}
+                             </div>
+
+                             {/* Section 2: Clinical Details */}
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                               <div className="space-y-4">
+                                 <h5 className="text-[8px] font-black text-[#006747] uppercase tracking-[0.2em]">Antecedentes & Hábitos</h5>
+                                 <div className="space-y-3">
+                                   {[
+                                     { label: 'Doenças Prévias', val: history.previous_diseases },
+                                     { label: 'Cirurgias', val: history.surgeries_history },
+                                     { label: 'Alergias', val: history.allergies },
+                                     { label: 'Medicação Habitual', val: history.habitual_medication },
+                                     { label: 'Histórico Familiar', val: history.hereditary_diseases }
+                                   ].map((item, idx) => item.val && (
+                                     <div key={idx} className="bg-gray-50 p-3 rounded-xl">
+                                       <p className="text-[7px] font-black text-gray-400 uppercase mb-1">{item.label}</p>
+                                       <p className="text-[10px] text-gray-700 leading-tight">{item.val}</p>
+                                     </div>
+                                   ))}
+                                 </div>
+                                 <div className="flex space-x-2">
+                                   {history.smoking_habits && (
+                                     <span className="px-2 py-1 bg-amber-50 text-amber-700 text-[8px] font-black uppercase rounded-lg border border-amber-100">Fumador: {history.smoking_habits}</span>
+                                   )}
+                                   {history.alcohol_consumption && (
+                                     <span className="px-2 py-1 bg-blue-50 text-blue-700 text-[8px] font-black uppercase rounded-lg border border-blue-100">Álcool: {history.alcohol_consumption}</span>
+                                   )}
+                                 </div>
+                               </div>
+
+                               <div className="space-y-4">
+                                 <h5 className="text-[8px] font-black text-[#006747] uppercase tracking-[0.2em]">Diagnóstico & Plano</h5>
+                                 <div className="space-y-3">
+                                   {history.secondary_diagnosis && (
+                                     <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                                       <p className="text-[7px] font-black text-emerald-600 uppercase mb-1">Diagnóstico Secundário</p>
+                                       <p className="text-[10px] text-gray-700 font-medium">{history.secondary_diagnosis}</p>
+                                     </div>
+                                   )}
+                                   {history.requested_exams && (
+                                     <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                                       <p className="text-[7px] font-black text-blue-600 uppercase mb-1">Exames Solicitados</p>
+                                       <p className="text-[10px] text-gray-700 whitespace-pre-wrap">{history.requested_exams}</p>
+                                     </div>
+                                   )}
+                                   {history.next_appointment_date && (
+                                     <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                                       <p className="text-[7px] font-black text-indigo-600 uppercase mb-1" >Próxima Consulta</p>
+                                       <p className="text-[10px] text-gray-700 font-black">{new Date(history.next_appointment_date).toLocaleDateString()}</p>
+                                     </div>
+                                   )}
+                                 </div>
+                               </div>
+                             </div>
+
+                             {/* Section 3: Notes */}
+                             <div>
+                                <p className="text-[8px] font-black text-[#006747] uppercase tracking-[0.2em] mb-2">Descrição Detalhada & Conduta</p>
+                                <div className="bg-gray-50 p-5 rounded-[2rem] border border-gray-100">
+                                  <p className="text-[11px] text-gray-600 whitespace-pre-wrap leading-relaxed">
+                                    {history.clinicalNotes || history.clinical_notes}
+                                  </p>
+                                  {(history.detailedDescription || history.detailed_description) && (
+                                    <div className="mt-4 pt-4 border-t border-gray-200/50">
+                                       <p className="text-[7px] font-black text-gray-400 uppercase mb-2">Desenvolvimento do Caso</p>
+                                       <p className="text-[11px] text-gray-600 leading-relaxed italic">
+                                         {history.detailedDescription || history.detailed_description}
+                                       </p>
+                                    </div>
+                                  )}
+                                </div>
+                             </div>
+                           </div>
+                         )}
                       </div>
                     </div>
                   ))}
