@@ -20,6 +20,7 @@ import Appointments from './pages/Appointments';
 import Messages from './pages/Messages';
 import CreatePrescription from './pages/CreatePrescription';
 import ProfessionalDashboard from './pages/ProfessionalDashboard';
+import MyPatients from './pages/MyPatients';
 import MyPrescriptions from './pages/MyPrescriptions';
 import DigitalPrescriptionView from './pages/PrescriptionVerification';
 import PrescriptionSearch from './pages/PrescriptionSearch';
@@ -72,6 +73,7 @@ function AppContent() {
           <Route path="/prescrever/:patientId" element={<CreatePrescription />} />
           <Route path="/prescriptions" element={<MyPrescriptions />} />
           <Route path="/professional/dashboard" element={<ProfessionalDashboard />} />
+          <Route path="/professional/patients" element={<MyPatients />} />
           <Route path="/verificar" element={<PrescriptionSearch />} />
           <Route path="/verificar-receita/:id" element={<DigitalPrescriptionView />} />
           <Route path="/c/:name" element={<CommunityDetail />} />

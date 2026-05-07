@@ -24,9 +24,11 @@ import {
   PackageCheck,
   PieChart as PieChartIcon,
   BarChart3,
-  LineChart as LineChartIcon
+  LineChart as LineChartIcon,
+  HeartPulse as HeartPulseIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Header } from '../components/layout/Header';
 import { 
@@ -569,6 +571,13 @@ export default function ProfessionalDashboard() {
             >
                 Análises
             </button>
+            <Link 
+                to="/professional/patients"
+                className="flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap text-gray-400 hover:text-[#006747] flex items-center justify-center space-x-2"
+            >
+                <HeartPulseIcon className="w-3 h-3" />
+                <span>Pacientes</span>
+            </Link>
         </div>
 
         {loading ? (
