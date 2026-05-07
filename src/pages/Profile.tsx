@@ -160,6 +160,23 @@ export default function Profile() {
     return age;
   };
 
+  const calculateCompletionScore = () => {
+    if (!profile) return 0;
+    const essentialFields = [
+      'full_name',
+      'birth_date',
+      'gender',
+      'address',
+      'marital_status',
+      'id_card_number',
+      'province',
+      'municipality',
+      'bio'
+    ];
+    const filledFields = essentialFields.filter(field => !!profile[field as keyof typeof profile]);
+    return Math.round((filledFields.length / essentialFields.length) * 100);
+  };
+
   const fetchProfile = async (targetUserId: string) => {
     try {
       const { data: pData, error } = await supabase
@@ -878,6 +895,41 @@ export default function Profile() {
             <div className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-red-100 hover:bg-red-50/30 transition-all group active:scale-90 cursor-pointer" onClick={() => signOut()}>
                <LogOut className="w-5 h-5 text-red-400 group-hover:scale-110 transition-transform" />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Completion Score Card */}
+      {isOwnProfile && calculateCompletionScore() < 100 && (
+        <div className="mb-6 bg-white rounded-[2rem] p-6 shadow-sm border border-emerald-100">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <UserIcon className="w-3 h-3 text-[#006747]" />
+              </div>
+              <span className="text-[10px] font-black text-[#006747] uppercase tracking-widest">Completude do Perfil</span>
+            </div>
+            <span className="text-sm font-bold text-[#006747]">{calculateCompletionScore()}%</span>
+          </div>
+          
+          <div className="w-full bg-emerald-50 h-2 rounded-full overflow-hidden mb-4">
+            <div 
+              className="bg-[#006747] h-full transition-all duration-1000 ease-out" 
+              style={{ width: `${calculateCompletionScore()}%` }}
+            />
+          </div>
+          
+          <div className="flex items-start justify-between space-x-4">
+            <p className="text-[11px] text-gray-500 leading-relaxed max-w-[240px]">
+              Complete o seu perfil para aumentar a sua credibilidade na plataforma e garantir que todos os seus dados são autênticos.
+            </p>
+            <Link 
+              to="/profile/edit"
+              className="flex items-center space-x-1 bg-[#006747] text-white px-4 py-2 rounded-xl text-[10px] font-bold hover:bg-emerald-800 transition-all active:scale-95 shadow-sm shadow-emerald-100"
+            >
+              <span>Completar</span>
+              <ChevronRight className="w-3 h-3" />
+            </Link>
           </div>
         </div>
       )}

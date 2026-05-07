@@ -43,7 +43,8 @@ export default function Home() {
         'gender', 
         'id_card_number', 
         'province', 
-        'municipality'
+        'municipality',
+        'address'
       ] as const;
       
       const isMissingSomething = essentialFields.some(field => !profile[field as keyof typeof profile]);
@@ -992,7 +993,7 @@ export default function Home() {
                   Complete o seu Perfil!
                 </h3>
                 <p className="text-sm text-gray-500 mb-8 leading-relaxed px-4">
-                  Para uma melhor experiência no VIVA+, precisamos de alguns dados essenciais como o seu BI, Morada e Data de Nascimento.
+                  A sua segurança e autenticidade são prioritárias. Complete os seus dados essenciais (BI, Província, Município, etc.) para garantir a melhor experiência e acesso total às funcionalidades do VIVA+.
                 </p>
 
                 <div className="space-y-3">

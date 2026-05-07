@@ -22,20 +22,41 @@ export default function EditProfile() {
   });
 
   useEffect(() => {
-    if (profile) {
-      setFormData({
-        full_name: profile.full_name || '',
-        birth_date: profile.birth_date || '',
-        gender: profile.gender || '',
-        address: profile.address || '',
-        marital_status: profile.marital_status || '',
-        id_card_number: profile.id_card_number || '',
-        province: profile.province || '',
-        municipality: profile.municipality || '',
-        bio: profile.bio || ''
-      });
-    }
-  }, [profile]);
+    const fetchLatestProfile = async () => {
+      if (!profile?.id) return;
+      
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', profile.id)
+          .single();
+
+        if (error) throw error;
+        
+        if (data) {
+          setFormData({
+            full_name: data.full_name || '',
+            birth_date: data.birth_date || '',
+            gender: data.gender || '',
+            address: data.address || '',
+            marital_status: data.marital_status || '',
+            id_card_number: data.id_card_number || '',
+            province: data.province || '',
+            municipality: data.municipality || '',
+            bio: data.bio || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLatestProfile();
+  }, [profile?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
