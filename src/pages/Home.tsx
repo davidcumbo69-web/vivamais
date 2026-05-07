@@ -158,9 +158,12 @@ export default function Home() {
         .from('prescriptions')
         .select(`
           patient_id,
-          patient_name,
-          patient_username,
-          created_at
+          created_at,
+          profiles:patient_id (
+            username,
+            full_name,
+            avatar_url
+          )
         `)
         .eq('professional_id', user.id)
         .order('created_at', { ascending: false })
@@ -173,7 +176,13 @@ export default function Home() {
       data?.forEach(p => {
         if (!seen.has(p.patient_id)) {
           seen.add(p.patient_id);
-          uniquePatients.push(p);
+          const profileData = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+          uniquePatients.push({
+            patient_id: p.patient_id,
+            patient_name: profileData?.full_name || 'Paciente',
+            patient_username: profileData?.username || 'viva_user',
+            created_at: p.created_at
+          });
         }
       });
       

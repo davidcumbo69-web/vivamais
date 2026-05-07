@@ -142,6 +142,12 @@ export default function Profile() {
     }
   }, [userId, myProfile]);
 
+  useEffect(() => {
+    if (activeTab === 'patients' && isOwnProfile && profile?.id && profile.is_professional) {
+      fetchPatientData(profile.id, myProfile?.id || profile.id);
+    }
+  }, [activeTab]);
+
   const fetchProfile = async (targetUserId: string) => {
     try {
       const { data: pData, error } = await supabase
@@ -361,44 +367,60 @@ export default function Profile() {
   };
 
   const fetchPatientData = async (targetProfId: string, currentUserId: string) => {
+    if (loadingPatient) return;
     setLoadingPatient(true);
     try {
-      // 1. Check if CURRENT USER is a patient of TARGET PROFID
-      const { data: status } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('user_id', currentUserId)
-        .eq('professional_id', targetProfId)
-        .maybeSingle();
-      
-      setPatientStatus(status);
-      setIsPatientOfProf(status?.status === 'accepted');
+      // 1. Check status of current viewer vs this profile
+      if (currentUserId !== targetProfId) {
+        const { data: status } = await supabase
+          .from('patients')
+          .select('*')
+          .eq('user_id', currentUserId)
+          .eq('professional_id', targetProfId)
+          .maybeSingle();
+        
+        setPatientStatus(status);
+        setIsPatientOfProf(status?.status === 'accepted');
+      }
 
       // 2. If it's MY professional profile, load my patients and requests
       if (currentUserId === targetProfId) {
         // Load accepted patients
-        const { data: accepted } = await supabase
+        const { data: accepted, error: accError } = await supabase
           .from('patients')
           .select(`
             *,
-            profiles:user_id (id, username, full_name, avatar_url, bio)
+            patient:user_id (id, username, full_name, avatar_url, bio)
           `)
           .eq('professional_id', targetProfId)
           .eq('status', 'accepted');
         
-        setMyPatients(accepted || []);
+        if (accError) console.error('Error fetching accepted patients:', accError);
+        
+        // Map data to handle potential join name issues
+        const formattedPatients = (accepted || []).map(p => ({
+          ...p,
+          profiles: p.patient || p.profiles // fallback
+        }));
+        setMyPatients(formattedPatients);
 
         // Load pending requests
-        const { data: pending } = await supabase
+        const { data: pending, error: penError } = await supabase
           .from('patients')
           .select(`
             *,
-            profiles:user_id (id, username, full_name, avatar_url)
+            patient:user_id (id, username, full_name, avatar_url)
           `)
           .eq('professional_id', targetProfId)
           .eq('status', 'pending');
         
-        setPatientRequests(pending || []);
+        if (penError) console.error('Error fetching pending patients:', penError);
+
+        const formattedRequests = (pending || []).map(p => ({
+          ...p,
+          profiles: p.patient || p.profiles // fallback
+        }));
+        setPatientRequests(formattedRequests);
       }
     } catch (err) {
       console.error('Error fetching patient data:', err);
@@ -1292,7 +1314,7 @@ export default function Profile() {
                     {/* Pending Requests first */}
                     {patientRequests.map(req => (
                       <div key={req.id} className="bg-amber-50/20 rounded-2xl p-4 border border-amber-100 shadow-sm flex items-center justify-between group hover:bg-amber-50/40 transition-all">
-                        <div className="flex items-center space-x-3">
+                        <Link to={`/profile/${req.profiles.id}`} className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
                           <div className="relative">
                             <img src={req.profiles.avatar_url || `https://i.pravatar.cc/150?u=${req.profiles.username}`} className="w-12 h-12 rounded-full object-cover" alt="" />
                             <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border border-white">
@@ -1306,7 +1328,7 @@ export default function Profile() {
                             </div>
                             <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">@{req.profiles.username}</p>
                           </div>
-                        </div>
+                        </Link>
                         <div className="flex items-center space-x-2">
                            <button 
                              onClick={() => handlePatientRequest(req.id, 'reject')}
@@ -1329,7 +1351,7 @@ export default function Profile() {
                     {/* Accepted Patients */}
                     {myPatients.map(patient => (
                       <div key={patient.id} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#006747]/20 transition-all">
-                        <div className="flex items-center space-x-3">
+                        <Link to={`/profile/${patient.profiles.id}`} className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
                           <div className="relative">
                             <img src={patient.profiles.avatar_url || `https://i.pravatar.cc/150?u=${patient.profiles.username}`} className="w-12 h-12 rounded-full object-cover" alt="" />
                             <div className="absolute -bottom-1 -right-1 bg-[#006747] rounded-full p-1 border border-white">
@@ -1340,7 +1362,7 @@ export default function Profile() {
                             <p className="font-bold text-gray-900 group-hover:text-[#006747] transition-colors leading-tight">{patient.profiles.full_name}</p>
                             <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">@{patient.profiles.username}</p>
                           </div>
-                        </div>
+                        </Link>
                         <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                            <Link 
                              to={`/messages?userId=${patient.profiles.id}`}
