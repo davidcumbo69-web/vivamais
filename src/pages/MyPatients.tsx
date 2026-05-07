@@ -228,7 +228,7 @@ export default function MyPatients() {
                     className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between group hover:border-emerald-200 transition-all"
                   >
                     <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-                      <div className="relative">
+                      <Link to={`/profile/${patient.user_id}`} className="relative group/avatar">
                         <img 
                           src={patient.profiles.avatar_url || `https://i.pravatar.cc/150?u=${patient.profiles.username}`} 
                           className="w-16 h-16 rounded-3xl object-cover shadow-sm group-hover:scale-105 transition-transform" 
@@ -237,11 +237,13 @@ export default function MyPatients() {
                         <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-xl p-1 border-4 border-white">
                           <CheckCircle2 className="w-3 h-3 text-white" />
                         </div>
-                      </div>
+                      </Link>
                       <div className="min-w-0">
-                        <h3 className="font-black text-gray-900 group-hover:text-[#006747] transition-colors truncate">
-                          {patient.profiles.full_name || patient.profiles.username}
-                        </h3>
+                        <Link to={`/profile/${patient.user_id}`} className="block group/name">
+                          <h3 className="font-black text-gray-900 group-hover/name:text-[#006747] transition-colors truncate">
+                            {patient.profiles.full_name || patient.profiles.username}
+                          </h3>
+                        </Link>
                         <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">@{patient.profiles.username}</p>
                         <div className="flex items-center space-x-3 mt-1.5">
                            {patient.profiles.birth_date && (
@@ -299,21 +301,23 @@ export default function MyPatients() {
                     className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-emerald-100 flex flex-col sm:flex-row sm:items-center justify-between group hover:shadow-md transition-all"
                   >
                     <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-                      <div className="relative">
+                      <Link to={`/profile/${req.user_id}`} className="relative group/avatar">
                         <img 
                           src={req.profiles.avatar_url || `https://i.pravatar.cc/150?u=${req.profiles.username}`} 
-                          className="w-16 h-16 rounded-3xl object-cover shadow-sm group-hover:scale-105 transition-transform" 
+                          className="w-16 h-16 rounded-3xl object-cover shadow-sm group-hover/avatar:scale-105 transition-transform" 
                           alt="" 
                         />
                         <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-xl p-1 border-4 border-white animate-pulse">
                           <Clock className="w-3 h-3 text-white" />
                         </div>
-                      </div>
+                      </Link>
                       <div className="min-w-0">
                          <div className="flex items-center space-x-2">
-                           <h3 className="font-black text-gray-900 transition-colors truncate">
-                             {req.profiles.full_name || req.profiles.username}
-                           </h3>
+                           <Link to={`/profile/${req.user_id}`} className="group/name">
+                             <h3 className="font-black text-gray-900 group-hover/name:text-[#006747] transition-colors truncate">
+                               {req.profiles.full_name || req.profiles.username}
+                             </h3>
+                           </Link>
                            <span className="text-[8px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-black uppercase tracking-widest">Pendente</span>
                          </div>
                         <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-0.5">@{req.profiles.username}</p>
