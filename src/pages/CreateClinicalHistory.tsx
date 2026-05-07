@@ -54,7 +54,7 @@ export default function CreateClinicalHistory() {
   const [formData, setFormData] = useState({
     // Step 1: Identification
     fullName: '',
-    year: new Date().getFullYear(),
+    year: '' as string, // Changed to string for "23 anos"
     gender: 'Masculino',
     idNumber: '',
     contact: '',
@@ -65,7 +65,8 @@ export default function CreateClinicalHistory() {
     // Step 2: Main Complaint
     mainComplaint: '',
     symptomsStartDate: '',
-    duration: 'Dias',
+    durationQuantity: '' as string | number,
+    durationUnit: 'Dias',
     painIntensity: 5,
     detailedDescription: '',
 
@@ -117,14 +118,25 @@ export default function CreateClinicalHistory() {
         
         if (data) {
           setPatientProfile(data);
+          
+          // Calculate Age String
+          let ageDisplay = '';
+          if (data.birth_date) {
+            const birthYear = new Date(data.birth_date).getFullYear();
+            const currentYear = new Date().getFullYear();
+            const age = currentYear - birthYear;
+            ageDisplay = `${age} anos`;
+          }
+
           setFormData(prev => ({
             ...prev,
             fullName: data.full_name || '',
             contact: data.phone || '',
             gender: data.gender || 'Masculino',
-            address: data.province || '',
-            idNumber: data.id_number || '', // Assuming this exists or falls back
-            year: data.birth_date ? new Date(data.birth_date).getFullYear() : new Date().getFullYear()
+            address: data.address || data.province || '', // Prefers specific address, falls back to province
+            idNumber: data.id_card_number || '', 
+            year: ageDisplay,
+            maritalStatus: data.marital_status || ''
           }));
         }
       } catch (err) {
@@ -196,16 +208,61 @@ export default function CreateClinicalHistory() {
         patient_id: patientId,
         professional_id: user?.id,
         professional_name: profProfile?.full_name || 'Profissional de Saúde',
-        ...formData,
+        
+        // Step 1
+        full_name: formData.fullName,
+        year: formData.year,
+        gender: formData.gender,
+        id_number: formData.idNumber,
+        contact: formData.contact,
+        profession: formData.profession,
+        marital_status: formData.maritalStatus,
+        address: formData.address,
+
+        // Step 2
+        main_complaint: formData.mainComplaint,
+        symptoms_start_date: formData.symptomsStartDate,
+        duration: `${formData.durationQuantity} ${formData.durationUnit}`,
+        pain_intensity: formData.painIntensity,
+        detailed_description: formData.detailedDescription,
+
+        // Step 3
+        previous_diseases: formData.previousDiseases,
+        surgeries_history: formData.surgeriesHistory,
+        allergies: formData.allergies,
+        vaccination_status: formData.vaccinationStatus,
+        smoking_habits: formData.smokingHabits,
+        alcohol_consumption: formData.alcoholConsumption,
+        habitual_medication: formData.habitualMedication,
+
+        // Step 4
+        hereditary_diseases: formData.hereditaryDiseases,
+
+        // Step 5
+        weight: typeof formData.weight === 'string' ? parseFloat(formData.weight) : formData.weight,
+        height: typeof formData.height === 'string' ? parseFloat(formData.height) : formData.height,
         calculated_imc: formData.imc,
+        temperature: typeof formData.temperature === 'string' ? parseFloat(formData.temperature) : formData.temperature,
+        blood_pressure: formData.bloodPressure,
+        heart_rate: typeof formData.heartRate === 'string' ? parseInt(formData.heartRate) : formData.heartRate,
+        respiratory_rate: typeof formData.respiratoryRate === 'string' ? parseInt(formData.respiratoryRate) : formData.respiratoryRate,
+        spo2: typeof formData.spo2 === 'string' ? parseInt(formData.spo2) : formData.spo2,
+        physical_exam_observations: formData.physicalExamObservations,
+
+        // Step 6
+        primary_diagnosis: formData.primaryDiagnosis,
+        secondary_diagnosis: formData.secondaryDiagnosis,
+        requested_exams: formData.requestedExams,
+        clinical_notes: formData.clinicalNotes,
+        next_appointment_date: formData.nextAppointmentDate || null,
+        referral: formData.referral,
+        
         created_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('clinical_histories')
-        .insert([historyData])
-        .select()
-        .single();
+        .insert([historyData]);
 
       if (error) throw error;
 
@@ -322,8 +379,8 @@ export default function CreateClinicalHistory() {
                         <input 
                           type="text" 
                           value={formData.fullName}
-                          onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                          className={cn("w-full bg-gray-50 border-none rounded-2xl py-3.5 pl-12 pr-4 text-sm font-medium focus:ring-2 transition-all", errors.fullName ? "ring-2 ring-red-100 placeholder:text-red-300" : "focus:ring-[#006747]/20")} 
+                          readOnly
+                          className={cn("w-full bg-gray-100 border-none rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold text-gray-500 cursor-not-allowed")} 
                           placeholder="Nome do Paciente"
                         />
                       </div>
@@ -333,10 +390,11 @@ export default function CreateClinicalHistory() {
                     <div>
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Ano *</label>
                       <input 
-                        type="number" 
+                        type="text" 
                         value={formData.year}
-                        onChange={(e) => setFormData({...formData, year: parseInt(e.target.value)})}
-                        className={cn("w-full bg-gray-50 border-none rounded-2xl py-3.5 px-4 text-sm font-medium focus:ring-2 transition-all", errors.year ? "ring-2 ring-red-100" : "focus:ring-[#006747]/20")}
+                        readOnly
+                        className={cn("w-full bg-gray-100 border-none rounded-2xl py-3.5 px-4 text-sm font-bold text-gray-500 cursor-not-allowed")}
+                        placeholder="Ex: 23 anos"
                       />
                       {errors.year && <p className="text-[10px] text-red-500 font-bold mt-2 uppercase px-1">{errors.year}</p>}
                     </div>
@@ -345,8 +403,8 @@ export default function CreateClinicalHistory() {
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Sexo</label>
                       <select 
                         value={formData.gender}
-                        onChange={(e) => setFormData({...formData, gender: e.target.value})}
-                        className="w-full bg-gray-50 border-none rounded-2xl py-3.5 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006747]/20 transition-all appearance-none"
+                        disabled
+                        className="w-full bg-gray-100 border-none rounded-2xl py-3.5 px-4 text-sm font-bold text-gray-500 cursor-not-allowed appearance-none"
                       >
                         <option>Masculino</option>
                         <option>Feminino</option>
@@ -358,8 +416,8 @@ export default function CreateClinicalHistory() {
                       <input 
                         type="text" 
                         value={formData.idNumber}
-                        onChange={(e) => setFormData({...formData, idNumber: e.target.value})}
-                        className="w-full bg-gray-50 border-none rounded-2xl py-3.5 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006747]/20 transition-all"
+                        readOnly
+                        className="w-full bg-gray-100 border-none rounded-2xl py-3.5 px-4 text-sm font-bold text-gray-500 cursor-not-allowed"
                         placeholder="Número de documento"
                       />
                     </div>
@@ -391,8 +449,8 @@ export default function CreateClinicalHistory() {
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Estado Civil</label>
                       <select 
                         value={formData.maritalStatus}
-                        onChange={(e) => setFormData({...formData, maritalStatus: e.target.value})}
-                        className="w-full bg-gray-50 border-none rounded-2xl py-3.5 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006747]/20 transition-all appearance-none"
+                        disabled
+                        className="w-full bg-gray-100 border-none rounded-2xl py-3.5 px-4 text-sm font-bold text-gray-500 cursor-not-allowed appearance-none"
                       >
                         <option value="">Selecionar...</option>
                         <option>Solteiro(a)</option>
@@ -407,8 +465,8 @@ export default function CreateClinicalHistory() {
                        <input 
                         type="text" 
                         value={formData.address}
-                        onChange={(e) => setFormData({...formData, address: e.target.value})}
-                        className="w-full bg-gray-50 border-none rounded-2xl py-3.5 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006747]/20 transition-all"
+                        readOnly
+                        className="w-full bg-gray-100 border-none rounded-2xl py-3.5 px-4 text-sm font-bold text-gray-500 cursor-not-allowed"
                         placeholder="Endereço"
                       />
                     </div>
@@ -443,17 +501,26 @@ export default function CreateClinicalHistory() {
                       </div>
                       <div>
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Duração</label>
-                        <select 
-                          value={formData.duration}
-                          onChange={(e) => setFormData({...formData, duration: e.target.value})}
-                          className="w-full bg-gray-50 border-none rounded-2xl py-3.5 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006747]/20 transition-all appearance-none"
-                        >
-                          <option>Horas</option>
-                          <option>Dias</option>
-                          <option>Semanas</option>
-                          <option>Meses</option>
-                          <option>Anos</option>
-                        </select>
+                        <div className="flex space-x-2">
+                          <input 
+                            type="number"
+                            value={formData.durationQuantity}
+                            onChange={(e) => setFormData({...formData, durationQuantity: e.target.value})}
+                            placeholder="Qtd"
+                            className="w-20 bg-gray-50 border-none rounded-2xl py-3.5 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006747]/20 transition-all text-center"
+                          />
+                          <select 
+                            value={formData.durationUnit}
+                            onChange={(e) => setFormData({...formData, durationUnit: e.target.value})}
+                            className="flex-1 bg-gray-50 border-none rounded-2xl py-3.5 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006747]/20 transition-all appearance-none"
+                          >
+                            <option>Horas</option>
+                            <option>Dias</option>
+                            <option>Semanas</option>
+                            <option>Meses</option>
+                            <option>Anos</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
 
@@ -462,14 +529,14 @@ export default function CreateClinicalHistory() {
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Intensidade da Dor - {formData.painIntensity}/10</label>
                         <span className={cn(
                           "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest text-white shadow-sm transition-all",
-                          formData.painIntensity <= 3 ? "bg-emerald-500" : formData.painIntensity <= 7 ? "bg-amber-500" : "bg-red-500"
+                          formData.painIntensity === 0 ? "bg-gray-400" : formData.painIntensity <= 3 ? "bg-emerald-500" : formData.painIntensity <= 7 ? "bg-amber-500" : "bg-red-500"
                         )}>
-                          {formData.painIntensity <= 3 ? 'Ligeira' : formData.painIntensity <= 7 ? 'Moderada' : 'Intensa'}
+                          {formData.painIntensity === 0 ? 'SEM DOR' : formData.painIntensity <= 3 ? 'Ligeira' : formData.painIntensity <= 7 ? 'Moderada' : 'Intensa'}
                         </span>
                       </div>
                       <input 
                         type="range" 
-                        min="1" 
+                        min="0" 
                         max="10" 
                         value={formData.painIntensity}
                         onChange={(e) => setFormData({...formData, painIntensity: parseInt(e.target.value)})}

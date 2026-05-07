@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, MapPin } from 'lucide-react';
+import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, MapPin, Calendar } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
@@ -413,19 +413,28 @@ export default function Profile() {
     setLoadingReels(false);
   };
 
-  const fetchPatientData = async (targetProfId: string, currentUserId: string) => {
+  const fetchPatientData = async (targetUserId: string, currentUserId: string) => {
     if (loadingPatient) return;
     setLoadingPatient(true);
     try {
-      // 1. Check status of current viewer vs this profile
-      if (currentUserId !== targetProfId) {
-        const { data: status } = await supabase
+      if (currentUserId !== targetUserId) {
+        // Case 1: Current user (patient) viewing Professional Profile
+        const { data: statusAsPatient } = await supabase
           .from('patients')
           .select('*')
           .eq('user_id', currentUserId)
-          .eq('professional_id', targetProfId)
+          .eq('professional_id', targetUserId)
           .maybeSingle();
         
+        // Case 2: Current user (Professional) viewing Patient Profile
+        const { data: statusAsProf } = await supabase
+          .from('patients')
+          .select('*')
+          .eq('user_id', targetUserId)
+          .eq('professional_id', currentUserId)
+          .maybeSingle();
+
+        const status = statusAsPatient || statusAsProf;
         setPatientStatus(status);
         setIsPatientOfProf(status?.status === 'accepted');
       }
@@ -996,7 +1005,7 @@ export default function Profile() {
             </button>
           )}
 
-          {(isOwnProfile || (myProfile?.is_professional)) && (
+          {(isOwnProfile || (myProfile?.is_professional && isPatientOfProf)) && (
             <button 
               onClick={() => setActiveTab('clinical_history')}
               className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'clinical_history' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
