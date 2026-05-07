@@ -647,9 +647,51 @@ create table if not exists prescriptions (
   diagnosis text,
   items jsonb default '[]'::jsonb,
   start_date date default current_date,
-  signature_code text not null unique,
+  signature_code text not null unique, -- Format: the-MMXVI-cedav-ROMAN1-ROMAN2
+  pdf_url text, -- Store generated PDF URL
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Storage bucket for prescription PDFs
+insert into storage.buckets (id, name, public) 
+values ('prescription-pdfs', 'prescription-pdfs', true)
+on conflict (id) do nothing;
+
+create policy "Prescription PDFs are public"
+on storage.objects for select
+using ( bucket_id = 'prescription-pdfs' );
+
+create policy "Professionals can upload prescription PDFs"
+on storage.objects for insert
+with check (
+  bucket_id = 'prescription-pdfs' AND 
+  auth.role() = 'authenticated'
+);
+
+-- Helper for Roman Numerals
+CREATE OR REPLACE FUNCTION public.to_roman(num integer) 
+RETURNS text 
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+    result text := '';
+    remaining integer := num;
+    vals integer[] := ARRAY[1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+    syms text[] := ARRAY['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
+BEGIN
+    IF num IS NULL OR num <= 0 THEN 
+      RETURN ''; 
+    END IF;
+    FOR i IN 1..13 LOOP
+        WHILE remaining >= vals[i] LOOP
+            result := result || syms[i];
+            remaining := remaining - vals[i];
+        END LOOP;
+    END LOOP;
+    RETURN result;
+END;
+$$;
 
 -- RPC for public verification
 create or replace function public.get_prescription_by_signature_code(signature_code_in text)
@@ -673,6 +715,7 @@ begin
       'professional_specialty', hp.specialty,
       'diagnosis', p.diagnosis,
       'items', p.items,
+      'pdf_url', p.pdf_url,
       'start_date', coalesce(p.start_date, p.created_at::date),
       'created_at', p.created_at
     ) into result

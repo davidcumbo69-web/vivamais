@@ -21,7 +21,7 @@ import Messages from './pages/Messages';
 import CreatePrescription from './pages/CreatePrescription';
 import ProfessionalDashboard from './pages/ProfessionalDashboard';
 import MyPrescriptions from './pages/MyPrescriptions';
-import PrescriptionVerification from './pages/PrescriptionVerification';
+import DigitalPrescriptionView from './pages/PrescriptionVerification';
 import PrescriptionSearch from './pages/PrescriptionSearch';
 import Login from './pages/Login';
 import { cn } from './lib/utils';
@@ -71,7 +71,7 @@ function AppContent() {
           <Route path="/prescriptions" element={<MyPrescriptions />} />
           <Route path="/professional/dashboard" element={<ProfessionalDashboard />} />
           <Route path="/verificar" element={<PrescriptionSearch />} />
-          <Route path="/verificar-receita/:id" element={<PrescriptionVerification />} />
+          <Route path="/verificar-receita/:id" element={<DigitalPrescriptionView />} />
           <Route path="/c/:name" element={<CommunityDetail />} />
           <Route path="/professional/settings" element={<ProfessionalSettings />} />
           <Route path="/explore" element={<Home />} /> {/* Mock redirect */}

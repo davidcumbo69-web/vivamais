@@ -12,7 +12,7 @@ export function Navbar() {
   
   const navItems = [
     { icon: Stethoscope, label: 'Feed', path: '/' },
-    { icon: ShieldCheck, label: 'Validador', path: '/verificar' },
+    { icon: ShieldCheck, label: 'Acesso', path: '/verificar' },
     { icon: Film, label: 'Reels', path: '/reels' },
     { icon: CalendarCheck, label: 'Consultas', path: '/appointments' },
     { icon: MessageSquare, label: 'Mensagens', path: '/messages' },
@@ -28,7 +28,7 @@ export function Navbar() {
 
   const bottomNavItems = [
     { icon: Stethoscope, label: 'Início', path: '/' },
-    { icon: ShieldCheck, label: 'Validador', path: '/verificar' },
+    { icon: ShieldCheck, label: 'Acesso', path: '/verificar' },
     { icon: Pill, label: 'Mercado', path: '/marketplace' },
     { icon: CalendarCheck, label: 'Agenda', path: '/appointments' },
     { icon: UserIcon, label: 'Perfil', path: '/profile' },

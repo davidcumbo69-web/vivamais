@@ -107,7 +107,7 @@ export default function Profile() {
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [loadingReels, setLoadingReels] = useState(false);
   const [loadingCommunities, setLoadingCommunities] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services' | 'prescriptions'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services' | 'prescriptions' | 'patients'>('posts');
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -123,6 +123,13 @@ export default function Profile() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  
+  // Patient Management States
+  const [patientStatus, setPatientStatus] = useState<any>(null); // Status relative to the professional being viewed
+  const [myPatients, setMyPatients] = useState<any[]>([]); // List for the professional viewing their own patients
+  const [patientRequests, setPatientRequests] = useState<any[]>([]); // Pending requests for professional
+  const [loadingPatient, setLoadingPatient] = useState(false);
+  const [isPatientOfProf, setIsPatientOfProf] = useState(false);
 
   useEffect(() => {
     const effectiveUserId = userId || myProfile?.id;
@@ -174,6 +181,11 @@ export default function Profile() {
         }
         
         fetchFollowData(targetUserId);
+
+        // Fetch Patient Status
+        if (myProfile?.id) {
+           fetchPatientData(targetUserId, myProfile.id);
+        }
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -348,6 +360,135 @@ export default function Profile() {
     setLoadingReels(false);
   };
 
+  const fetchPatientData = async (targetProfId: string, currentUserId: string) => {
+    setLoadingPatient(true);
+    try {
+      // 1. Check if CURRENT USER is a patient of TARGET PROFID
+      const { data: status } = await supabase
+        .from('patients')
+        .select('*')
+        .eq('user_id', currentUserId)
+        .eq('professional_id', targetProfId)
+        .maybeSingle();
+      
+      setPatientStatus(status);
+      setIsPatientOfProf(status?.status === 'accepted');
+
+      // 2. If it's MY professional profile, load my patients and requests
+      if (currentUserId === targetProfId) {
+        // Load accepted patients
+        const { data: accepted } = await supabase
+          .from('patients')
+          .select(`
+            *,
+            profiles:user_id (id, username, full_name, avatar_url, bio)
+          `)
+          .eq('professional_id', targetProfId)
+          .eq('status', 'accepted');
+        
+        setMyPatients(accepted || []);
+
+        // Load pending requests
+        const { data: pending } = await supabase
+          .from('patients')
+          .select(`
+            *,
+            profiles:user_id (id, username, full_name, avatar_url)
+          `)
+          .eq('professional_id', targetProfId)
+          .eq('status', 'pending');
+        
+        setPatientRequests(pending || []);
+      }
+    } catch (err) {
+      console.error('Error fetching patient data:', err);
+    } finally {
+      setLoadingPatient(false);
+    }
+  };
+
+  const requestToBePatient = async () => {
+    if (!myProfile) return alert('Faça login primeiro');
+    setLoadingPatient(true);
+    try {
+      const { error } = await supabase
+        .from('patients')
+        .insert({
+          user_id: myProfile.id,
+          professional_id: profile.id,
+          status: 'pending'
+        });
+      
+      if (error) {
+        if (error.code === '23505') {
+          alert('Você já é paciente de um profissional ou ja tem um pedido pendente. Só é permitido ter 1 profissional por paciente.');
+        } else {
+          throw error;
+        }
+      } else {
+        alert('Pedido enviado com sucesso!');
+        fetchPatientData(profile.id, myProfile.id);
+      }
+    } catch (err) {
+      console.error('Error requesting status:', err);
+    } finally {
+      setLoadingPatient(false);
+    }
+  };
+
+  const handlePatientRequest = async (requestId: string, action: 'accept' | 'reject' | 'remove') => {
+    try {
+      if (action === 'accept') {
+        const { data: patientRel, error: updateError } = await supabase
+          .from('patients')
+          .update({ status: 'accepted', updated_at: new Date().toISOString() })
+          .eq('id', requestId)
+          .select('user_id, professional_id')
+          .single();
+        
+        if (updateError) throw updateError;
+
+        // Auto-follow logic
+        if (patientRel) {
+          await supabase.from('professional_followers').upsert({
+            follower_id: patientRel.user_id,
+            professional_id: patientRel.professional_id
+          });
+        }
+      } else if (action === 'reject' || action === 'remove') {
+        await supabase.from('patients').delete().eq('id', requestId);
+      }
+
+      // Refresh data
+      fetchPatientData(profile.id, myProfile!.id);
+      fetchFollowData(profile.id);
+    } catch (err) {
+      console.error('Error handling patient request:', err);
+    }
+  };
+
+  const cancelPatientRequest = async () => {
+    if (!patientStatus?.id) return;
+    if (!confirm('Tem a certeza que deseja cancelar o seu pedido de acompanhamento?')) return;
+    
+    setLoadingPatient(true);
+    try {
+      const { error } = await supabase
+        .from('patients')
+        .delete()
+        .eq('id', patientStatus.id);
+      
+      if (error) throw error;
+      
+      setPatientStatus(null);
+      setIsPatientOfProf(false);
+    } catch (err) {
+      console.error('Error cancelling request:', err);
+    } finally {
+      setLoadingPatient(false);
+    }
+  };
+
   const fetchUserCommunities = async (targetUserId: string) => {
     setLoadingCommunities(true);
     
@@ -510,6 +651,24 @@ export default function Profile() {
                 >
                   {isFollowing ? 'A seguir' : 'Seguir'}
                 </button>
+                {profile.is_professional && !isOwnProfile && (
+                  <button 
+                    onClick={patientStatus?.status === 'pending' ? cancelPatientRequest : requestToBePatient}
+                    disabled={loadingPatient || patientStatus?.status === 'accepted'}
+                    className={cn(
+                      "px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center space-x-2 border-2",
+                      patientStatus?.status === 'accepted' ? "bg-emerald-50 border-emerald-100 text-[#006747]" : 
+                      patientStatus?.status === 'pending' ? "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100" :
+                      "bg-white border-[#006747]/10 text-[#006747] hover:bg-emerald-50"
+                    )}
+                  >
+                    <HeartPulse className="w-4 h-4" />
+                    <span>
+                      {patientStatus?.status === 'accepted' ? 'Sou Paciente' : 
+                       patientStatus?.status === 'pending' ? 'Cancelar Pedido' : 'Tornar-se Paciente'}
+                    </span>
+                  </button>
+                )}
                 <Link 
                   to={`/messages?userId=${profile.id}`}
                   className="bg-white border-2 border-emerald-50 text-[#006747] px-4 py-1.5 rounded-lg text-sm font-bold transition-all hover:bg-emerald-50 flex items-center space-x-2"
@@ -690,6 +849,16 @@ export default function Profile() {
             >
               <HeartPulse className="w-4 h-4" />
               <span>Serviços</span>
+            </button>
+          )}
+
+          {isOwnProfile && profile.is_professional && (
+            <button 
+              onClick={() => setActiveTab('patients')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'patients' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Pacientes</span>
             </button>
           )}
 
@@ -1108,6 +1277,96 @@ export default function Profile() {
                   <p className="text-gray-400 text-sm font-medium">Ainda não guardou nada.</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'patients' && isOwnProfile && profile.is_professional && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-2">
+                 <h3 className="text-gray-900 font-bold">Meus Pacientes ({myPatients.length + patientRequests.length})</h3>
+              </div>
+
+              <div className="space-y-4">
+                {(patientRequests.length > 0 || myPatients.length > 0) ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
+                    {/* Pending Requests first */}
+                    {patientRequests.map(req => (
+                      <div key={req.id} className="bg-amber-50/20 rounded-2xl p-4 border border-amber-100 shadow-sm flex items-center justify-between group hover:bg-amber-50/40 transition-all">
+                        <div className="flex items-center space-x-3">
+                          <div className="relative">
+                            <img src={req.profiles.avatar_url || `https://i.pravatar.cc/150?u=${req.profiles.username}`} className="w-12 h-12 rounded-full object-cover" alt="" />
+                            <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1 border border-white">
+                               <Clock className="w-2.5 h-2.5 text-white" />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <p className="font-bold text-gray-900 leading-tight">{req.profiles.full_name}</p>
+                              <span className="text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest">Pendente</span>
+                            </div>
+                            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">@{req.profiles.username}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                           <button 
+                             onClick={() => handlePatientRequest(req.id, 'reject')}
+                             className="p-2 bg-white text-gray-400 rounded-xl hover:bg-red-50 hover:text-red-500 transition-all border border-amber-100"
+                             title="Recusar"
+                           >
+                              <UserIcon className="w-4 h-4" />
+                           </button>
+                           <button 
+                             onClick={() => handlePatientRequest(req.id, 'accept')}
+                             className="p-2 bg-[#006747] text-white rounded-xl hover:bg-emerald-800 transition-all shadow-md shadow-emerald-50"
+                             title="Aceitar"
+                           >
+                              <HeartPulse className="w-4 h-4" />
+                           </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Accepted Patients */}
+                    {myPatients.map(patient => (
+                      <div key={patient.id} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#006747]/20 transition-all">
+                        <div className="flex items-center space-x-3">
+                          <div className="relative">
+                            <img src={patient.profiles.avatar_url || `https://i.pravatar.cc/150?u=${patient.profiles.username}`} className="w-12 h-12 rounded-full object-cover" alt="" />
+                            <div className="absolute -bottom-1 -right-1 bg-[#006747] rounded-full p-1 border border-white">
+                               <HeartPulse className="w-2.5 h-2.5 text-white" />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900 group-hover:text-[#006747] transition-colors leading-tight">{patient.profiles.full_name}</p>
+                            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">@{patient.profiles.username}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <Link 
+                             to={`/messages?userId=${patient.profiles.id}`}
+                             className="p-2 bg-emerald-50 text-[#006747] rounded-xl hover:bg-emerald-100 transition-all"
+                           >
+                              <MessageSquare className="w-4 h-4" />
+                           </Link>
+                           <button 
+                             onClick={() => handlePatientRequest(patient.id, 'remove')}
+                             className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-all"
+                             title="Remover Paciente"
+                           >
+                              <UserIcon className="w-4 h-4" />
+                           </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                    <HeartPulse className="w-8 h-8 text-gray-100 mx-auto mb-2" />
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">Sem pacientes</p>
+                    <p className="text-[10px] text-gray-400 px-10">Os pacientes que aceitar ou que solicitarem acompanhamento aparecerão aqui.</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

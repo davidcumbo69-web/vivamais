@@ -60,8 +60,8 @@ export default function PrescriptionSearch() {
            <div className="w-20 h-20 bg-white rounded-[2rem] shadow-xl flex items-center justify-center mx-auto mb-6 border border-emerald-50">
               <ShieldCheck className="w-10 h-10 text-[#006747]" />
            </div>
-           <h1 className="text-3xl font-black text-gray-900 tracking-tighter mb-2">Validador The Cedav</h1>
-           <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Portal de Verificação de Prescrições Angola</p>
+           <h1 className="text-3xl font-black text-gray-900 tracking-tighter mb-2">Acesso The Cedav</h1>
+           <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Portal de Acesso a Prescrições Angola</p>
         </div>
 
         <div className="bg-white rounded-[3rem] shadow-2xl p-8 border border-gray-100 relative overflow-hidden">
@@ -107,7 +107,7 @@ export default function PrescriptionSearch() {
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                 <>
-                  <span>Verificar Autenticidade</span>
+                  <span>Aceder à Prescrição</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

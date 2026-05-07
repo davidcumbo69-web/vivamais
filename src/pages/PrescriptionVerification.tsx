@@ -15,16 +15,18 @@ import {
   Hash,
   Stethoscope,
   User,
-  Printer,
   Pill,
   Sunrise,
   Sun,
   CloudSun,
   Moon,
   BedDouble,
-  Info
+  Info,
+  Download
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import jsPDF from 'jspdf';
+import { toPng } from 'html-to-image';
 
 interface PrescriptionItem {
   medication: string;
@@ -47,15 +49,19 @@ interface Prescription {
   license_number: string;
   patient_name: string;
   patient_username: string;
+  pdf_url?: string;
   taken_doses?: Record<string, boolean>;
 }
 
-export default function PrescriptionVerification() {
+export default function DigitalPrescriptionView() {
   const { id } = useParams();
   const [prescription, setPrescription] = useState<Prescription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const prescriptionRef = React.useRef<HTMLDivElement>(null);
+  const mapPrintRef = React.useRef<HTMLDivElement>(null);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text || "");
@@ -63,16 +69,71 @@ export default function PrescriptionVerification() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const downloadPDF = async () => {
+    if (!prescription) return;
+    
+    // If we have a pre-generated URL, use it directly
+    if (prescription.pdf_url) {
+      window.open(prescription.pdf_url, '_blank');
+      return;
+    }
+
+    if (!prescriptionRef.current || !mapPrintRef.current) return;
+    
+    setDownloading(true);
+    try {
+      // Capture Main Prescription
+      const dataUrl = await toPng(prescriptionRef.current, {
+        quality: 0.95,
+        backgroundColor: '#030303',
+        pixelRatio: 2,
+      });
+
+      // Capture Therapeutic Map
+      const mapDataUrl = await toPng(mapPrintRef.current, {
+        quality: 0.95,
+        backgroundColor: '#030303',
+        pixelRatio: 2,
+      });
+      
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      // Page 1: Main Prescription
+      const imgProps = pdf.getImageProperties(dataUrl);
+      const mainImgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, mainImgHeight);
+      
+      // Page 2: Therapeutic Map
+      pdf.addPage();
+      const mapImgProps = pdf.getImageProperties(mapDataUrl);
+      const mapImgHeight = (mapImgProps.height * pdfWidth) / mapImgProps.width;
+      pdf.addImage(mapDataUrl, 'PNG', 0, 0, pdfWidth, Math.min(mapImgHeight, pdfHeight));
+
+      pdf.save(`Receita_${prescription.patient_name.replace(/\s+/g, '_')}_${prescription.signature_code}.pdf`);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const [takenDoses, setTakenDoses] = useState<Record<string, boolean>>({});
   const [updatingDose, setUpdatingDose] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
-      verifyPrescription();
+      loadPrescription();
     }
   }, [id]);
 
-  const verifyPrescription = async () => {
+  const loadPrescription = async () => {
     setLoading(true);
     try {
       const { data, error: rpcError } = await supabase.rpc('get_prescription_by_signature_code', {
@@ -92,7 +153,7 @@ export default function PrescriptionVerification() {
       }
     } catch (err) {
       console.error('RPC Error:', err);
-      setError('Ocorreu um erro ao verificar a receita');
+      setError('Ocorreu um erro ao aceder à receita');
     } finally {
       setLoading(false);
     }
@@ -139,7 +200,7 @@ export default function PrescriptionVerification() {
       <div className="min-h-screen bg-[#f8f9fa] flex items-center justify-center p-6">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-[#006747] mx-auto mb-4" />
-          <p className="text-gray-400 font-black uppercase tracking-[0.2em] text-[10px]">Verificando Credenciais...</p>
+          <p className="text-gray-400 font-black uppercase tracking-[0.2em] text-[10px]">A carregar receituário...</p>
         </div>
       </div>
     );
@@ -210,33 +271,209 @@ export default function PrescriptionVerification() {
 
   const startTreatmentDate = prescription.start_date ? new Date(prescription.start_date) : new Date(prescription.created_at);
 
+
   return (
-    <div className="min-h-screen bg-[#030303] text-[#D7DADC] font-sans selection:bg-[#FF4500] selection:text-white">
+    <div className="min-h-screen bg-[#030303] text-[#D7DADC] font-sans selection:bg-[#FF4500] selection:text-white print:bg-white print:text-black">
+      {/* Hidden Capture Area for Fallback PDF Generation - EXACT DIGITAL MATCH (DARK) */}
+      <div className="fixed top-[-9999px] left-[-9999px] pointer-events-none">
+        {/* Page 1: Official Prescription */}
+        <div 
+          ref={prescriptionRef}
+          className="w-[800px] bg-[#030303] text-[#D7DADC] p-8 font-sans"
+        >
+          {/* Navbar Mimic */}
+          <div className="h-12 bg-[#1A1A1B] border-b border-[#343536] flex items-center px-6 mb-8 rounded-t-lg">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-[#FF4500] rounded-full flex items-center justify-center text-white">
+                <Stethoscope className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-black tracking-tight text-white uppercase italic">The Cedav Digital</span>
+            </div>
+          </div>
+
+          <div className="bg-[#1A1A1B] border border-[#343536] rounded p-8">
+            <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#343536]">
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-[10px] font-black text-white">V</div>
+                <div className="flex flex-col">
+                  <p className="text-[12px] font-bold">The Cedav Digital <span className="font-normal text-gray-500">• Documento Oficial</span></p>
+                </div>
+              </div>
+            </div>
+
+            <h1 className="text-2xl font-black text-white tracking-tight mb-8">Receituário Digital #{prescription.id.slice(0,8).toUpperCase()}</h1>
+            
+            <div className="grid grid-cols-2 gap-8 mb-10">
+              <div className="p-6 bg-[#272729] rounded border border-[#343536]">
+                <p className="text-[9px] font-black text-[#006747] uppercase tracking-[0.2em] mb-3">Profissional Responsável</p>
+                <h2 className="text-xl font-black text-white leading-tight">Dr(a). {prescription.professional_name}</h2>
+                <p className="text-xs font-bold text-gray-500 mt-2 uppercase tracking-widest">{prescription.professional_specialty} • {prescription.license_number}</p>
+                <p className="text-[10px] text-[#006747] font-black uppercase mt-1">Hospital Central de Luanda</p>
+              </div>
+              <div className="p-6 bg-[#272729] rounded border border-[#343536]">
+                <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] mb-3">Paciente / Diagnóstico</p>
+                <h2 className="text-xl font-black text-white truncate">{prescription.patient_name}</h2>
+                <p className="text-xs font-bold text-gray-500 mt-2 uppercase tracking-widest">Diagnóstico: {prescription.diagnosis}</p>
+                <p className="text-[10px] text-gray-600 font-black uppercase mt-1">Emissão: {new Date(prescription.created_at).toLocaleDateString('pt-PT')}</p>
+              </div>
+            </div>
+
+            <div className="bg-[#030303] rounded border border-[#343536] overflow-hidden mb-12">
+              {items.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between p-6 border-b border-[#343536] last:border-0 hover:bg-[#1A1A1B] transition-colors">
+                  <div className="flex items-center space-x-6 flex-1">
+                    <div className="w-8 h-8 bg-[#343536] rounded-full flex items-center justify-center text-[10px] font-black text-gray-400">
+                      {idx + 1}
+                    </div>
+                    <div className="w-3.5 h-3.5 rounded-full shadow-lg" style={{ backgroundColor: (item as any).color || dotColors[idx % dotColors.length] }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-3">
+                        <h4 className="text-sm font-black text-white tracking-tight">{item.medication}</h4>
+                        <span className="text-[10px] font-medium text-gray-500 uppercase">{item.form || 'Comprimido'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-12 ml-6">
+                    <div className="text-right min-w-[140px]">
+                      <p className="text-sm font-black text-white/90 leading-tight">
+                        {item.frequency}/dia · {item.duration} dias
+                      </p>
+                    </div>
+                    <div className="w-10 text-right">
+                      <p className="text-sm font-black text-white">
+                        {(item as any).totalUnits || (parseInt(item.frequency) * parseInt(item.duration))}<span className="text-[10px] text-gray-500 ml-0.5 font-bold">x</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col md:flex-row items-center justify-between gap-12 pt-8 border-t border-[#343536]">
+              <div className="space-y-4">
+                <div className="bg-[#272729] border border-[#343536] rounded p-4 flex items-center space-x-4">
+                   <div className="w-10 h-10 bg-[#FF4500]/10 rounded flex items-center justify-center text-[#FF4500]">
+                      <ShieldCheck className="w-6 h-6" />
+                   </div>
+                   <div>
+                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">AUTENTICIDADE VERIFICADA</p>
+                      <p className="text-sm font-mono font-black text-white tracking-[0.2em]">{prescription.signature_code}</p>
+                   </div>
+                </div>
+                <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">Protocolo Digital The Cedav • 2026</p>
+              </div>
+              <div className="text-right">
+                <div className="mb-6 h-[60px] flex flex-col justify-end opacity-20">
+                   <p className="font-serif italic text-3xl text-white mb-2">{prescription.professional_name}</p>
+                   <div className="h-[1px] w-[200px] bg-white ml-auto" />
+                </div>
+                <p className="text-sm font-black text-white uppercase tracking-[0.2em]">Dr(a). {prescription.professional_name}</p>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Delegado de Saúde Autorizado</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Page 2: Therapeutic Map - DIGITAL MATCH */}
+        <div 
+          ref={mapPrintRef}
+          className="w-[800px] bg-[#030303] text-[#D7DADC] p-8 font-sans"
+        >
+          <div className="bg-[#1A1A1B] border border-[#343536] rounded p-8">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <Calendar className="w-6 h-6 text-[#FF4500]" />
+                <h2 className="text-2xl font-black text-white tracking-tight uppercase">Cronograma de Administração</h2>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-black text-white">{prescription.patient_name}</p>
+                <p className="text-[10px] font-bold text-gray-500 uppercase">Início: {startTreatmentDate.toLocaleDateString('pt-PT')}</p>
+              </div>
+            </div>
+
+            <div className="bg-[#030303] rounded border border-[#343536] p-6 mb-10">
+               <div className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 mb-6 border-b border-[#343536] pb-4">
+                  <div className="text-[10px] font-black text-gray-500 uppercase self-end">Hora</div>
+                  {Array.from({ length: 14 }).map((_, i) => {
+                      const d = new Date(startTreatmentDate);
+                      d.setDate(d.getDate() + i);
+                      return (
+                        <div key={i} className="text-center">
+                            <p className="text-[8px] font-bold text-gray-600 uppercase mb-1">{getDayName(d)}</p>
+                            <p className="text-[10px] font-bold text-gray-400">{d.getDate()}</p>
+                        </div>
+                      );
+                  })}
+               </div>
+
+               {[0, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22].map(hour => (
+                  <div key={hour} className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 py-2 border-b border-white/[0.01] last:border-0">
+                      <div className="text-[10px] font-bold text-gray-500 self-center">{hour.toString().padStart(2, '0')}:00</div>
+                      {Array.from({ length: 14 }).map((_, dIdx) => (
+                        <div key={dIdx} className="flex flex-wrap items-center justify-center gap-1 min-h-[24px]">
+                            {items.map((item, mIdx) => {
+                              const dur = parseDurationDays(item.duration);
+                              if (dIdx < dur && isPeriodActiveForHour(item.frequency, hour)) {
+                                  return (
+                                    <div 
+                                      key={mIdx}
+                                      className="w-3 h-3 rounded-full shadow-lg"
+                                      style={{ backgroundColor: (item as any).color || dotColors[mIdx % dotColors.length] }}
+                                    />
+                                  );
+                              }
+                              return null;
+                            })}
+                        </div>
+                      ))}
+                  </div>
+               ))}
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Legenda dos Medicamentos</p>
+              <div className="grid grid-cols-2 gap-4">
+                {items.map((item, idx) => (
+                  <div key={idx} className="flex items-center space-x-3 bg-[#272729] p-4 rounded border border-[#343536]">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: (item as any).color || dotColors[idx % dotColors.length] }} />
+                    <div>
+                      <p className="text-sm font-black text-white">{item.medication}</p>
+                      <p className="text-[10px] text-gray-500">{item.form || 'Comprimido'} • {item.frequency} / Dia</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-[#343536] flex items-center justify-between text-gray-600">
+              <p className="text-[8px] font-bold uppercase tracking-[0.2em]">SISTEMA VIVA+ & THE CEDAV DIGITAL • AUTENTICIDADE GARANTIDA</p>
+              <p className="text-[8px] font-bold uppercase tracking-widest">Página 2 de 2</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Top Navbar mimic */}
-      <div className="h-12 bg-[#1A1A1B] border-b border-[#343536] fixed top-0 w-full z-50 flex items-center px-4 md:px-8">
+      <div className="h-12 bg-[#1A1A1B] border-b border-[#343536] fixed top-0 w-full z-50 flex items-center px-4 md:px-8 print:hidden">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-[#FF4500] rounded-full flex items-center justify-center text-white">
             <Stethoscope className="w-5 h-5" />
           </div>
-          <span className="text-sm font-bold tracking-tight">r/PrescriptionVerification</span>
+          <span className="text-sm font-bold tracking-tight">r/VIVAplus_Oficial</span>
         </div>
       </div>
 
       <div className="max-w-[1200px] mx-auto px-4 pt-20 pb-12 grid grid-cols-1 lg:grid-cols-[1fr,312px] gap-6">
         {/* Main Content: Reddit "Thread" Column */}
-        <div className="space-y-4">
-          <div className="bg-[#1A1A1B] border border-[#343536] rounded hover:border-[#818384] transition-colors">
+        <div className="space-y-4 print:space-y-0 print:m-0 print:p-0">
+          <div className="bg-[#1A1A1B] border border-[#343536] rounded hover:border-[#818384] transition-colors print:bg-white print:border-none print:shadow-none">
             
             {/* Thread Header */}
-            <div className="p-4 border-b border-[#343536] flex items-center justify-between">
+            <div className="p-4 border-b border-[#343536] flex items-center justify-between print:hidden">
               <div className="flex items-center space-x-2">
                 <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-[10px] font-black text-white">V</div>
                 <div className="flex flex-col">
-                  <p className="text-[12px] font-bold">Cedav Verification <span className="font-normal text-gray-500">• Secure Document</span></p>
-                  <div className="flex items-center space-x-1">
-                    <ShieldCheck className="w-3 h-3 text-[#FF4500]" />
-                    <p className="text-[10px] text-[#FF4500] font-black uppercase tracking-widest">Verified Integrity</p>
-                  </div>
+                  <p className="text-[12px] font-bold">The Cedav Digital <span className="font-normal text-gray-500">• Documento Oficial</span></p>
                 </div>
               </div>
               <div className="text-right">
@@ -245,45 +482,45 @@ export default function PrescriptionVerification() {
             </div>
 
             {/* Document Content (The Post) */}
-            <div className="p-8">
-              <h1 className="text-2xl font-black text-white tracking-tight mb-8">Receituário Digital #{prescription.id.slice(0,8).toUpperCase()}</h1>
+            <div className="p-8 print:p-0">
+              <h1 className="text-2xl font-black text-white tracking-tight mb-8 print:text-black print:text-center print:text-3xl">Receituário Digital #{prescription.id.slice(0,8).toUpperCase()}</h1>
               
               {/* Professional & Patient Info Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                <div className="p-6 bg-[#272729] rounded border border-[#343536]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 print:grid-cols-2 print:gap-4 print:mb-8">
+                <div className="p-6 bg-[#272729] rounded border border-[#343536] print:bg-white print:border-gray-200">
                    <p className="text-[9px] font-black text-[#006747] uppercase tracking-[0.2em] mb-3">Profissional Responsável</p>
-                   <h2 className="text-xl font-black text-white leading-tight">Dr(a). {prescription.professional_name}</h2>
+                   <h2 className="text-xl font-black text-white leading-tight print:text-black">Dr(a). {prescription.professional_name}</h2>
                    <p className="text-xs font-bold text-gray-500 mt-2 uppercase tracking-widest">{prescription.professional_specialty} • {prescription.license_number}</p>
                    <p className="text-[10px] text-[#006747] font-black uppercase mt-1">Hospital Central de Luanda</p>
                 </div>
-                <div className="p-6 bg-[#272729] rounded border border-[#343536]">
+                <div className="p-6 bg-[#272729] rounded border border-[#343536] print:bg-white print:border-gray-200">
                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] mb-3">Paciente / Diagnóstico</p>
-                   <h2 className="text-xl font-black text-white truncate">{prescription.patient_name}</h2>
+                   <h2 className="text-xl font-black text-white truncate print:text-black">{prescription.patient_name}</h2>
                    <p className="text-xs font-bold text-gray-500 mt-2 uppercase tracking-widest">Diagnóstico: {prescription.diagnosis}</p>
                    <p className="text-[10px] text-gray-600 font-black uppercase mt-1">Emissão: {new Date(prescription.created_at).toLocaleDateString('pt-PT')}</p>
                 </div>
               </div>
 
               {/* Medication List (The Main "Table") */}
-              <div className="bg-[#030303] rounded border border-[#343536] overflow-hidden mb-10">
+              <div className="bg-[#030303] rounded border border-[#343536] overflow-hidden mb-10 print:bg-white print:border-gray-200">
                 {items.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-6 border-b border-[#343536] last:border-0 group hover:bg-[#1A1A1B] transition-colors">
+                  <div key={idx} className="flex items-center justify-between p-6 border-b border-[#343536] last:border-0 group hover:bg-[#1A1A1B] transition-colors print:border-gray-200 print:p-4">
                     <div className="flex items-center space-x-6 flex-1">
-                      <div className="w-8 h-8 bg-[#343536] rounded-full flex items-center justify-center text-[10px] font-black text-gray-400">
+                      <div className="w-8 h-8 bg-[#343536] rounded-full flex items-center justify-center text-[10px] font-black text-gray-400 print:bg-gray-100 print:text-gray-600">
                         {idx + 1}
                       </div>
-                      <div className="w-3.5 h-3.5 rounded-full shadow-lg" style={{ backgroundColor: (item as any).color || dotColors[idx % dotColors.length] }} />
+                      <div className="w-3.5 h-3.5 rounded-full shadow-lg print:shadow-none" style={{ backgroundColor: (item as any).color || dotColors[idx % dotColors.length] }} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-3">
-                          <h4 className="text-sm font-black text-white tracking-tight">{item.medication}</h4>
+                          <h4 className="text-sm font-black text-white tracking-tight print:text-black">{item.medication}</h4>
                           <span className="text-[10px] font-medium text-gray-500 uppercase">{item.form || 'Comprimido'}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-12 ml-6">
+                    <div className="flex items-center space-x-12 ml-6 print:ml-4">
                       <div className="text-right min-w-[140px]">
-                        <p className="text-sm font-black text-white/90 leading-tight">
+                        <p className="text-sm font-black text-white/90 leading-tight print:text-black">
                           {item.frequency}/dia · {item.duration} dias
                         </p>
                         <p className="text-[10px] font-medium text-gray-500 mt-1">
@@ -291,7 +528,7 @@ export default function PrescriptionVerification() {
                         </p>
                       </div>
                       <div className="w-10 text-right">
-                        <p className="text-sm font-black text-white">
+                        <p className="text-sm font-black text-white print:text-black">
                           {(item as any).totalUnits || (parseInt(item.frequency) * parseInt(item.duration))}<span className="text-[10px] text-gray-500 ml-0.5 font-bold">x</span>
                         </p>
                       </div>
@@ -301,9 +538,9 @@ export default function PrescriptionVerification() {
               </div>
 
               {/* Therapeutic Map Implementation */}
-              <div className="bg-[#030303] rounded border border-[#343536] p-6 mb-10 overflow-hidden">
+              <div className="bg-[#030303] rounded border border-[#343536] p-6 mb-10 overflow-hidden print:bg-white print:border-gray-200 print:p-4">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Cronograma de Administração</h3>
+                  <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest print:text-gray-900">Cronograma de Administração</h3>
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-3 h-3 text-gray-600" />
                     <span className="text-[9px] text-gray-600 font-bold uppercase">{startTreatmentDate.toLocaleDateString('pt-PT')} – {new Date(new Date(startTreatmentDate).setDate(startTreatmentDate.getDate() + 13)).toLocaleDateString('pt-PT')}</span>
@@ -311,8 +548,8 @@ export default function PrescriptionVerification() {
                 </div>
 
                 <div className="overflow-x-auto no-scrollbar">
-                  <div className="min-w-[700px]">
-                    <div className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 mb-4 border-b border-[#343536] pb-3">
+                  <div className="min-w-[700px] print:min-w-0 print:w-full">
+                    <div className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 mb-4 border-b border-[#343536] pb-3 print:grid-cols-[60px_repeat(14,1fr)] print:border-gray-200">
                       <div />
                       {Array.from({ length: 14 }).map((_, i) => {
                         const d = new Date(startTreatmentDate);
@@ -320,15 +557,15 @@ export default function PrescriptionVerification() {
                         return (
                           <div key={i} className="text-center">
                             <p className="text-[8px] font-bold text-gray-600 uppercase tracking-tighter mb-1">{getDayName(d)}</p>
-                            <p className="text-[10px] font-bold text-gray-400">{d.getDate()}</p>
+                            <p className="text-[10px] font-bold text-gray-400 print:text-black">{d.getDate()}</p>
                           </div>
                         );
                       })}
                     </div>
 
                     {[0, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22].map(hour => (
-                      <div key={hour} className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 py-2 border-b border-white/[0.01] last:border-0 hover:bg-white/[0.02] transition-colors rounded group">
-                        <div className="text-[10px] font-bold text-gray-500 group-hover:text-gray-300 transition-colors self-center">{hour.toString().padStart(2, '0')}:00</div>
+                      <div key={hour} className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 py-2 border-b border-white/[0.01] last:border-0 hover:bg-white/[0.02] transition-colors rounded group print:grid-cols-[60px_repeat(14,1fr)] print:border-gray-100">
+                        <div className="text-[10px] font-bold text-gray-500 group-hover:text-gray-300 transition-colors self-center print:text-black">{hour.toString().padStart(2, '0')}:00</div>
                         {Array.from({ length: 14 }).map((_, dIdx) => (
                           <div key={dIdx} className="flex flex-wrap items-center justify-center gap-1 min-h-[24px]">
                             {items.map((item, mIdx) => {
@@ -338,24 +575,18 @@ export default function PrescriptionVerification() {
                               if (isActive) {
                                 const doseKey = `${mIdx}-${dIdx}-${hour}`;
                                 const isTaken = takenDoses[doseKey];
-                                const isUpdating = updatingDose === doseKey;
-
+                                
                                 return (
-                                  <button 
+                                  <div 
                                     key={mIdx}
-                                    onClick={() => toggleDose(mIdx, dIdx, hour)}
-                                    disabled={isUpdating}
-                                    title={isTaken ? "Marcar como não tomado" : "Confirmar que tomou"}
-                                    className={`
-                                      relative w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center
-                                      ${isTaken ? 'scale-110 opacity-40 shadow-none ring-0' : 'hover:scale-125 shadow-lg shadow-black/40 ring-1 ring-white/10'}
-                                      ${isUpdating ? 'animate-pulse' : 'cursor-pointer'}
-                                    `}
                                     style={{ backgroundColor: (item as any).color || dotColors[mIdx % dotColors.length] }}
+                                    className={`
+                                      w-3 h-3 rounded-full flex items-center justify-center
+                                      ${isTaken ? 'opacity-30' : 'opacity-100'}
+                                    `}
                                   >
-                                    {isTaken && <Check className="w-2.5 h-2.5 text-white stroke-[4]" />}
-                                    {!isTaken && <div className="w-1 h-1 bg-white rounded-full opacity-0 hover:opacity-40 transition-opacity" />}
-                                  </button>
+                                    {isTaken && <Check className="w-2 h-2 text-white stroke-[4]" />}
+                                  </div>
                                 );
                               }
                               return null;
@@ -367,45 +598,51 @@ export default function PrescriptionVerification() {
                   </div>
                 </div>
                 
-                <div className="mt-6 flex items-center justify-center space-x-6 py-4 border-t border-[#343536]">
+                <div className="mt-6 flex items-center justify-center space-x-6 py-4 border-t border-[#343536] print:border-gray-200">
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full ring-1 ring-white/20 bg-gray-500" />
-                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Dose Pendente</span>
+                    <div className="w-2 h-2 rounded-full ring-1 ring-white/20 bg-gray-500 print:ring-gray-200 print:bg-gray-300" />
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest print:text-black">Dose Pendente</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-gray-500 opacity-40 flex items-center justify-center">
-                      <Check className="w-1.5 h-1.5 text-white" />
+                    <div className="w-2 h-2 rounded-full bg-gray-500 opacity-40 flex items-center justify-center print:bg-gray-100">
+                      <Check className="w-1.5 h-1.5 text-white print:text-gray-400" />
                     </div>
-                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Dose Tomada</span>
-                  </div>
-                  <div className="text-[9px] font-black text-[#FF4500] uppercase tracking-tighter animate-pulse">
-                    • Toque nos pontos para registrar a toma
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest print:text-black">Dose Tomada</span>
                   </div>
                 </div>
               </div>
 
               {/* Footer Section (Reddit bottom bar) */}
-              <div className="flex flex-col md:flex-row items-center justify-between gap-12 pt-8 border-t border-[#343536]">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-12 pt-8 border-t border-[#343536] print:border-gray-200 print:gap-4 print:pt-4">
                  <div className="space-y-4 w-full md:w-auto">
-                    <div className="bg-[#272729] border border-[#343536] rounded p-4 flex items-center space-x-4">
-                       <div className="w-10 h-10 bg-[#FF4500]/10 rounded flex items-center justify-center text-[#FF4500]">
+                    <div className="bg-[#272729] border border-[#343536] rounded p-4 flex items-center space-x-4 print:bg-white print:border-gray-100 print:p-2">
+                       <div className="w-10 h-10 bg-[#FF4500]/10 rounded flex items-center justify-center text-[#FF4500] print:bg-gray-50">
                           <ShieldCheck className="w-6 h-6" />
                        </div>
                        <div>
-                          <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">CÓDIGO DE AUTENTICAÇÃO</p>
-                          <p className="text-sm font-mono font-black text-white tracking-[0.2em]">{prescription.signature_code}</p>
+                          <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1 print:text-black">CÓDIGO DE AUTENTICIDADE</p>
+                          <div className="flex items-center space-x-2 group/copy">
+                            <p className="text-sm font-mono font-black text-white tracking-[0.2em] print:text-black">{prescription.signature_code}</p>
+                            <button 
+                              onClick={() => copyToClipboard(prescription.signature_code)}
+                              className="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded transition-all print:hidden"
+                              title="Copiar código"
+                            >
+                              {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </div>
                        </div>
                     </div>
-                    <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest text-center md:text-left">Assinado digitalmente via Protocolo Cedav • 2026</p>
+                    <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest text-center md:text-left print:text-black">Assinado digitalmente via Protocolo The Cedav • 2026</p>
                  </div>
 
                  <div className="text-center md:text-right">
-                    <div className="mb-6 h-[80px] flex flex-col justify-end opacity-20">
-                       <p className="font-serif italic text-3xl text-white mb-2">{prescription.professional_name}</p>
-                       <div className="h-[1px] w-[200px] bg-white mx-auto md:ml-auto md:mr-0" />
+                    <div className="mb-6 h-[80px] flex flex-col justify-end opacity-20 print:opacity-100 print:mb-2 print:h-auto">
+                       <p className="font-serif italic text-3xl text-white mb-2 print:text-black print:text-2xl">{prescription.professional_name}</p>
+                       <div className="h-[1px] w-[200px] bg-white mx-auto md:ml-auto md:mr-0 print:bg-black" />
                     </div>
-                    <p className="text-sm font-black text-white uppercase tracking-[0.2em]">Dr(a). {prescription.professional_name}</p>
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Delegado de Saúde • Região de Luanda</p>
+                    <p className="text-sm font-black text-white uppercase tracking-[0.2em] print:text-black">Dr(a). {prescription.professional_name}</p>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1 print:text-black">Delegado de Saúde • Região de Luanda</p>
                  </div>
               </div>
             </div>
@@ -414,18 +651,28 @@ export default function PrescriptionVerification() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 py-8 print:hidden">
              <Link 
               to="/" 
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-3 bg-[#343536] text-[#D7DADC] px-8 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-[#444546] transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-3 bg-[#343536] text-[#D7DADC] px-6 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-[#444546] transition-all"
              >
                <ArrowLeft className="w-4 h-4" />
-               <span>Sair da Verificação</span>
+               <span>Início</span>
              </Link>
-             <button 
-              onClick={() => window.print()}
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-3 bg-[#D7DADC] text-black px-10 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-white transition-all"
-             >
-               <Printer className="w-4 h-4" />
-               <span>Imprimir Receita</span>
-             </button>
+             
+              <motion.button 
+                whileTap={{ scale: 0.92, y: 2 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                onClick={downloadPDF}
+                disabled={downloading}
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-3 bg-emerald-600 text-white px-6 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-900/20 disabled:opacity-50"
+              >
+                {downloading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                <span>Baixar PDF</span>
+              </motion.button>
+
+
           </div>
         </div>
 
@@ -439,11 +686,11 @@ export default function PrescriptionVerification() {
                   <ShieldCheck className="w-8 h-8" />
                 </div>
                 <div className="flex flex-col mt-6">
-                  <span className="text-sm font-bold">r/CedavVerified</span>
+                  <span className="text-sm font-bold">r/TheCedav_Official</span>
                 </div>
               </div>
               <p className="text-xs text-gray-400">
-                Este post contém uma prescrição médica oficial validada. A integridade dos dados foi confirmada via blockchain interno Cedav.
+                Este post contém uma prescrição médica oficial validada. A integridade dos dados foi confirmada via blockchain interno The Cedav.
               </p>
               <div className="grid grid-cols-2 gap-4 py-4 border-t border-[#343536]">
                 <div>

@@ -28,15 +28,23 @@ export default function Home() {
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [userPrescriptions, setUserPrescriptions] = useState<any[]>([]);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(true);
+  const [recentPatients, setRecentPatients] = useState<any[]>([]);
+  const [loadingPatients, setLoadingPatients] = useState(false);
+  const [suggestedProfessionals, setSuggestedProfessionals] = useState<any[]>([]);
 
   // Helper to check if a medication is active at a certain hour
   const isPeriodActiveAt = (freqStr: string, hour: number) => {
     const f = (freqStr || "").toLowerCase();
-    if (f === '1x' || f.includes('24/24')) return hour === 8;
-    if (f === '2x' || f.includes('12/12')) return [8, 20].includes(hour);
-    if (f === '3x' || f.includes('8/8')) return [8, 16, 0].includes(hour);
-    if (f === '4x' || f.includes('6/6')) return [6, 12, 18, 0].includes(hour);
-    if (f === '6x' || f.includes('4/4')) return [4, 8, 12, 16, 20, 0].includes(hour);
+    // 1x ao dia ou 24 em 24h
+    if (f.includes('1x') || f.includes('24/24') || f.includes('24h')) return hour === 8;
+    // 2x ao dia ou 12 em 12h
+    if (f.includes('2x') || f.includes('12/12') || f.includes('12h')) return [8, 20].includes(hour);
+    // 3x ao dia ou 8 em 8h
+    if (f.includes('3x') || f.includes('8/8') || f.includes('8h')) return [8, 16, 0].includes(hour);
+    // 4x ao dia ou 6 em 6h
+    if (f.includes('4x') || f.includes('6/6') || f.includes('6h')) return [6, 12, 18, 0].includes(hour);
+    // 6x ao dia ou 4 em 4h
+    if (f.includes('6x') || f.includes('4/4') || f.includes('4h')) return [4, 8, 12, 16, 20, 0].includes(hour);
     return false;
   };
 
@@ -46,24 +54,25 @@ export default function Home() {
     const currentHour = now.getHours();
     
     userPrescriptions.forEach(presc => {
-        const startDate = presc.start_date ? new Date(presc.start_date) : new Date(presc.created_at);
-        // Reseting hours to start of day for accurate day count
-        const startDay = new Date(startDate);
-        startDay.setHours(0, 0, 0, 0);
-        const todayDay = new Date(now);
-        todayDay.setHours(0, 0, 0, 0);
+        const dateStr = presc.start_date || presc.created_at;
+        const startDate = new Date(dateStr);
         
-        const daysSinceStart = Math.floor((todayDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24));
+        // Use local day values to avoid UTC shift issues
+        const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+        const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        const diffTime = todayDay.getTime() - startDay.getTime();
+        const daysSinceStart = Math.round(diffTime / (1000 * 60 * 60 * 24));
         
         if (presc.items && Array.isArray(presc.items)) {
           presc.items.forEach((item: any, idx: number) => {
               const durationDays = parseInt(item.duration) || 0;
               if (daysSinceStart >= 0 && daysSinceStart < durationDays) {
-                  // Check all possible hours used in our app
+                  // Check all possible hours
                   [0, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22].forEach(hour => {
                       if (isPeriodActiveAt(item.frequency, hour)) {
                           const doseKey = `${idx}-${daysSinceStart}-${hour}`;
-                          const isTaken = presc.taken_doses?.[doseKey] || false;
+                          const isTaken = (presc.taken_doses && presc.taken_doses[doseKey]) || false;
                           todaySchedule.push({
                               medication: item.medication,
                               hour,
@@ -84,7 +93,7 @@ export default function Home() {
     return todaySchedule.sort((a, b) => a.hour - b.hour);
   };
 
-  const todaySchedule = getTodaySchedule();
+  const todaySchedule = React.useMemo(() => getTodaySchedule(), [userPrescriptions, profile]);
 
   const handleToggleDoseInFeed = async (prescId: string, doseKey: string) => {
     const presc = userPrescriptions.find(p => p.id === prescId);
@@ -117,8 +126,64 @@ export default function Home() {
     if (user) {
       fetchUserMemberships();
       fetchUserPrescriptions();
+      fetchSuggestedProfessionals();
+      if (profile?.is_professional) {
+        fetchRecentPatients();
+      }
+    } else {
+      fetchSuggestedProfessionals();
     }
-  }, [user, activeTab]);
+  }, [user, activeTab, profile?.is_professional]);
+
+  const fetchSuggestedProfessionals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_professional', true)
+        .limit(5);
+      
+      if (error) throw error;
+      if (data) setSuggestedProfessionals(data);
+    } catch (err) {
+      console.error('Error fetching suggestions:', err);
+    }
+  };
+
+  const fetchRecentPatients = async () => {
+    if (!user || !profile?.is_professional) return;
+    setLoadingPatients(true);
+    try {
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .select(`
+          patient_id,
+          patient_name,
+          patient_username,
+          created_at
+        `)
+        .eq('professional_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      
+      const uniquePatients: any[] = [];
+      const seen = new Set();
+      data?.forEach(p => {
+        if (!seen.has(p.patient_id)) {
+          seen.add(p.patient_id);
+          uniquePatients.push(p);
+        }
+      });
+      
+      setRecentPatients(uniquePatients.slice(0, 5));
+    } catch (err) {
+      console.error('Error fetching recent patients:', err);
+    } finally {
+      setLoadingPatients(false);
+    }
+  };
 
   const fetchUserPrescriptions = async () => {
     if (!user) return;
@@ -131,7 +196,14 @@ export default function Home() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      if (data) setUserPrescriptions(data);
+      if (data) {
+        // Ensure items is an array (sometimes Supabase returns it as a string if not properly typed)
+        const parsedData = data.map(p => ({
+          ...p,
+          items: Array.isArray(p.items) ? p.items : (typeof p.items === 'string' ? JSON.parse(p.items) : [])
+        }));
+        setUserPrescriptions(parsedData);
+      }
     } catch (err) {
       console.error('Error fetching prescriptions:', err);
     } finally {
@@ -354,18 +426,6 @@ export default function Home() {
       setIsSubmitting(false);
     }
   };
-
-  const SUGGESTIONS = [
-    { username: 'cruzvermelha_pt', name: 'Cruz Vermelha', avatar: 'https://i.pravatar.cc/150?u=cv', isProf: true },
-    { username: 'medico_responde', name: 'Dr. Ricardo M.', avatar: 'https://i.pravatar.cc/150?u=doctor', isProf: true },
-    { username: 'yoga_viva', name: 'Yoga Portugal', avatar: 'https://i.pravatar.cc/150?u=yoga', isProf: false }
-  ];
-
-  const MOCK_GROUPS = [
-    { id: '1', name: 'Diabetes Tipo 2 - Portugal', members: 1240, category: 'Saúde Crónica', prof: 'Dr. Ricardo M.' },
-    { id: '2', name: 'Mães e Grávidas SNS', members: 4500, category: 'Maternidade', prof: 'Enfª Helena' },
-    { id: '3', name: 'Saúde Mental em Casa', members: 890, category: 'Bem-estar', prof: 'Psic. João' }
-  ];
 
   return (
     <div className="pb-20 md:pb-0 min-h-screen bg-[#dae0e6]">
@@ -688,52 +748,6 @@ export default function Home() {
               </div>
               <span className="text-[10px] uppercase font-bold text-[#006747]">Perfil</span>
            </Link>
-
-           {/* Meus Medicamentos / Schedule (Only if prescriptions exist) */}
-           {!profile?.is_professional && todaySchedule.length > 0 && (
-             <div className="mb-8 bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                   <div className="flex items-center space-x-2">
-                      <div className="bg-[#006747] p-1.5 rounded-lg text-white">
-                         <Syringe className="w-3 h-3" />
-                      </div>
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Meus Medicamentos</h4>
-                   </div>
-                   <Link to="/my-prescriptions" className="text-[9px] font-bold text-[#006747] uppercase hover:underline">Ver todas</Link>
-                </div>
-                
-                <div className="space-y-4">
-                   {todaySchedule.filter(s => s.isUpcoming || !s.isTaken).slice(0, 3).map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between group">
-                         <div className="flex items-center space-x-3">
-                            <div className={cn(
-                              "w-1.5 h-1.5 rounded-full",
-                              item.isTaken ? "bg-gray-200" : "bg-[#006747]"
-                            )} />
-                            <div className="flex flex-col">
-                               <p className={cn(
-                                 "text-[11px] font-bold text-gray-700",
-                                 item.isTaken && "line-through text-gray-400"
-                               )}>{item.medication}</p>
-                               <p className="text-[9px] text-gray-400 font-bold uppercase">{item.dosage} {item.form} • {item.hour.toString().padStart(2, '0')}:00</p>
-                            </div>
-                         </div>
-                         {item.isTaken ? (
-                           <div className="text-[9px] font-black text-gray-300 uppercase">Tomado</div>
-                         ) : (
-                           <button 
-                             onClick={() => handleToggleDoseInFeed(item.prescId, item.doseKey)}
-                             className="text-[9px] font-black text-[#006747] uppercase hover:bg-emerald-50 px-2 py-1 rounded-lg transition-colors"
-                           >
-                             Tomar
-                           </button>
-                         )}
-                      </div>
-                   ))}
-                </div>
-             </div>
-           )}
-
            {/* Suggestions Header */}
            <div className="flex justify-between items-center mb-4">
               <h4 className="text-sm font-bold text-gray-400">Profissionais Sugeridos</h4>
@@ -742,63 +756,130 @@ export default function Home() {
 
            {/* Suggestions List */}
            <div className="space-y-4">
-              {SUGGESTIONS.map((sug) => (
-                <div key={sug.username} className="flex justify-between items-center">
-                    <Link to="/explore" className="flex items-center space-x-3 group">
-                        <div className="w-8 h-8 rounded-full overflow-hidden group-hover:scale-105 transition-transform">
-                            <img src={sug.avatar} alt="" className="w-full h-full object-cover" />
+              {suggestedProfessionals.length > 0 ? suggestedProfessionals.map((sug) => (
+                <div key={sug.id} className="flex justify-between items-center">
+                    <Link to={`/search?q=${sug.username}`} className="flex items-center space-x-3 group">
+                        <div className="w-8 h-8 rounded-full overflow-hidden group-hover:scale-105 transition-transform border border-gray-100">
+                            <img src={sug.avatar_url || "https://i.pravatar.cc/150"} alt="" className="w-full h-full object-cover" />
                         </div>
                         <div>
                             <div className="flex items-center">
                               <p className="text-sm font-bold leading-none group-hover:text-[#006747] transition-colors">{sug.username}</p>
-                              {sug.isProf && <ShieldCheck className="w-3 h-3 text-[#006747] ml-1 fill-current" />}
+                              {sug.is_professional && <ShieldCheck className="w-3 h-3 text-[#006747] ml-1 fill-current" />}
                             </div>
-                            <p className="text-[10px] text-gray-400 mt-1">{sug.isProf ? 'Profissional SNS' : 'Sugerido'}</p>
+                            <p className="text-[10px] text-gray-400 mt-1">{sug.specialty || 'Profissional SNS'}</p>
                         </div>
                     </Link>
-                    {sug.isProf ? (
-                      <button className="text-xs font-bold text-[#006747] hover:text-emerald-800">Seguir</button>
-                    ) : (
-                      <button className="text-xs font-bold text-gray-300 cursor-not-allowed">Membro</button>
-                    )}
+                    <button className="text-xs font-bold text-[#006747] hover:text-emerald-800">Seguir</button>
                 </div>
-              ))}
+              )) : (
+                <p className="text-[10px] text-gray-400 italic">A procurar especialistas...</p>
+              )}
            </div>
 
-           {/* Dose Diária - Promoção de Saúde */}
-           <div className="mt-10 bg-emerald-50 rounded-3xl p-5 border border-emerald-100 shadow-sm relative overflow-hidden group">
+           {/* Dose Diária / Medicação de hoje - Real Data Companion */}
+           <div className="mt-10 bg-emerald-50 rounded-[2rem] p-6 border border-emerald-100 shadow-sm relative overflow-hidden group">
               <div className="absolute -right-4 -top-4 opacity-5 group-hover:rotate-12 transition-transform">
                  <Syringe className="w-16 h-16 text-[#006747]" />
               </div>
               
               <div className="flex items-center space-x-2 mb-4">
                  <div className="bg-[#006747] p-1.5 rounded-lg text-white">
-                    <Syringe className="w-3 h-3" />
+                    <HeartPulse className="w-3 h-3" />
                  </div>
-                 <h4 className="text-[10px] font-black uppercase tracking-widest text-[#006747]">Dose Diária Viva</h4>
+                 <h4 className="text-[10px] font-black uppercase tracking-widest text-[#006747]">
+                   {profile?.is_professional ? 'Pacientes Recentes' : 'Medicação de hoje'}
+                 </h4>
               </div>
               
               <div className="space-y-4">
-                 <div className="flex items-center justify-between group cursor-pointer">
-                    <div className="flex items-center space-x-3">
-                       <div className="w-1.5 h-1.5 rounded-full bg-[#006747]" />
-                       <p className="text-[11px] font-bold text-gray-700 group-hover:text-[#006747] transition-colors">Beber 2L de Água</p>
-                    </div>
-                    <span className="text-[9px] font-black text-emerald-600 bg-white px-2 py-0.5 rounded-full">+50V</span>
-                 </div>
-                 <div className="flex items-center justify-between group cursor-pointer">
-                    <div className="flex items-center space-x-3">
-                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
-                       <p className="text-[11px] font-bold text-gray-700 group-hover:text-[#006747] transition-colors">Caminhada 30 Min</p>
-                    </div>
-                    <span className="text-[9px] font-black text-emerald-600 bg-white px-2 py-0.5 rounded-full">+120V</span>
-                 </div>
-              </div>
-              
-              <button className="w-full mt-5 py-2.5 bg-white border border-emerald-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#006747] hover:bg-[#006747] hover:text-white transition-all">
-                 Ver Desafios
-              </button>
-           </div>
+                  {profile?.is_professional ? (
+                    recentPatients.length > 0 ? (
+                      recentPatients.map((p, idx) => (
+                        <div key={idx} className="flex items-center justify-between group cursor-pointer" onClick={() => navigate(`/search?q=${p.patient_name}`)}>
+                           <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 rounded-lg bg-white border border-emerald-100 flex items-center justify-center text-[10px] font-bold text-[#006747]">
+                                {p.patient_name[0]}
+                              </div>
+                              <div>
+                                 <p className="text-[11px] font-bold text-gray-700 truncate max-w-[120px]">{p.patient_name}</p>
+                                 <p className="text-[9px] text-gray-400 font-bold uppercase">@{p.patient_username || 'paciente'}</p>
+                              </div>
+                           </div>
+                           <span className="text-[8px] font-black text-gray-300 uppercase">{new Date(p.created_at).toLocaleDateString('pt-PT')}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-[10px] text-gray-400 text-center py-4 italic">Nenhuma receita emitida recentemente.</p>
+                    )
+                  ) : (
+                    /* Patient: Show doses from ALL active prescriptions */
+                    (() => {
+                      if (loadingPrescriptions) return (
+                        <div className="flex justify-center py-6">
+                           <Loader2 className="w-5 h-5 animate-spin text-[#006747] opacity-20" />
+                        </div>
+                      );
+                      
+                      if (userPrescriptions.length === 0) return (
+                        <p className="text-[10px] text-gray-400 text-center py-4 italic font-medium">Nenhuma receita ativa.</p>
+                      );
+                      
+                      if (todaySchedule.length === 0) {
+                         return (
+                           <div className="text-center py-4">
+                              <p className="text-[11px] font-bold text-emerald-800">Tudo em dia!</p>
+                              <p className="text-[10px] text-emerald-600/60 mt-1">Nenhuma medicação pendente para hoje.</p>
+                           </div>
+                         );
+                      }
+                      
+                      return (
+                        <div className="space-y-4">
+                          {todaySchedule.slice(0, 4).map((item, idx) => (
+                            <div key={`${item.prescId}-${item.doseKey}`} className="flex items-center justify-between group px-1">
+                               <div className="flex items-center space-x-3">
+                                  <div className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
+                                    item.isTaken ? "bg-gray-200" : "bg-[#006747] shadow-[0_0_8px_rgba(0,103,71,0.4)]"
+                                  )} />
+                                  <div>
+                                     <p className={cn("text-[11px] font-bold text-gray-700 leading-tight", item.isTaken && "line-through text-gray-400")}>
+                                       {item.medication}
+                                     </p>
+                                     <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">
+                                       {item.hour.toString().padStart(2, '0')}:00 • {item.dosage} {item.form}
+                                     </p>
+                                  </div>
+                               </div>
+                               {!item.isTaken ? (
+                                 <button 
+                                   onClick={(e) => {
+                                     e.preventDefault();
+                                     handleToggleDoseInFeed(item.prescId, item.doseKey);
+                                   }}
+                                   className="text-[9px] font-black text-[#006747] bg-white px-2 py-1.5 rounded-lg border border-emerald-100 shadow-sm active:scale-95 transition-all hover:bg-emerald-50"
+                                 >
+                                   Tomar
+                                 </button>
+                               ) : (
+                                 <span className="text-[9px] font-black text-gray-300 uppercase select-none">Ok</span>
+                               )}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()
+                  )}
+               </div>
+               
+               <Link 
+                 to={profile?.is_professional ? "/professional-dashboard" : "/my-prescriptions"}
+                 className="w-full mt-5 block text-center py-2.5 bg-white border border-emerald-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#006747] hover:bg-[#006747] hover:text-white transition-all shadow-sm"
+               >
+                  {profile?.is_professional ? 'Painel de Gestão' : 'Ver Meu Farmaco'}
+               </Link>
+            </div>
 
            {/* Health Mission Progress */}
            <div className="mt-6 bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm">
