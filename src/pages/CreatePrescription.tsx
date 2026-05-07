@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { 
@@ -27,6 +27,8 @@ import { toPng } from 'html-to-image';
 export default function CreatePrescription() {
   const { patientId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefill = location.state as { prefillDiagnosis?: string } | null;
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(false);
@@ -54,7 +56,7 @@ export default function CreatePrescription() {
   ];
 
   const [formData, setFormData] = useState({
-    diagnosis: '',
+    diagnosis: prefill?.prefillDiagnosis || '',
     startDate: new Date().toISOString().split('T')[0],
     items: [
       { 

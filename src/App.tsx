@@ -19,6 +19,7 @@ import CommunityDetail from './pages/CommunityDetail';
 import Appointments from './pages/Appointments';
 import Messages from './pages/Messages';
 import CreatePrescription from './pages/CreatePrescription';
+import CreateClinicalHistory from './pages/CreateClinicalHistory';
 import ProfessionalDashboard from './pages/ProfessionalDashboard';
 import MyPatients from './pages/MyPatients';
 import MyPrescriptions from './pages/MyPrescriptions';
@@ -71,6 +72,7 @@ function AppContent() {
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/prescrever/:patientId" element={<CreatePrescription />} />
+          <Route path="/professional/clinical-history/:patientId" element={<CreateClinicalHistory />} />
           <Route path="/prescriptions" element={<MyPrescriptions />} />
           <Route path="/professional/dashboard" element={<ProfessionalDashboard />} />
           <Route path="/professional/patients" element={<MyPatients />} />

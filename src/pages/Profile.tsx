@@ -107,7 +107,7 @@ export default function Profile() {
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [loadingReels, setLoadingReels] = useState(false);
   const [loadingCommunities, setLoadingCommunities] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services' | 'prescriptions' | 'patients'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services' | 'prescriptions' | 'patients' | 'clinical_history'>('posts');
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -118,6 +118,8 @@ export default function Profile() {
   const [loadingServices, setLoadingServices] = useState(false);
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
+  const [clinicalHistories, setClinicalHistories] = useState<any[]>([]);
+  const [loadingHistories, setLoadingHistories] = useState(false);
   const [savedItems, setSavedItems] = useState<any[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -204,6 +206,7 @@ export default function Profile() {
         fetchUserAppointments(targetUserId);
         fetchUserOrders(targetUserId);
         fetchUserPrescriptions(targetUserId);
+        fetchClinicalHistory(targetUserId);
         if (pData.is_professional) {
           fetchUserServices(targetUserId);
         }
@@ -365,6 +368,24 @@ export default function Profile() {
     
     if (data) setPrescriptions(data);
     setLoadingPrescriptions(false);
+  };
+
+  const fetchClinicalHistory = async (targetUserId: string) => {
+    setLoadingHistories(true);
+    try {
+      const { data, error } = await supabase
+        .from('clinical_histories')
+        .select('*')
+        .eq('patient_id', targetUserId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setClinicalHistories(data || []);
+    } catch (err) {
+      console.error('Error fetching clinical histories:', err);
+    } finally {
+      setLoadingHistories(false);
+    }
   };
 
   const fetchUserPosts = async (targetUserId: string) => {
@@ -975,6 +996,16 @@ export default function Profile() {
             </button>
           )}
 
+          {(isOwnProfile || (myProfile?.is_professional)) && (
+            <button 
+              onClick={() => setActiveTab('clinical_history')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'clinical_history' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            >
+              <HeartPulse className="w-4 h-4" />
+              <span>Histórico Clínico</span>
+            </button>
+          )}
+
           {isOwnProfile && (
             <button 
               onClick={() => setActiveTab('orders')}
@@ -1080,6 +1111,102 @@ export default function Profile() {
                    </div>
                    <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Sem receitas médicas</p>
                    <p className="text-xs text-gray-400 px-10">As suas receitas médicas digitais aparecerão aqui após serem emitidas por um profissional.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'clinical_history' && (
+            <div className="space-y-6 px-2 pb-10">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-gray-900 font-black uppercase tracking-widest text-xs">Registos do Paciente</h3>
+                {myProfile?.is_professional && (
+                   <Link 
+                     to={`/professional/clinical-history/${profile.id}`}
+                     className="bg-[#006747] text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition-all flex items-center space-x-2 shadow-lg shadow-emerald-50"
+                   >
+                     <span>Nova História</span>
+                   </Link>
+                )}
+              </div>
+
+              {loadingHistories ? (
+                <div className="flex justify-center py-20">
+                   <Loader2 className="w-10 h-10 animate-spin text-[#006747] opacity-20" />
+                </div>
+              ) : clinicalHistories.length > 0 ? (
+                <div className="space-y-4">
+                  {clinicalHistories.map((history) => (
+                    <div 
+                      key={history.id} 
+                      className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm hover:border-[#006747]/20 transition-all group"
+                    >
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-[#006747] group-hover:scale-110 transition-all">
+                             <ClipboardList className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h4 className="font-black text-gray-900 text-base leading-none mb-1.5">{history.primaryDiagnosis}</h4>
+                            <div className="flex items-center space-x-3 text-gray-400">
+                               <p className="text-[10px] font-black uppercase tracking-widest flex items-center">
+                                 <Calendar className="w-3 h-3 mr-1.5" />
+                                 {new Date(history.created_at).toLocaleDateString()}
+                               </p>
+                               <span className="text-[8px] opacity-20">•</span>
+                               <p className="text-[10px] font-black uppercase tracking-widest flex items-center italic">
+                                 Por: {history.professional_name}
+                               </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className={cn(
+                          "px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest",
+                          history.referral === 'Sem referenciação' ? "bg-gray-100 text-gray-500" : "bg-amber-100 text-amber-700"
+                        )}>
+                          {history.referral}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                         <div className="p-3 bg-gray-50 rounded-2xl">
+                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">IMC</p>
+                            <p className="text-xs font-black text-[#006747]">{history.calculated_imc}</p>
+                         </div>
+                         <div className="p-3 bg-gray-50 rounded-2xl">
+                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Temp</p>
+                            <p className="text-xs font-black text-gray-900">{history.temperature}°C</p>
+                         </div>
+                         <div className="p-3 bg-gray-50 rounded-2xl">
+                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">T. Arterial</p>
+                            <p className="text-xs font-black text-gray-900">{history.bloodPressure}</p>
+                         </div>
+                         <div className="p-3 bg-gray-50 rounded-2xl">
+                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">SpO2</p>
+                            <p className="text-xs font-black text-[#006747]">{history.spo2}%</p>
+                         </div>
+                      </div>
+
+                      <div className="space-y-3">
+                         <div>
+                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Queixa Principal</p>
+                            <p className="text-xs text-gray-600 line-clamp-2">{history.mainComplaint}</p>
+                         </div>
+                         <div className="pt-3 border-t border-gray-50">
+                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Notas Clínicas</p>
+                            <p className="text-xs text-gray-600 whitespace-pre-wrap">{history.clinicalNotes}</p>
+                         </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                   <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
+                      <HeartPulse className="w-8 h-8 text-gray-200" />
+                   </div>
+                   <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Sem histórico clínico</p>
+                   <p className="text-xs text-gray-400 px-10">Os registos clínicos do paciente aparecerão aqui após as consultas.</p>
                 </div>
               )}
             </div>

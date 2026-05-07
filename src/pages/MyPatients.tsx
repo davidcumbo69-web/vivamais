@@ -262,6 +262,14 @@ export default function MyPatients() {
                     
                     <div className="flex items-center space-x-2">
                        <Link 
+                         to={`/professional/clinical-history/${patient.user_id}`}
+                         className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-emerald-50 text-[#006747] px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100/50"
+                         title="História Clínica"
+                       >
+                          <HeartPulse className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">História Clínica</span>
+                       </Link>
+                       <Link 
                          to={`/profile/${patient.user_id}`}
                          className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-gray-50 text-gray-600 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 hover:text-[#006747] transition-all"
                        >
