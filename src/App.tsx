@@ -23,6 +23,7 @@ import ProfessionalDashboard from './pages/ProfessionalDashboard';
 import MyPrescriptions from './pages/MyPrescriptions';
 import DigitalPrescriptionView from './pages/PrescriptionVerification';
 import PrescriptionSearch from './pages/PrescriptionSearch';
+import EditProfile from './pages/EditProfile';
 import Login from './pages/Login';
 import { cn } from './lib/utils';
 
@@ -61,6 +62,7 @@ function AppContent() {
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/profile/:userId" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<AdminDashboard />} />

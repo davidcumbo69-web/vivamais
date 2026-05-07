@@ -6,7 +6,18 @@ import { StoriesBar } from '../components/feed/StoriesBar';
 import { CreateReelModal } from '../components/feed/CreateReelModal';
 import { FeedPost } from '../components/feed/FeedPost';
 import { cn } from '../lib/utils';
-import { ShieldCheck, Plus, ImagePlus, Syringe, Loader2, Trophy, TrendingUp, Coins, HeartPulse } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  Plus, 
+  ImagePlus, 
+  Syringe, 
+  Loader2, 
+  Trophy, 
+  TrendingUp, 
+  Coins, 
+  HeartPulse,
+  User
+} from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
 import { motion, AnimatePresence } from 'motion/react';
@@ -18,14 +29,39 @@ export default function Home() {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
   const { balance, addVitus } = useVitus();
+
   const [posts, setPosts] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [userGroups, setUserGroups] = useState<Set<string>>(new Set());
   const [loadingPosts, setLoadingPosts] = useState(true);
+
+  useEffect(() => {
+    if (profile && !loadingPosts) {
+      const essentialFields = [
+        'full_name', 
+        'birth_date', 
+        'gender', 
+        'id_card_number', 
+        'province', 
+        'municipality'
+      ] as const;
+      
+      const isMissingSomething = essentialFields.some(field => !profile[field as keyof typeof profile]);
+      
+      if (isMissingSomething) {
+        // Show modal after a short delay
+        const timer = setTimeout(() => {
+          setShowCompleteProfileModal(true);
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [profile, loadingPosts]);
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateReelModal, setShowCreateReelModal] = useState(false);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [showCompleteProfileModal, setShowCompleteProfileModal] = useState(false);
   const [userPrescriptions, setUserPrescriptions] = useState<any[]>([]);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(true);
   const [recentPatients, setRecentPatients] = useState<any[]>([]);
@@ -928,6 +964,57 @@ export default function Home() {
         isOpen={showCreateReelModal} 
         onClose={() => setShowCreateReelModal(false)}
       />
+
+      {/* Complete Profile Notification Modal */}
+      <AnimatePresence>
+        {showCompleteProfileModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white rounded-[3rem] p-8 max-w-sm w-full shadow-2xl border border-white/20 relative overflow-hidden"
+            >
+              {/* Background Decoration */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-50 rounded-full blur-3xl opacity-50" />
+              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-50" />
+              
+              <div className="relative z-10 text-center">
+                <div className="w-20 h-20 bg-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-3">
+                  <User className="w-10 h-10 text-[#006747]" />
+                </div>
+                
+                <h3 className="text-xl font-black text-gray-900 mb-2 leading-tight">
+                  Complete o seu Perfil!
+                </h3>
+                <p className="text-sm text-gray-500 mb-8 leading-relaxed px-4">
+                  Para uma melhor experiência no VIVA+, precisamos de alguns dados essenciais como o seu BI, Morada e Data de Nascimento.
+                </p>
+
+                <div className="space-y-3">
+                  <Link
+                    to="/profile/edit"
+                    className="w-full bg-[#006747] text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 shadow-lg shadow-emerald-100/50 hover:bg-emerald-800 transition-all active:scale-95"
+                  >
+                    <span>Completar Agora</span>
+                    <HeartPulse className="w-4 h-4" />
+                  </Link>
+                  <button
+                    onClick={() => setShowCompleteProfileModal(false)}
+                    className="w-full py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-all"
+                  >
+                    Lembrar-me mais tarde
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

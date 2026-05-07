@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight } from 'lucide-react';
+import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, MapPin } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
@@ -147,6 +147,18 @@ export default function Profile() {
       fetchPatientData(profile.id, myProfile?.id || profile.id);
     }
   }, [activeTab]);
+
+  const calculateAge = (birthDate: string | undefined) => {
+    if (!birthDate) return null;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
 
   const fetchProfile = async (targetUserId: string) => {
     try {
@@ -590,46 +602,48 @@ export default function Profile() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-bold text-xl">{user.username}</h1>
         <div className="flex items-center space-x-4">
-          <Link 
-            to="/settings" 
-            className="group relative w-14 h-14 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300"
-            title="Definições"
-          >
-            {/* Organic Intestine Illustration */}
-            <svg viewBox="0 20 100 80" className="w-full h-full drop-shadow-md overflow-visible relative z-10">
-              <defs>
-                <linearGradient id="intestineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#ffb7b2" />
-                  <stop offset="100%" stopColor="#ff9aa2" />
-                </linearGradient>
-              </defs>
+          {isOwnProfile && (
+            <Link 
+              to="/settings" 
+              className="group relative w-14 h-14 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300"
+              title="Definições"
+            >
+              {/* Organic Intestine Illustration */}
+              <svg viewBox="0 20 100 80" className="w-full h-full drop-shadow-md overflow-visible relative z-10">
+                <defs>
+                  <linearGradient id="intestineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#ffb7b2" />
+                    <stop offset="100%" stopColor="#ff9aa2" />
+                  </linearGradient>
+                </defs>
+                
+                {/* Large Intestine (Stylized outer frame) */}
+                <path 
+                  d="M20,35 C15,35 15,75 25,75 L75,75 C85,75 85,35 75,35 L65,35 C60,35 60,40 65,40 L75,40 C80,40 80,70 75,70 L25,70 C20,70 20,40 25,40 L35,40 C40,40 40,35 35,35 Z" 
+                  fill="url(#intestineGrad)" 
+                  stroke="#ff8289" 
+                  strokeWidth="1.5"
+                  className="transition-all duration-700 group-hover:scale-105 group-hover:rotate-2"
+                />
+                
+                {/* Small Intestine (Stylized inner coiling) */}
+                <path 
+                  d="M40,45 C42,40 48,40 50,45 C52,50 58,50 60,45 C65,40 65,55 60,55 C55,55 50,60 50,65 C50,60 45,55 40,55 C35,55 35,45 40,45" 
+                  fill="#ffc1bc" 
+                  stroke="#ff8289" 
+                  strokeWidth="2" 
+                  strokeLinecap="round"
+                  className="animate-[pulse_4s_ease-in-out_infinite]"
+                />
+                
+                {/* Texture and Organic gloss effect */}
+                <path d="M22,50 Q25,45 28,50" fill="none" stroke="white" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
+                <path d="M72,55 Q75,60 78,55" fill="none" stroke="#ff8289" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
+              </svg>
               
-              {/* Large Intestine (Stylized outer frame) */}
-              <path 
-                d="M20,35 C15,35 15,75 25,75 L75,75 C85,75 85,35 75,35 L65,35 C60,35 60,40 65,40 L75,40 C80,40 80,70 75,70 L25,70 C20,70 20,40 25,40 L35,40 C40,40 40,35 35,35 Z" 
-                fill="url(#intestineGrad)" 
-                stroke="#ff8289" 
-                strokeWidth="1.5"
-                className="transition-all duration-700 group-hover:scale-105 group-hover:rotate-2"
-              />
-              
-              {/* Small Intestine (Stylized inner coiling) */}
-              <path 
-                d="M40,45 C42,40 48,40 50,45 C52,50 58,50 60,45 C65,40 65,55 60,55 C55,55 50,60 50,65 C50,60 45,55 40,55 C35,55 35,45 40,45" 
-                fill="#ffc1bc" 
-                stroke="#ff8289" 
-                strokeWidth="2" 
-                strokeLinecap="round"
-                className="animate-[pulse_4s_ease-in-out_infinite]"
-              />
-              
-              {/* Texture and Organic gloss effect */}
-              <path d="M22,50 Q25,45 28,50" fill="none" stroke="white" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
-              <path d="M72,55 Q75,60 78,55" fill="none" stroke="#ff8289" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
-            </svg>
-            
-            {/* Sub-text or tiny icon removed as requested for a pure drawing */}
-          </Link>
+              {/* Sub-text or tiny icon removed as requested for a pure drawing */}
+            </Link>
+          )}
         </div>
       </div>
 
@@ -652,27 +666,45 @@ export default function Profile() {
 
         <div className="flex-1 min-w-0">
           <div className="hidden md:flex items-center space-x-4 mb-4">
-            <h2 className="text-xl font-semibold">{user.username}</h2>
+            <div className="flex flex-col">
+              <h2 className="text-xl font-bold text-gray-900">{profile.full_name || profile.username}</h2>
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none">@{profile.username}</span>
+                {profile.birth_date && (
+                  <span className="text-[10px] bg-emerald-50 text-[#006747] px-2 py-0.5 rounded-full font-bold">
+                    {calculateAge(profile.birth_date)} anos
+                  </span>
+                )}
+                {profile.province && (
+                  <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold flex items-center">
+                    <MapPin className="w-2.5 h-2.5 mr-1" />
+                    {profile.province}
+                  </span>
+                )}
+              </div>
+            </div>
             {isOwnProfile ? (
               <>
-                <Link to="/settings" className="bg-gray-100 hover:bg-gray-200 px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors font-sans">Editar Perfil</Link>
+                <Link to="/profile/edit" className="bg-gray-100 hover:bg-gray-200 px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors font-sans">Editar Perfil</Link>
                 {profile.is_professional && (
                   <Link to="/professional/dashboard" className="bg-[#006747] text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-all hover:bg-emerald-800 shadow-sm shadow-emerald-100">Área Profissional</Link>
                 )}
               </>
             ) : (
               <div className="flex items-center space-x-2">
-                <button 
-                  onClick={handleFollow}
-                  className={cn(
-                    "px-8 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm",
-                    isFollowing 
-                      ? "bg-gray-100 text-gray-700 hover:bg-gray-200" 
-                      : "bg-[#006747] text-white hover:bg-emerald-800 shadow-emerald-100"
-                  )}
-                >
-                  {isFollowing ? 'A seguir' : 'Seguir'}
-                </button>
+                {profile.is_professional && (
+                  <button 
+                    onClick={handleFollow}
+                    className={cn(
+                      "px-8 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm",
+                      isFollowing 
+                        ? "bg-gray-100 text-gray-700 hover:bg-gray-200" 
+                        : "bg-[#006747] text-white hover:bg-emerald-800 shadow-emerald-100"
+                    )}
+                  >
+                    {isFollowing ? 'A seguir' : 'Seguir'}
+                  </button>
+                )}
                 {profile.is_professional && !isOwnProfile && (
                   <button 
                     onClick={patientStatus?.status === 'pending' ? cancelPatientRequest : requestToBePatient}
@@ -702,8 +734,24 @@ export default function Profile() {
             )}
           </div>
 
-          <div className="md:hidden space-y-1">
-            <h3 className="font-black text-lg text-gray-900">{user.name}</h3>
+          <div className="md:hidden space-y-0.5">
+            <h3 className="font-black text-lg text-gray-900 leading-tight">{profile.full_name || profile.username}</h3>
+             <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">@{profile.username}</p>
+             
+             <div className="flex flex-wrap gap-2 mt-2">
+                {profile.birth_date && (
+                  <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-[10px] font-bold">
+                    {calculateAge(profile.birth_date)} anos
+                  </span>
+                )}
+                {profile.province && (
+                  <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-[10px] font-bold flex items-center">
+                    <MapPin className="w-3 h-3 mr-1" />
+                    {profile.province}
+                  </span>
+                )}
+             </div>
+
             {profile?.is_professional && (
                <div className="flex flex-col">
                   <p className="text-xs font-bold text-[#006747]">
@@ -725,24 +773,26 @@ export default function Profile() {
         <div className="flex md:hidden items-center space-x-2 mb-6">
              {isOwnProfile ? (
                <>
-                 <Link to="/settings" className="flex-1 bg-gray-100 py-2 rounded-lg text-sm font-bold text-center">Editar Perfil</Link>
+                 <Link to="/profile/edit" className="flex-1 bg-gray-100 py-2 rounded-lg text-sm font-bold text-center">Editar Perfil</Link>
                  {profile.is_professional && (
                     <Link to="/professional/dashboard" className="flex-1 bg-[#006747] text-white py-2 rounded-lg text-sm font-bold text-center">Área Pro</Link>
                  )}
                </>
              ) : (
                <div className="flex w-full space-x-2">
-                 <button 
-                   onClick={handleFollow}
-                   className={cn(
-                     "flex-1 py-2 rounded-lg text-sm font-bold text-center transition-all",
-                     isFollowing 
-                       ? "bg-gray-100 text-gray-700" 
-                       : "bg-[#006747] text-white"
-                   )}
-                 >
-                   {isFollowing ? 'A seguir' : 'Seguir'}
-                 </button>
+                 {profile.is_professional && (
+                   <button 
+                     onClick={handleFollow}
+                     className={cn(
+                       "flex-1 py-2 rounded-lg text-sm font-bold text-center transition-all",
+                       isFollowing 
+                         ? "bg-gray-100 text-gray-700" 
+                         : "bg-[#006747] text-white"
+                     )}
+                   >
+                     {isFollowing ? 'A seguir' : 'Seguir'}
+                   </button>
+                 )}
                  <Link 
                    to={`/messages?userId=${profile.id}`}
                    className="flex-1 bg-white border-2 border-emerald-50 text-[#006747] py-2 rounded-lg text-sm font-bold text-center flex items-center justify-center space-x-2"
@@ -754,24 +804,16 @@ export default function Profile() {
              )}
         </div>
 
-        <div className="flex justify-between border-y border-gray-100 py-4">
-           <div className="text-center"><span className="font-bold block">{user.posts}</span> <span className="text-gray-500 text-[10px] uppercase font-black tracking-widest">publicações</span></div>
-           <div className="text-center">
-              <span className="font-bold block">{user.followers}</span> 
-              <span className="text-gray-500 text-[10px] uppercase font-black tracking-widest"> seguidores</span>
-           </div>
-           <div className="text-center"><span className="font-bold block">{user.following}</span> <span className="text-gray-500 text-[10px] uppercase font-black tracking-widest"> a seguir</span></div>
-        </div>
+        {profile.is_professional && (
+          <div className="flex justify-between border-y border-gray-100 py-4">
+             <div className="text-center"><span className="font-bold block">{user.posts}</span> <span className="text-gray-500 text-[10px] uppercase font-black tracking-widest">publicações</span></div>
+          </div>
+        )}
       </div>
 
       <div className="hidden md:block">
           <div className="flex md:justify-start md:space-x-10 mb-4 md:border-none md:py-0">
-             <div className="text-center md:text-left"><span className="font-bold block md:inline">{user.posts}</span> <span className="text-gray-500 text-sm">publicações</span></div>
-             <div className="text-center md:text-left">
-                <span className="font-bold block md:inline">{user.followers}</span> 
-                <span className="text-gray-500 text-sm"> seguidores</span>
-             </div>
-             <div className="text-center md:text-left"><span className="font-bold block md:inline">{user.following}</span> <span className="text-gray-500 text-sm"> a seguir</span></div>
+             {profile.is_professional && <div className="text-center md:text-left"><span className="font-bold block md:inline">{user.posts}</span> <span className="text-gray-500 text-sm">publicações</span></div>}
           </div>
 
           <div className="space-y-1">

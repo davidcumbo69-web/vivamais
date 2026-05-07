@@ -42,6 +42,13 @@ export type Profile = {
   email?: string;
   bio?: string;
   avatar_url?: string;
+  birth_date?: string;
+  gender?: string;
+  address?: string;
+  marital_status?: string;
+  id_card_number?: string;
+  province?: string;
+  municipality?: string;
   vitus_balance: number;
   is_professional: boolean;
   specialty?: string;
