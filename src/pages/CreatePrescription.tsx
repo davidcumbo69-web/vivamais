@@ -28,7 +28,12 @@ export default function CreatePrescription() {
   const { patientId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const prefill = location.state as { prefillDiagnosis?: string } | null;
+  const prefill = location.state as { 
+    prefillDiagnosis?: string, 
+    clinicalHistoryId?: string,
+    aiMedications?: Array<{ name: string; dosage: string; duration: string; instructions: string }>,
+    aiConduct?: string
+  } | null;
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(false);
@@ -55,11 +60,9 @@ export default function CreatePrescription() {
     { name: 'Vitamina B12', value: '#6b7280' },
   ];
 
-  const [formData, setFormData] = useState({
-    diagnosis: prefill?.prefillDiagnosis || '',
-    startDate: new Date().toISOString().split('T')[0],
-    items: [
-      { 
+  const mapAiMeds = () => {
+    if (!prefill?.aiMedications || prefill.aiMedications.length === 0) {
+      return [{ 
         medication: '', 
         form: 'Comprimido', 
         dosage: '1', 
@@ -69,8 +72,28 @@ export default function CreatePrescription() {
         color: availableColors[0].value,
         totalUnits: 0,
         endDate: '' 
-      }
-    ]
+      }];
+    }
+    return prefill.aiMedications.map((m, idx) => ({
+      medication: m.name,
+      form: 'Comprimido', // Default
+      dosage: m.dosage.match(/\d+/) ? m.dosage.match(/\d+/)![0] : '1',
+      frequency: m.instructions.toLowerCase().includes('8/8') ? '8/8h' : 
+                 m.instructions.toLowerCase().includes('12/12') ? '12/12h' : 
+                 m.instructions.toLowerCase().includes('6/6') ? '6/6h' : '3x',
+      duration: m.duration.match(/\d+/) ? m.duration.match(/\d+/)![0] : '7',
+      specialInstructions: m.instructions,
+      color: availableColors[idx % availableColors.length].value,
+      totalUnits: 0,
+      endDate: ''
+    }));
+  };
+
+  const [formData, setFormData] = useState({
+    diagnosis: prefill?.prefillDiagnosis || '',
+    startDate: new Date().toISOString().split('T')[0],
+    conduct: prefill?.aiConduct || '',
+    items: mapAiMeds()
   });
 
 // Function to convert numbers to Roman Numerals
@@ -265,6 +288,17 @@ export default function CreatePrescription() {
           .eq('id', data.id);
       }
 
+      // Update clinical history with prescription info if it was initiated from there
+      if (prefill?.clinicalHistoryId) {
+        await supabase
+          .from('clinical_histories')
+          .update({ 
+            prescription_code: signature,
+            prescription_id: data.id 
+          })
+          .eq('id', prefill.clinicalHistoryId);
+      }
+
       setGenerationProgress(100);
       setSuccess(true);
       setTimeout(() => navigate(`/verificar-receita/${data.id}`), 1000);
@@ -349,6 +383,17 @@ export default function CreatePrescription() {
                       className="w-full bg-[#1A1A1B] border border-[#343536] rounded px-4 py-2 text-sm focus:border-[#D7DADC] outline-none transition-colors"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block">Conduta Médica & Recomendações (IA)</label>
+                  <textarea 
+                    rows={3}
+                    placeholder="Recomendações adicionais, dieta, repouso, etc..."
+                    value={formData.conduct}
+                    onChange={(e) => setFormData(prev => ({ ...prev, conduct: e.target.value }))}
+                    className="w-full bg-[#1A1A1B] border border-[#343536] rounded px-4 py-2 text-sm focus:border-[#D7DADC] outline-none transition-colors resize-none"
+                  />
                 </div>
               </div>
 

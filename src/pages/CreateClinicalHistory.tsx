@@ -20,13 +20,19 @@ import {
   Zap,
   ArrowUpRight,
   ShieldCheck,
-  Save
+  Save,
+  Sparkles,
+  Camera,
+  RotateCcw,
+  Plus,
+  Brain
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Header } from '../components/layout/Header';
 import { cn } from '../lib/utils';
+import { geminiService, AIDiagnosisOnlyResult } from '../services/geminiService';
 
 interface Step {
   id: number;
@@ -50,6 +56,19 @@ export default function CreateClinicalHistory() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [patientProfile, setPatientProfile] = useState<any>(null);
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  
+  // AI States
+  const [aiLoading, setAiLoading] = useState(false);
+  const [prescLoading, setPrescLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<AIDiagnosisOnlyResult | null>(null);
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 4000);
+  };
 
   const [formData, setFormData] = useState({
     // Step 1: Identification
@@ -147,6 +166,168 @@ export default function CreateClinicalHistory() {
     }
     fetchPatient();
   }, [patientId]);
+
+  const handleCaptureOCR = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setOcrLoading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Content = (reader.result as string).split(',')[1];
+        const result = await geminiService.processHistoryOCR(base64Content);
+        
+        setFormData(prev => ({
+          ...prev,
+          mainComplaint: result.mainComplaint || prev.mainComplaint,
+          detailedDescription: result.detailedDescription || prev.detailedDescription,
+          previousDiseases: result.previousDiseases || prev.previousDiseases,
+          surgeriesHistory: result.surgeriesHistory || prev.surgeriesHistory,
+          allergies: result.allergies || prev.allergies,
+          habitualMedication: result.habitualMedication || prev.habitualMedication,
+          hereditaryDiseases: result.hereditaryDiseases || prev.hereditaryDiseases,
+          physicalExamObservations: result.physicalExamObservations || prev.physicalExamObservations,
+          weight: result.weight || prev.weight,
+          height: result.height || prev.height,
+          temperature: result.temperature || prev.temperature,
+          bloodPressure: result.bloodPressure || prev.bloodPressure,
+          heartRate: result.heartRate || prev.heartRate,
+          respiratoryRate: result.respiratoryRate || prev.respiratoryRate,
+          spo2: result.spo2 || prev.spo2
+        }));
+        
+        showNotification('Histórico digitalizado com sucesso! Alguns campos foram preenchidos.');
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('OCR Error:', err);
+      showNotification('Erro ao digitalizar histórico. Tente novamente.', 'error');
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
+  const handleAiDiagnosis = async () => {
+    setAiLoading(true);
+    try {
+      const result = await geminiService.analyzeClinicalHistory(formData);
+      setAiResult(result);
+      setShowAiModal(true);
+      showNotification('Análise concluída!');
+    } catch (err) {
+      console.error('AI Diagnosis Error:', err);
+      showNotification('Erro ao gerar diagnóstico com IA.', 'error');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleGenPrescription = async () => {
+    setPrescLoading(true);
+    try {
+      showNotification('Gerando receita com IA...');
+      const result = await geminiService.suggestPrescription(formData, formData.allergies);
+      
+      // Save history first
+      const { data: profProfile } = await supabase.from('profiles').select('full_name').eq('id', user?.id).single();
+      
+      const historyData = {
+        patient_id: patientId,
+        professional_id: user?.id,
+        professional_name: profProfile?.full_name || 'Profissional de Saúde',
+        ...getFormattedFormData(),
+        created_at: new Date().toISOString()
+      };
+
+      const { data: createdHistory, error: hError } = await supabase
+        .from('clinical_histories')
+        .insert([historyData])
+        .select()
+        .single();
+
+      if (hError) throw hError;
+
+      // Navigate to prescription with full AI data
+      navigate(`/prescrever/${patientId}`, { 
+        state: { 
+          prefillDiagnosis: result.diagnosis,
+          clinicalHistoryId: createdHistory.id,
+          aiMedications: result.medications,
+          aiConduct: result.conduct
+        } 
+      });
+    } catch (err) {
+      console.error('AI Prescription Error:', err);
+      showNotification('Erro ao gerar receita com IA.', 'error');
+    } finally {
+      setPrescLoading(false);
+    }
+  };
+
+  const getFormattedFormData = () => ({
+    // Step 1
+    full_name: formData.fullName,
+    year: formData.year,
+    gender: formData.gender,
+    id_number: formData.idNumber,
+    contact: formData.contact,
+    profession: formData.profession,
+    marital_status: formData.maritalStatus,
+    address: formData.address,
+
+    // Step 2
+    main_complaint: formData.mainComplaint,
+    symptoms_start_date: formData.symptomsStartDate,
+    duration: `${formData.durationQuantity} ${formData.durationUnit}`,
+    pain_intensity: formData.painIntensity,
+    detailed_description: formData.detailedDescription,
+
+    // Step 3
+    previous_diseases: formData.previousDiseases,
+    surgeries_history: formData.surgeriesHistory,
+    allergies: formData.allergies,
+    vaccination_status: formData.vaccinationStatus,
+    smoking_habits: formData.smokingHabits,
+    alcohol_consumption: formData.alcoholConsumption,
+    habitual_medication: formData.habitualMedication,
+
+    // Step 4
+    hereditary_diseases: formData.hereditaryDiseases,
+
+    // Step 5
+    weight: typeof formData.weight === 'string' ? parseFloat(formData.weight) || 0 : formData.weight,
+    height: typeof formData.height === 'string' ? parseFloat(formData.height) || 0 : formData.height,
+    calculated_imc: formData.imc,
+    temperature: typeof formData.temperature === 'string' ? parseFloat(formData.temperature) || 0 : formData.temperature,
+    blood_pressure: formData.bloodPressure,
+    heart_rate: typeof formData.heartRate === 'string' ? parseInt(formData.heartRate) || 0 : formData.heartRate,
+    respiratory_rate: typeof formData.respiratoryRate === 'string' ? parseInt(formData.respiratoryRate) || 0 : formData.respiratoryRate,
+    spo2: typeof formData.spo2 === 'string' ? parseInt(formData.spo2) || 0 : formData.spo2,
+    physical_exam_observations: formData.physicalExamObservations,
+
+    // Step 6
+    primary_diagnosis: formData.primaryDiagnosis,
+    secondary_diagnosis: formData.secondaryDiagnosis,
+    requested_exams: formData.requestedExams,
+    clinical_notes: formData.clinicalNotes,
+    next_appointment_date: formData.nextAppointmentDate || null,
+    referral: formData.referral
+  });
+
+  const applyAiSuggestion = () => {
+    if (!aiResult) return;
+    
+    setFormData(prev => ({
+      ...prev,
+      primaryDiagnosis: `${aiResult.primaryDiagnosis} (${aiResult.cid10})`,
+      requestedExams: aiResult.recommendedExams.join(', '),
+      clinicalNotes: `Explicação Fisiológica: ${aiResult.explanations.physiological}\n\nExplicação Patológica: ${aiResult.explanations.pathological}\n\nDiagnósticos Diferenciais: ${aiResult.differentialDiagnoses.join(', ')}\n\nÁreas a examinar: ${aiResult.guidance.areasToExamine.join(', ')}`
+    }));
+    
+    setShowAiModal(false);
+    showNotification('Sugestões aplicadas ao formulário!');
+  };
 
   // IMC Calculation
   useEffect(() => {
@@ -260,17 +441,20 @@ export default function CreateClinicalHistory() {
         created_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
+      const { data: createdHistory, error } = await supabase
         .from('clinical_histories')
-        .insert([historyData]);
+        .insert([historyData])
+        .select()
+        .single();
 
       if (error) throw error;
 
       if (generatePrescription) {
-        // Redirecionar para receita com dados pré-preenchidos
+        // Redirecionar para receita com dados pré-preenchidos e ID da história
         navigate(`/prescrever/${patientId}`, { 
           state: { 
-            prefillDiagnosis: formData.primaryDiagnosis 
+            prefillDiagnosis: formData.primaryDiagnosis,
+            clinicalHistoryId: createdHistory.id
           } 
         });
       } else {
@@ -320,6 +504,14 @@ export default function CreateClinicalHistory() {
                 <h1 className="text-2xl font-black text-gray-900 leading-none">História Clínica</h1>
                 <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">Nova Entrada • {patientProfile?.full_name}</p>
               </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <label className="cursor-pointer flex items-center space-x-2 bg-[#FF4500] hover:bg-[#FF4500]/90 text-white px-4 py-2.5 rounded-2xl shadow-lg shadow-orange-100 transition-all text-[10px] font-black uppercase tracking-widest disabled:opacity-50">
+                {ocrLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" /> : <Camera className="w-4 h-4 mr-2" />}
+                Digitalizar
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCaptureOCR} disabled={ocrLoading} />
+              </label>
             </div>
             
             <div className="hidden md:flex items-center space-x-2">
@@ -664,6 +856,7 @@ export default function CreateClinicalHistory() {
                         <div className="relative">
                           <Scale className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#006747]" />
                           <input 
+                            id="vital-weight"
                             type="number" 
                             step="0.1"
                             value={formData.weight}
@@ -678,6 +871,7 @@ export default function CreateClinicalHistory() {
                         <div className="relative">
                           <Ruler className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#006747]" />
                           <input 
+                            id="vital-height"
                             type="number" 
                             value={formData.height}
                             onChange={(e) => setFormData({...formData, height: e.target.value})}
@@ -708,6 +902,7 @@ export default function CreateClinicalHistory() {
                         <div className="relative">
                           <Thermometer className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                           <input 
+                            id="vital-temp"
                             type="number" 
                             step="0.1"
                             value={formData.temperature}
@@ -720,6 +915,7 @@ export default function CreateClinicalHistory() {
                       <div>
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">TA (mmHg) *</label>
                         <input 
+                          id="vital-bp"
                           type="text" 
                           placeholder="120/80"
                           value={formData.bloodPressure}
@@ -731,6 +927,7 @@ export default function CreateClinicalHistory() {
                       <div>
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">FC (bpm) *</label>
                         <input 
+                          id="vital-hr"
                           type="number" 
                           value={formData.heartRate}
                           onChange={(e) => setFormData({...formData, heartRate: e.target.value})}
@@ -741,6 +938,7 @@ export default function CreateClinicalHistory() {
                       <div>
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">FR (rpm) *</label>
                         <input 
+                          id="vital-rr"
                           type="number" 
                           value={formData.respiratoryRate}
                           onChange={(e) => setFormData({...formData, respiratoryRate: e.target.value})}
@@ -753,6 +951,7 @@ export default function CreateClinicalHistory() {
                         <div className="relative">
                           <Zap className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                           <input 
+                            id="vital-spo2"
                             type="number" 
                             value={formData.spo2}
                             onChange={(e) => setFormData({...formData, spo2: e.target.value})}
@@ -778,6 +977,18 @@ export default function CreateClinicalHistory() {
                 {/* STEP 6: DIAGNOSIS & PLAN */}
                 {currentStep === 6 && (
                   <div className="space-y-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Diagnóstico & Sugestões IA</label>
+                      <button 
+                        onClick={handleAiDiagnosis}
+                        disabled={aiLoading}
+                        className="flex items-center space-x-2 text-[#006747] bg-emerald-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all disabled:opacity-50"
+                      >
+                        {aiLoading ? <div className="w-3 h-3 border-2 border-[#006747] border-t-transparent rounded-full animate-spin mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                        Sugerir com IA
+                      </button>
+                    </div>
+
                     <div>
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Diagnóstico Principal *</label>
                       <input 
@@ -886,19 +1097,31 @@ export default function CreateClinicalHistory() {
               <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
                 <button
                   onClick={() => handleSubmit(false)}
-                  disabled={loading}
-                  className="w-full md:w-auto flex items-center justify-center space-x-2 px-8 py-4 bg-white text-gray-600 border border-gray-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                  disabled={loading || prescLoading}
+                  className="w-full md:w-auto flex items-center justify-center space-x-2 px-8 py-4 bg-white text-gray-600 border border-gray-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all opacity-80"
                 >
                   <Save className="w-4 h-4" />
                   <span>{loading ? 'A guardar...' : 'Só Guardar'}</span>
                 </button>
                 <button
                   onClick={() => handleSubmit(true)}
-                  disabled={loading}
-                  className="w-full md:w-auto flex items-center justify-center space-x-2 px-10 py-4 bg-[#006747] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-100"
+                  disabled={loading || prescLoading}
+                  className="w-full md:w-auto flex items-center justify-center space-x-2 px-8 py-4 bg-white text-[#006747] border border-emerald-100 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-all"
                 >
                   <ArrowUpRight className="w-4 h-4" />
-                  <span>{loading ? 'A processar...' : 'Concluir e Gerar Receita'}</span>
+                  <span>Concluir</span>
+                </button>
+                <button
+                  onClick={handleGenPrescription}
+                  disabled={loading || prescLoading}
+                  className="w-full md:w-auto flex items-center justify-center space-x-2 px-10 py-4 bg-[#006747] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition-all shadow-xl shadow-emerald-100 relative overflow-hidden group"
+                >
+                  {prescLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 group-hover:animate-pulse" />
+                  )}
+                  <span>{prescLoading ? 'A Gerar...' : 'Concluir e Gerar Receita com IA'}</span>
                 </button>
               </div>
             )}
@@ -916,6 +1139,220 @@ export default function CreateClinicalHistory() {
            </p>
         </div>
       </div>
-    </div>
+
+      {/* AI SUGGESTION MODAL */}
+      <AnimatePresence>
+        {showAiModal && aiResult && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden"
+            >
+              <div className="bg-[#006747] p-8 text-white">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                      <Sparkles className="w-6 h-6 text-emerald-200" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black leading-none">Sugestão da IA</h2>
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mt-1">Baseado nos dados clínicos inseridos</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowAiModal(false)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
+                    <RotateCcw className="w-5 h-5 text-white/60" />
+                  </button>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 mt-6 border border-white/10">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-200 block mb-2">Diagnóstico Provável</span>
+                  <h3 className="text-2xl font-black">{aiResult.primaryDiagnosis}</h3>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <span className="px-3 py-1 bg-white text-[#006747] rounded-full text-[10px] font-black uppercase tracking-widest">
+                      {aiResult.cid10}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 max-h-[60vh] overflow-y-auto space-y-8 custom-scrollbar">
+                {/* Explanations Axis */}
+                <section className="space-y-6">
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center border-b border-gray-100 pb-2">
+                    <Brain className="w-4 h-4 mr-2 text-[#006747]" />
+                    Análise Fisiopatológica & Clínica
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-emerald-50/30 rounded-2xl border border-emerald-100/50">
+                      <span className="text-[8px] font-black uppercase text-[#006747] tracking-widest block mb-1">Fisiológica</span>
+                      <p className="text-xs text-gray-600 font-medium leading-relaxed">{aiResult.explanations.physiological}</p>
+                    </div>
+                    <div className="p-4 bg-emerald-50/30 rounded-2xl border border-emerald-100/50">
+                      <span className="text-[8px] font-black uppercase text-[#006747] tracking-widest block mb-1">Patológica</span>
+                      <p className="text-xs text-gray-600 font-medium leading-relaxed">{aiResult.explanations.pathological}</p>
+                    </div>
+                    <div className="p-4 bg-emerald-50/30 rounded-2xl border border-emerald-100/50">
+                      <span className="text-[8px] font-black uppercase text-[#006747] tracking-widest block mb-1">Clínica</span>
+                      <p className="text-xs text-gray-600 font-medium leading-relaxed">{aiResult.explanations.clinical}</p>
+                    </div>
+                    <div className="p-4 bg-emerald-50/30 rounded-2xl border border-emerald-100/50">
+                      <span className="text-[8px] font-black uppercase text-[#006747] tracking-widest block mb-1">Social e Ambiental</span>
+                      <p className="text-xs text-gray-600 font-medium leading-relaxed">{aiResult.explanations.socialEnvironmental}</p>
+                    </div>
+                    {aiResult.explanations.genetic && (
+                      <div className="p-4 bg-emerald-50/30 rounded-2xl border border-emerald-100/50 md:col-span-2">
+                        <span className="text-[8px] font-black uppercase text-[#006747] tracking-widest block mb-1">Genética / Hereditária</span>
+                        <p className="text-xs text-gray-600 font-medium leading-relaxed">{aiResult.explanations.genetic}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Differential Diagnosis */}
+                <section>
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center border-b border-gray-100 pb-2">
+                    <Stethoscope className="w-4 h-4 mr-2 text-[#006747]" />
+                    Diagnósticos Diferenciais
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {aiResult.differentialDiagnoses.map((d, i) => (
+                      <span key={i} className="px-4 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold border border-gray-100">
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Clinical Guidance */}
+                <section className="bg-amber-50/50 p-6 rounded-[2rem] border border-amber-100/50 space-y-6">
+                  <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-widest mb-2 flex items-center">
+                    <Activity className="w-4 h-4 mr-2" />
+                    Orientações de Exame & Investigação
+                  </h4>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-[8px] font-black uppercase text-amber-700 tracking-widest block mb-2">Áreas Críticas para Examinar</span>
+                      <ul className="space-y-1.5">
+                        {aiResult.guidance.areasToExamine.map((a, i) => (
+                          <li key={i} className="flex items-center text-[10px] font-bold text-amber-900/70">
+                            <div className="w-1.5 h-1.5 bg-amber-400 rounded-full mr-2" />
+                            {a}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-[8px] font-black uppercase text-amber-700 tracking-widest block mb-2">Perguntas Específicas</span>
+                        <ul className="space-y-1.5">
+                          {aiResult.guidance.questionsToAsk.map((q, i) => (
+                            <li key={i} className="flex items-center text-[10px] font-bold text-amber-900/70">
+                              <Plus className="w-2.5 h-2.5 text-amber-400 mr-2" />
+                              {q}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <span className="text-[8px] font-black uppercase text-amber-700 tracking-widest block mb-2">Manobras Recomendadas</span>
+                        <ul className="space-y-1.5">
+                          {aiResult.guidance.maneuversToPerform.map((m, i) => (
+                            <li key={i} className="flex items-center text-[10px] font-bold text-amber-900/70">
+                              <RotateCcw className="w-2.5 h-2.5 text-amber-400 mr-2" />
+                              {m}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Recommended Exams */}
+                <section>
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center border-b border-gray-100 pb-2">
+                    <ClipboardList className="w-4 h-4 mr-2 text-[#006747]" />
+                    Exames Complementares Recomendados
+                  </h4>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {aiResult.recommendedExams.map((e, i) => (
+                      <li key={i} className="flex items-center space-x-2 text-xs font-bold text-gray-700 bg-white p-3 rounded-2xl border border-gray-100">
+                        <CheckCircle2 className="w-4 h-4 text-[#006747]" />
+                        <span>{e}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
+
+              <div className="p-8 bg-gray-50 border-t border-gray-100 flex flex-col md:flex-row gap-4">
+                <button 
+                  onClick={() => setShowAiModal(false)}
+                  className="flex-1 px-8 py-4 rounded-3xl bg-white border border-gray-200 text-sm font-black text-gray-500 uppercase tracking-widest hover:bg-gray-100 transition-all"
+                >
+                  Confirmar Manualmente
+                </button>
+                <button 
+                  onClick={applyAiSuggestion}
+                  className="flex-1 px-8 py-4 rounded-3xl bg-[#006747] text-white text-sm font-black uppercase tracking-widest shadow-xl shadow-emerald-100 hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  Aplicar Sugestão
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* OCR LOADING OVERLAY */}
+      <AnimatePresence>
+        {ocrLoading && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-[#006747]/90 backdrop-blur-md text-white p-8"
+          >
+            <div className="relative">
+              <div className="w-24 h-24 border-4 border-emerald-200/20 border-t-emerald-200 rounded-full animate-spin mb-8" />
+              <Camera className="w-8 h-8 text-emerald-200 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-[-16px]" />
+            </div>
+            <h3 className="text-2xl font-black mb-2 animate-pulse">Digitalizando Histórico...</h3>
+            <p className="text-emerald-100/60 text-sm font-black uppercase tracking-widest">A IA do VIVA+ está extraindo dados do documento</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* NOTIFICATION TOAST */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div 
+            initial={{ opacity: 0, y: 100, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 100, x: '-50%' }}
+            className="fixed bottom-8 left-1/2 z-[120] w-full max-w-sm px-4"
+          >
+            <div className={cn(
+              "px-6 py-4 rounded-3xl shadow-2xl flex items-center space-x-3 border-b-4",
+              notification.type === 'success' 
+                ? "bg-white text-gray-900 border-[#006747] shadow-emerald-100" 
+                : "bg-red-600 text-white border-red-800 shadow-red-100"
+            )}>
+              {notification.type === 'success' ? (
+                <CheckCircle2 className="w-6 h-6 text-[#006747]" />
+              ) : (
+                <AlertCircle className="w-6 h-6 text-white" />
+              )}
+              <span className="text-sm font-black tracking-tight">{notification.message}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </div>
   );
 }

@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, MapPin, Calendar, ChevronDown, ChevronUp, Activity, Thermometer, Droplet, Ruler } from 'lucide-react';
+import { 
+  Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, 
+  Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, 
+  ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, 
+  Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, 
+  MapPin, Calendar, ChevronDown, ChevronUp, Activity, Thermometer, 
+  Droplet, Ruler, Sparkles, AlertTriangle, Info, CheckCircle2
+} from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
@@ -7,6 +14,8 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase, type HealthProfessional, type HealthGroup } from '../lib/supabase';
 import CreateCommunityModal from '../components/modals/CreateCommunityModal';
 import { cn } from '../lib/utils';
+import { geminiService, AIEvolutionResult, AIMedicationSafetyResult } from '../services/geminiService';
+import { motion, AnimatePresence } from 'motion/react';
 
 function ServiceCard({ svc, user }: { svc: any, user: any, key?: any }) {
   const [isSaved, setIsSaved] = useState(false);
@@ -126,6 +135,13 @@ export default function Profile() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+
+  // AI States
+  const [evolutionResult, setEvolutionResult] = useState<AIEvolutionResult | null>(null);
+  const [evolutionLoading, setEvolutionLoading] = useState(false);
+  const [showEvolutionModal, setShowEvolutionModal] = useState(false);
+  const [safetyResult, setSafetyResult] = useState<AIMedicationSafetyResult | null>(null);
+  const [safetyLoading, setSafetyLoading] = useState(false);
   
   // Patient Management States (for visitors)
   const [patientStatus, setPatientStatus] = useState<any>(null);
@@ -208,6 +224,11 @@ export default function Profile() {
         fetchUserOrders(targetUserId);
         fetchUserPrescriptions(targetUserId);
         fetchClinicalHistory(targetUserId);
+        
+        if (isOwnProfile || myProfile?.is_professional) {
+          fetchSafetyAlerts(targetUserId, pData.allergies || '');
+        }
+
         if (pData.is_professional) {
           fetchUserServices(targetUserId);
         }
@@ -389,6 +410,52 @@ export default function Profile() {
       console.error('Error fetching clinical histories:', err);
     } finally {
       setLoadingHistories(false);
+    }
+  };
+
+  const fetchSafetyAlerts = async (targetUserId: string, allergies: string) => {
+    setSafetyLoading(true);
+    try {
+      // Get most recent prescription
+      const { data: prescription } = await supabase
+        .from('prescriptions')
+        .select('*')
+        .eq('patient_id', targetUserId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (prescription) {
+        const result = await geminiService.checkMedicationSafety(
+          prescription.diagnosis,
+          prescription.medications?.map((m: any) => m.name) || [],
+          allergies,
+          prescription.medications || []
+        );
+        setSafetyResult(result);
+      }
+    } catch (err) {
+      console.error('Error fetching safety alerts:', err);
+    } finally {
+      setSafetyLoading(false);
+    }
+  };
+
+  const handleAnalyzeEvolution = async () => {
+    if (clinicalHistories.length < 2) {
+      alert('São necessárias pelo menos duas histórias clínicas para analisar a evolução.');
+      return;
+    }
+    setEvolutionLoading(true);
+    try {
+      const result = await geminiService.analyzePatientEvolution(clinicalHistories);
+      setEvolutionResult(result);
+      setShowEvolutionModal(true);
+    } catch (err) {
+      console.error('Evolution Analysis Error:', err);
+      alert('Erro ao analisar evolução do paciente.');
+    } finally {
+      setEvolutionLoading(false);
     }
   };
 
@@ -1131,13 +1198,63 @@ export default function Profile() {
 
           {activeTab === 'clinical_history' && (
             <div className="space-y-6 px-2 pb-10">
+              {/* Safety Alerts Banner */}
+              {safetyResult && (safetyResult.interactions.length > 0 || safetyResult.allergyConflicts.length > 0) && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-red-50 border border-red-100 rounded-[2rem] p-6 mb-6"
+                >
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="p-2 bg-red-100 rounded-xl">
+                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-red-900 uppercase tracking-widest leading-none">Alertas de Segurança Ativos</h4>
+                      <p className="text-[10px] text-red-600 font-bold uppercase tracking-widest mt-1">Análise da Receita mais Recente</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {safetyResult.allergyConflicts.map((a, i) => (
+                      <div key={i} className="flex items-start space-x-2 text-xs font-black text-red-800 bg-white/50 p-3 rounded-2xl border border-red-100">
+                        <span className="w-1.5 h-1.5 bg-red-600 rounded-full mt-1.5 flex-shrink-0" />
+                        <span>Alergia: {a}</span>
+                      </div>
+                    ))}
+                    {safetyResult.interactions.map((inter, i) => (
+                      <div key={i} className={cn(
+                        "flex items-start space-x-2 text-xs font-black p-3 rounded-2xl border",
+                        inter.severity === 'high' ? "bg-red-100/50 border-red-200 text-red-900" : "bg-orange-50 border-orange-100 text-orange-900"
+                      )}>
+                        <span className={cn("w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0", inter.severity === 'high' ? "bg-red-600" : "bg-orange-500")} />
+                        <span>Interacção {inter.severity === 'high' ? 'Grave' : 'Moderada'}: {inter.description}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-gray-900 font-black uppercase tracking-widest text-xs">Registos do Paciente</h3>
+                <div className="flex items-center space-x-3">
+                  <h3 className="text-gray-900 font-black uppercase tracking-widest text-xs">Registos do Paciente</h3>
+                  {myProfile?.is_professional && (
+                    <button 
+                      onClick={handleAnalyzeEvolution}
+                      disabled={evolutionLoading || clinicalHistories.length < 2}
+                      className="group relative flex items-center space-x-2 text-[#006747] bg-emerald-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all disabled:opacity-50"
+                    >
+                      {evolutionLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
+                      <span>Evolução IA</span>
+                    </button>
+                  )}
+                </div>
                 {myProfile?.is_professional && (
                    <Link 
                      to={`/professional/clinical-history/${profile.id}`}
                      className="bg-[#006747] text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition-all flex items-center space-x-2 shadow-lg shadow-emerald-50"
                    >
+                     <Plus className="w-3 h-3" />
                      <span>Nova História</span>
                    </Link>
                 )}
@@ -1161,6 +1278,16 @@ export default function Profile() {
                           </div>
                           <div>
                             <h4 className="font-black text-gray-900 text-base leading-none mb-1.5">{history.primary_diagnosis || history.primaryDiagnosis}</h4>
+                            
+                            {history.prescription_code && (
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Pill className="w-3 h-3 text-[#FF4500]" />
+                                <span className="text-[10px] font-black text-[#FF4500] uppercase tracking-widest bg-[#FF4500]/5 px-2 py-0.5 rounded-full">
+                                  Receita: {history.prescription_code}
+                                </span>
+                              </div>
+                            )}
+
                             <div className="flex items-center space-x-3 text-gray-400">
                                <p className="text-[10px] font-black uppercase tracking-widest flex items-center">
                                  <Calendar className="w-3 h-3 mr-1.5" />
@@ -1601,6 +1728,81 @@ export default function Profile() {
 
         </div>
       </div>
+
+      {/* Evolution Modal */}
+      <AnimatePresence>
+        {showEvolutionModal && evolutionResult && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden"
+            >
+              <div className="bg-[#006747] p-8 text-white">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                      <Brain className="w-6 h-6 text-emerald-200" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black leading-none">Análise de Evolução</h2>
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mt-1">Inteligência Clínica VIVA+</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowEvolutionModal(false)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
+                    <Plus className="w-5 h-5 text-white/60 rotate-45" />
+                  </button>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 mt-6 border border-white/10">
+                  <p className="text-sm font-medium leading-relaxed">
+                    {evolutionResult.summary}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-8 max-h-[60vh] overflow-y-auto space-y-8 custom-scrollbar">
+                <section>
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center">
+                    <Activity className="w-4 h-4 mr-2 text-[#006747]" />
+                    Padrões e Tendências Identificadas
+                  </h4>
+                  <div className="space-y-3">
+                    {evolutionResult.trends.map((trend, i) => (
+                      <div key={i} className="flex items-center space-x-3 p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
+                        <CheckCircle2 className="w-4 h-4 text-[#006747]" />
+                        <span className="text-xs font-bold text-gray-700">{trend}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center">
+                    <Stethoscope className="w-4 h-4 mr-2 text-[#006747]" />
+                    Conduta Recomendada
+                  </h4>
+                  <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                    <p className="text-sm text-gray-600 leading-relaxed font-medium italic">
+                      "{evolutionResult.suggestedConduct}"
+                    </p>
+                  </div>
+                </section>
+              </div>
+
+              <div className="p-8 bg-gray-50 border-t border-gray-100">
+                <button 
+                  onClick={() => setShowEvolutionModal(false)}
+                  className="w-full py-4 rounded-3xl bg-[#006747] text-white text-sm font-black uppercase tracking-widest shadow-xl shadow-emerald-100 hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  Entendido
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <CreateCommunityModal 
         isOpen={isModalOpen}
