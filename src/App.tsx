@@ -5,6 +5,7 @@
 
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { AlertProvider } from './hooks/useAlert';
 import { Navbar } from './components/layout/Navbar';
 import Home from './pages/Home';
 import Reels from './pages/Reels';
@@ -91,9 +92,11 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <AlertProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AlertProvider>
     </AuthProvider>
   );
 }

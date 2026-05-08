@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { HeartPulse, Brain, Syringe, Music, Share2, ShieldCheck, Plus, Play, Pause, Loader2, Camera, X, User } from 'lucide-react';
 import { useVitus } from '../hooks/useVitus';
 import { useAuth } from '../hooks/useAuth';
+import { useAlert } from '../hooks/useAlert';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
 import { ReelsCarousel } from '../components/feed/ReelsCarousel';
@@ -20,6 +21,7 @@ export default function Reels() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { addVitus } = useVitus();
   const { user, profile } = useAuth();
+  const { showAlert } = useAlert();
   
   const [reels, setReels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,7 +156,7 @@ export default function Reels() {
 
   const handleToggleLike = async (reelId: string) => {
     if (!user) {
-      alert('Inicie sessão para curtir este vídeo');
+      showAlert('Login Necessário', 'Inicie sessão para interagir e curtir vídeos nos Reels VIVA.', 'info');
       return;
     }
 

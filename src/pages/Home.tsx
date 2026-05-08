@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
+import { useAlert } from '../hooks/useAlert';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase, type Post } from '../lib/supabase';
 import CreateCommunityModal from '../components/modals/CreateCommunityModal';
@@ -35,6 +36,7 @@ export default function Home() {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
   const { balance, addVitus } = useVitus();
+  const { showAlert } = useAlert();
 
   const [posts, setPosts] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
@@ -385,9 +387,9 @@ export default function Home() {
         
         if (error) {
           if (error.code === '23503') {
-             alert('Erro: Perfil de utilizador não encontrado. Por favor, recarregue a página ou faça login novamente.');
+             showAlert('Sessão Expirada', 'Perfil de utilizador não encontrado. Por favor, recarregue a página ou faça login novamente.', 'warning');
           } else {
-             alert(`Erro ao aderir ao grupo: ${error.message}`);
+             showAlert('Erro de Adesão', `Não foi possível aderir ao grupo: ${error.message}`, 'error');
           }
           throw error;
         }

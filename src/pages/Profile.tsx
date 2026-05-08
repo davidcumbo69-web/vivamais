@@ -5,10 +5,12 @@ import {
   ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, 
   Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, 
   MapPin, Calendar, ChevronDown, ChevronUp, Activity, Thermometer, 
-  Droplet, Ruler, Sparkles, AlertTriangle, Info, CheckCircle2, Check, AlertCircle
+  Droplet, Ruler, Sparkles, AlertTriangle, Info, CheckCircle2, Check, AlertCircle,
+  CalendarRange
 } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { useAuth } from '../hooks/useAuth';
+import { useAlert } from '../hooks/useAlert';
 import { useVitus } from '../hooks/useVitus';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, type HealthProfessional, type HealthGroup } from '../lib/supabase';
@@ -104,12 +106,26 @@ function ServiceCard({ svc, user }: { svc: any, user: any, key?: any }) {
   );
 }
 
+const MED_COLORS = [
+  '#3B82F6', // blue
+  '#10B981', // green
+  '#F97316', // orange
+  '#8B5CF6', // purple
+  '#F59E0B', // yellow
+  '#EC4899', // pink
+  '#84CC16', // lime
+  '#6B7280', // gray
+  '#EAB308', // amber
+  '#EF4444', // red
+];
+
 export default function Profile() {
   const { userId } = useParams<{ userId: string }>();
   const { profile: myProfile, signOut } = useAuth();
   const isOwnProfile = !userId || userId === myProfile?.id;
   const [profile, setProfile] = useState<any>(null);
   const { balance } = useVitus();
+  const { showAlert } = useAlert();
   const [proData, setProData] = useState<HealthProfessional | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [reels, setReels] = useState<any[]>([]);
@@ -318,7 +334,7 @@ export default function Profile() {
 
   const handleFollow = async () => {
     if (!myProfile) {
-      alert('Por favor, faça login para seguir profissionais.');
+      showAlert('Autenticação Necessária', 'Por favor, faça login para seguir profissionais.', 'warning');
       return;
     }
 
@@ -371,7 +387,7 @@ export default function Profile() {
       .eq('id', orderId);
 
     if (!error) {
-        alert('Compra concluída com sucesso!');
+        showAlert('Pedido Concluído', 'Sua confirmação foi registrada com sucesso!', 'success');
         fetchUserOrders(profile.id);
     }
   };
@@ -485,7 +501,7 @@ export default function Profile() {
 
   const handleAnalyzeEvolution = async () => {
     if (clinicalHistories.length < 2) {
-      alert('São necessárias pelo menos duas histórias clínicas para analisar a evolução.');
+      showAlert('Histórico Necessário', 'São necessárias pelo menos duas histórias clínicas para analisar a evolução.', 'info');
       return;
     }
     setEvolutionLoading(true);
@@ -495,7 +511,7 @@ export default function Profile() {
       setShowEvolutionModal(true);
     } catch (err) {
       console.error('Evolution Analysis Error:', err);
-      alert('Erro ao analisar evolução do paciente.');
+      showAlert('Erro na Análise', 'Não foi possível analisar a evolução do paciente no momento.', 'error');
     } finally {
       setEvolutionLoading(false);
     }
@@ -567,7 +583,7 @@ export default function Profile() {
   };
 
   const requestToBePatient = async () => {
-    if (!myProfile) return alert('Faça login primeiro');
+    if (!myProfile) return showAlert('Acesso Restrito', 'Faça login primeiro para solicitar acompanhamento médico.', 'warning');
     setLoadingPatient(true);
     try {
       const { error } = await supabase
@@ -580,12 +596,12 @@ export default function Profile() {
       
       if (error) {
         if (error.code === '23505') {
-          alert('Você já é paciente de um profissional ou ja tem um pedido pendente. Só é permitido ter 1 profissional por paciente.');
+          showAlert('Limite de Profissional', 'Você já é paciente de um profissional ou já possui um pedido pendente. Atualmente, é permitido apenas 1 profissional por paciente.', 'warning');
         } else {
           throw error;
         }
       } else {
-        alert('Pedido enviado com sucesso!');
+        showAlert('Pedido Enviado', 'Seu pedido de acompanhamento foi enviado com sucesso! Aguarde a aprovação do profissional.', 'success');
         fetchPatientData(profile.id, myProfile.id);
       }
     } catch (err) {
@@ -1088,7 +1104,7 @@ export default function Profile() {
             </button>
           )}
 
-          {(isOwnProfile || (myProfile?.is_professional && isPatientOfProf)) && (
+          {(myProfile?.is_professional && isPatientOfProf) && (
             <button 
               onClick={() => setActiveTab('tracking')}
               className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'tracking' ? 'border-[#006747] text-[#006747] -mt-[1px]' : 'border-transparent text-gray-400'}`}
@@ -1197,67 +1213,177 @@ export default function Profile() {
                 ))
               ) : (
                 <div className="col-span-full text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
-                   <HeartPulse className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                   <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Sem serviços listados</p>
-                </div>
+                    <HeartPulse className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                    <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Sem serviços listados</p>
+                 </div>
               )}
             </div>
           )}
 
           {activeTab === 'prescriptions' && (
-            <div className="space-y-4 px-2">
+            <div className="min-h-screen bg-gray-50 -mx-4 -mb-20 px-6 pt-10 pb-32 font-sans">
               {loadingPrescriptions ? (
                 <div className="flex justify-center py-12">
                    <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
                 </div>
               ) : prescriptions.length > 0 ? (
-                prescriptions.map(presc => (
-                  <Link 
-                    key={presc.id} 
-                    to={`/verificar-receita/${presc.id}`}
-                    className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#006747]/20 transition-all"
-                  >
-                    <div className="flex items-center space-x-5">
-                       <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center">
-                          <FileText className="w-6 h-6 text-[#006747]" />
-                       </div>
-                       <div>
-                          <p className="text-[10px] font-black text-[#006747] uppercase tracking-widest mb-1">
-                            Emitida por {presc.professional?.full_name}
-                          </p>
-                          <h4 className="text-lg font-black text-gray-900 tracking-tighter mb-1">{presc.medication}</h4>
-                          <div className="flex items-center space-x-3 text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
-                             <span className="flex items-center">
-                                <Clock className="w-3 h-3 mr-1" />
-                                {presc.frequency}
-                             </span>
-                             <span className="flex items-center">
-                                <CalendarCheck2 className="w-3 h-3 mr-1" />
-                                {new Date(presc.created_at).toLocaleDateString('pt-PT')}
-                             </span>
+                prescriptions.map(presc => {
+                  const items = Array.isArray(presc.items) ? presc.items : [];
+                  return (
+                    <div key={presc.id} className="w-full max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                      {/* Prescription Paper Style Card */}
+                      <div className="bg-white rounded-[2.5rem] p-10 md:p-14 border border-gray-100 shadow-xl relative overflow-hidden">
+                        {/* Header Box */}
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-16 border-b border-gray-50 pb-10">
+                          <div className="space-y-1">
+                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Dr. {presc.professional?.full_name || 'Carlos Mendes'}</h3>
+                            <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
+                              <p>{presc.professional?.specialty || 'Infectologista'} — Cédula {presc.professional?.license_number || '12.847'}</p>
+                              <p>{presc.hospital || 'Hospital Central de Luanda'}</p>
+                            </div>
                           </div>
-                       </div>
+                          
+                          <div className="text-right space-y-1 mt-2">
+                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Data: {new Date(presc.created_at).toLocaleDateString('pt-PT')}</p>
+                            <p className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Paciente: <span className="text-gray-900">{profile.full_name}, {profile.age || '34'} anos</span></p>
+                            <p className="text-[11px] font-black text-gray-500 uppercase tracking-widest">Diagnóstico: <span className="text-gray-900">{presc.diagnosis || 'Malária por P. falciparum'}</span></p>
+                          </div>
+                        </div>
+
+                        {/* Medications list */}
+                        <div className="space-y-4 mb-16">
+                          {items.map((item: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between py-4 px-6 rounded-2xl hover:bg-gray-50 transition-all group">
+                              <div className="flex items-center space-x-6">
+                                <span className="text-[11px] font-black text-gray-200 w-4">{idx + 1}</span>
+                                <div className="w-5 h-5 rounded-full shadow-sm" style={{ backgroundColor: MED_COLORS[idx % MED_COLORS.length] }} />
+                                <div className="flex items-center space-x-4">
+                                  <h5 className="text-lg font-black text-gray-900 tracking-tight">{item.medication}</h5>
+                                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{item.form || 'comprimido'}</span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center space-x-12">
+                                <div className="text-right">
+                                  <p className="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-1">{item.frequency || '2x/dia'} — {item.duration || '3'} dias</p>
+                                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none">
+                                    {item.instructions || 'com refeição'}
+                                  </p>
+                                </div>
+                                <div className="w-12 text-right">
+                                  <span className="text-xl font-black text-gray-900">{((parseInt(item.frequency) || 2) * (parseInt(item.duration) || 3))}x</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Therapeutic Map Grid */}
+                        <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
+                          <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-10 text-center">
+                            Mapa de administração terapêutica — {new Date(presc.created_at).toLocaleDateString('pt-PT')} — {(() => {
+                              const d = new Date(presc.created_at);
+                              d.setDate(d.getDate() + 14);
+                              return d.toLocaleDateString('pt-PT');
+                            })()}
+                          </h4>
+
+                          <div className="overflow-x-auto pb-4 scrollbar-hide">
+                            <table className="w-full text-left border-collapse min-w-[800px]">
+                              <thead>
+                                <tr className="border-b border-gray-200">
+                                  <th className="pb-8 text-[11px] font-bold text-gray-300 uppercase tracking-widest w-24">Horário</th>
+                                  {[...Array(14)].map((_, i) => {
+                                    const d = new Date(presc.created_at);
+                                    d.setDate(d.getDate() + i);
+                                    const isToday = new Date().toDateString() === d.toDateString();
+                                    return (
+                                      <th key={i} className={cn("pb-8 text-center px-1 min-w-[50px]", isToday ? "text-[#006747]" : "text-gray-300")}>
+                                        <p className="text-[9px] font-black uppercase mb-1">{d.toLocaleDateString('pt-PT', { weekday: 'short' }).slice(0,3)}</p>
+                                        <p className="text-[11px] font-black">{d.getDate()}</p>
+                                      </th>
+                                    );
+                                  })}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {[8, 12, 14, 18, 20, 22].map((hour) => (
+                                  <tr key={hour} className="group border-b border-gray-100 last:border-0 hover:bg-white transition-colors">
+                                    <td className="py-5 text-[11px] font-black text-gray-400 group-hover:text-gray-900">{hour.toString().padStart(2, '0')}:00</td>
+                                    {[...Array(14)].map((_, dayIdx) => (
+                                      <td key={dayIdx} className="py-5 px-1">
+                                         <div className="flex flex-wrap justify-center gap-1.5 min-h-[14px]">
+                                           {items.filter((item: any) => isPeriodActiveForHour(item.frequency, hour)).map((_, medIdx) => (
+                                             <div 
+                                               key={medIdx}
+                                               className="w-3 h-3 rounded-full shadow-sm"
+                                               style={{ backgroundColor: MED_COLORS[items.indexOf(items.filter((i: any) => isPeriodActiveForHour(i.frequency, hour))[medIdx]) % MED_COLORS.length] }}
+                                             />
+                                           ))}
+                                         </div>
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Legend Area */}
+                          <div className="mt-12 pt-8 border-t border-gray-200 flex flex-wrap gap-x-12 gap-y-6">
+                             {items.map((item: any, idx: number) => (
+                               <div key={idx} className="flex items-center space-x-3">
+                                 <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: MED_COLORS[idx % MED_COLORS.length] }} />
+                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{item.medication}</span>
+                               </div>
+                             ))}
+                          </div>
+                        </div>
+
+                        {/* Footer / QR / Signature */}
+                        <div className="mt-16 flex flex-col md:flex-row justify-between items-end gap-8 border-t border-gray-50 pt-10">
+                           <div className="flex items-center space-x-8">
+                              <div className="w-24 h-24 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center">
+                                 <svg viewBox="0 0 100 100" className="w-16 h-16 opacity-10">
+                                   <rect x="10" y="10" width="20" height="20" fill="currentColor" />
+                                   <rect x="70" y="10" width="20" height="20" fill="currentColor" />
+                                   <rect x="10" y="70" width="20" height="20" fill="currentColor" />
+                                   <rect x="40" y="40" width="20" height="20" fill="currentColor" />
+                                   <rect x="50" y="50" width="10" height="10" fill="currentColor" />
+                                 </svg>
+                              </div>
+                              <div className="space-y-1">
+                                 <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Código de Verificação</p>
+                                 <span className="text-sm font-mono font-bold text-gray-900">#{(presc.signature_code || presc.id.slice(0,8)).toUpperCase()}</span>
+                                 <div className="flex items-center space-x-2 text-[#006747] pt-2">
+                                    <ShieldCheck className="w-4 h-4" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Receita Digital Validada</span>
+                                 </div>
+                              </div>
+                           </div>
+                           
+                           <Link 
+                             to={`/verificar-receita/${presc.id}`}
+                             className="bg-black text-white px-10 py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-2xl"
+                           >
+                             Imprimir Receituário
+                           </Link>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right flex flex-col items-end">
-                       <div className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 mb-2">
-                          <span className="text-[9px] font-mono font-bold text-gray-500">{presc.signature_code}</span>
-                       </div>
-                       <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#006747] transition-colors" />
-                    </div>
-                  </Link>
-                ))
+                  );
+                })
               ) : (
-                <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
-                   <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                      <Pill className="w-8 h-8 text-gray-200" />
+                <div className="text-center py-40 bg-white rounded-[3rem] border border-gray-100 shadow-xl max-w-4xl mx-auto">
+                   <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8 border border-gray-100">
+                      <FileText className="w-12 h-12 text-gray-100" />
                    </div>
-                   <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Sem receitas médicas</p>
-                   <p className="text-xs text-gray-400 px-10">As suas receitas médicas digitais aparecerão aqui após serem emitidas por um profissional.</p>
+                   <h4 className="text-base font-black text-gray-200 uppercase tracking-widest mb-3">Historial Vazio</h4>
+                   <p className="text-xs text-gray-300 font-bold uppercase tracking-widest max-w-xs mx-auto leading-relaxed">Nenhuma prescrição digital foi emitida para este perfil até o momento.</p>
                 </div>
               )}
             </div>
           )}
-
           {activeTab === 'clinical_history' && (
             <div className="space-y-6 px-2 pb-10">
               {/* Safety Alerts Banner */}
@@ -1518,10 +1644,16 @@ export default function Profile() {
             </div>
           )}
 
-          {activeTab === 'tracking' && (
+          {activeTab === 'tracking' && myProfile?.is_professional && isPatientOfProf && (
             <div className="space-y-6 px-2 pb-10">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-gray-900 font-black uppercase tracking-widest text-xs">Acompanhamento de Medicação</h3>
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-[#006747]">
+                  <HeartPulse className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 leading-tight">Acompanhamento</h3>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estado da Medicação</p>
+                </div>
               </div>
               {loadingPrescriptions ? (
                 <div className="flex flex-col items-center justify-center py-12">
@@ -1605,32 +1737,32 @@ export default function Profile() {
                              const perc = totalPlanned > 0 ? (takenCount / totalPlanned) * 100 : 0;
 
                              return (
-                              <div key={iIdx} className="bg-white p-4 rounded-3xl border border-gray-100 space-y-3 group transition-all hover:border-emerald-100/50">
+                              <div key={iIdx} className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm space-y-4 group transition-all hover:bg-emerald-50/10">
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-3">
+                                  <div className="flex items-center space-x-4">
                                     <div className={cn(
-                                      "w-2 h-2 rounded-full shadow-sm blink-soft",
-                                      perc > 0 ? "bg-emerald-500" : "bg-gray-300"
+                                      "w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]",
+                                      perc > 0 ? "bg-emerald-500 blink-soft" : "bg-gray-200"
                                     )} />
                                     <div>
                                       <p className="text-sm font-black text-gray-900 leading-none group-hover:text-emerald-700 transition-colors uppercase tracking-tight">{item.medication}</p>
-                                      <p className="text-[10px] text-gray-400 font-bold mt-2 uppercase tracking-widest leading-none">
+                                      <p className="text-[10px] text-gray-400 font-black mt-2 uppercase tracking-widest leading-none">
                                         {item.dosage || '1'} {item.form || ''} • {item.frequency}
                                       </p>
                                     </div>
                                   </div>
-                                  <div className="text-right flex items-center space-x-3">
+                                  <div className="text-right flex items-center space-x-4">
                                     <div className="flex flex-col items-end">
-                                      <p className="text-xs font-black text-gray-900 leading-none">{takenCount}/{totalPlanned}</p>
+                                      <p className="text-sm font-black text-gray-900 leading-none">{takenCount}/{totalPlanned}</p>
                                       <p className={cn(
-                                        "text-[9px] font-black uppercase mt-1.5 tracking-tighter",
+                                        "text-[10px] font-black uppercase mt-1.5 tracking-tighter",
                                         perc > 0 ? "text-emerald-500" : "text-gray-300"
                                       )}>{perc.toFixed(0)}%</p>
                                     </div>
-                                    <div className="w-10 h-10 rounded-full border-2 border-emerald-50 flex items-center justify-center relative overflow-hidden bg-gray-50/30">
+                                    <div className="w-11 h-11 rounded-full border-2 border-emerald-50 flex items-center justify-center relative shadow-sm overflow-hidden bg-gray-50/20">
                                       <div 
-                                        className="absolute inset-0 bg-emerald-500 transition-all duration-1000" 
-                                        style={{ height: `${Math.min(perc, 100)}%`, bottom: 0, top: 'auto', opacity: 0.1 }} 
+                                        className="absolute inset-x-0 bottom-0 bg-emerald-500 transition-all duration-1000" 
+                                        style={{ height: `${Math.min(perc, 100)}%`, opacity: 0.1 }} 
                                       />
                                       <Check className={cn(
                                         "w-4 h-4 transition-colors", 

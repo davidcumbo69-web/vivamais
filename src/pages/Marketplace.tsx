@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
+import { useAlert } from '../hooks/useAlert';
 import { 
   ShoppingBag, 
   Search, 
@@ -121,6 +122,7 @@ function ProductCard({ product, user, setSelectedProduct }: { product: any, user
 export default function Marketplace() {
   const { user, profile } = useAuth();
   const { balance } = useVitus();
+  const { showAlert } = useAlert();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('Todos');
@@ -151,7 +153,7 @@ export default function Marketplace() {
 
     const handleConfirmOrder = async () => {
         if (!user || !selectedProduct) {
-            alert('Faça login para comprar.');
+            showAlert('Login Necessário', 'Por favor, inicie sessão para realizar compras na Loja VIVA.', 'warning');
             return;
         }
 
@@ -189,11 +191,11 @@ export default function Marketplace() {
                 }]);
             }
             
-            alert(`Pedido realizado! Total: ${totalPrice}€ (Pago com ${vitusToUse.toFixed(1)} Vitus + ${cashToPay.toFixed(2)}€ em dinheiro)`);
+            showAlert('Pedido Realizado', `Sua encomenda de ${selectedProduct.name} foi registada com sucesso!`, 'success');
             setSelectedProduct(null);
             setOrderQuantity(1);
         } else {
-            alert('Erro ao realizar pedido: ' + orderError.message);
+            showAlert('Erro no Pedido', 'Não foi possível processar a sua encomenda: ' + orderError.message, 'error');
         }
         setIsOrdering(false);
     };

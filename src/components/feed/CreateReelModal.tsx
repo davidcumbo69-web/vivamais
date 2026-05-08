@@ -3,6 +3,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Music, Plus, Play, Loader2, Camera, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useAlert } from '../../hooks/useAlert';
 import { supabase } from '../../lib/supabase';
 
 interface CreateReelModalProps {
@@ -13,6 +14,7 @@ interface CreateReelModalProps {
 
 export function CreateReelModal({ isOpen, onClose, onCreated }: CreateReelModalProps) {
   const { user } = useAuth();
+  const { showAlert } = useAlert();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newReelFile, setNewReelFile] = useState<File | null>(null);
   const [newReelCaption, setNewReelCaption] = useState('');
@@ -36,7 +38,7 @@ export function CreateReelModal({ isOpen, onClose, onCreated }: CreateReelModalP
 
     // Check file size (limit to 50MB for better reliability)
     if (newReelFile.size > 50 * 1024 * 1024) {
-      alert('O vídeo é demasiado grande. Por favor, carregue um vídeo com menos de 50MB.');
+      showAlert('Ficheiro Muito Grande', 'O vídeo é demasiado pesado. Por favor, carregue um vídeo com menos de 50MB para garantir a estabilidade do SNS VIVA.', 'warning');
       return;
     }
 
@@ -81,7 +83,7 @@ export function CreateReelModal({ isOpen, onClose, onCreated }: CreateReelModalP
       if (onCreated) onCreated();
     } catch (err: any) {
       console.error('Error creating reel:', err);
-      alert(`Erro ao publicar reel: ${err.message || 'Verifique o tamanho do ficheiro e ligação.'}`);
+      showAlert('Erro na Publicação', `Não foi possível publicar o reel: ${err.message || 'Verifique o tamanho do ficheiro e a ligação.'}`, 'error');
     } finally {
       setIsSubmitting(false);
     }

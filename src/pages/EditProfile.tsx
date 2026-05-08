@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, User, MapPin, Calendar, CreditCard, Heart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { useAlert } from '../hooks/useAlert';
 import { Header } from '../components/layout/Header';
 
 export default function EditProfile() {
   const { profile, loading: authLoading } = useAuth();
+  const { showAlert } = useAlert();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -73,7 +75,7 @@ export default function EditProfile() {
       navigate('/perfil');
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Erro ao atualizar perfil. Tente novamente.');
+      showAlert('Erro ao Atualizar', 'Não foi possível guardar as alterações no seu perfil. Por favor, tente novamente.', 'error');
     } finally {
       setLoading(false);
     }
