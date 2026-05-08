@@ -5,7 +5,7 @@ import {
   ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, 
   Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, 
   MapPin, Calendar, ChevronDown, ChevronUp, Activity, Thermometer, 
-  Droplet, Ruler, Sparkles, AlertTriangle, Info, CheckCircle2
+  Droplet, Ruler, Sparkles, AlertTriangle, Info, CheckCircle2, Check, AlertCircle
 } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { useAuth } from '../hooks/useAuth';
@@ -118,7 +118,7 @@ export default function Profile() {
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [loadingReels, setLoadingReels] = useState(false);
   const [loadingCommunities, setLoadingCommunities] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services' | 'prescriptions' | 'patients' | 'clinical_history'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services' | 'prescriptions' | 'patients' | 'clinical_history' | 'tracking'>('posts');
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -378,8 +378,37 @@ export default function Profile() {
     setLoadingAppointments(false);
   };
 
-  const fetchUserPrescriptions = async (targetUserId: string) => {
-    if (!isOwnProfile) return;
+  const parseDurationDays = (durationStr: string) => {
+    if (!durationStr) return 1;
+    const d = durationStr.toString().toLowerCase();
+    const numMatch = d.match(/(\d+)/);
+    if (!numMatch) return 1;
+    
+    const num = parseInt(numMatch[1]);
+    if (d.includes('semana') || d.includes('week')) return num * 7;
+    if (d.includes('mês') || d.includes('mes') || d.includes('month')) return num * 30;
+    return num;
+  };
+
+  const isPeriodActiveForHour = (freqStr: string, hour: number) => {
+    const f = (freqStr || "").toLowerCase();
+    if (f.includes('1x') || f.includes('24/24') || f.includes('diária') || f.includes('diaria')) return hour === 8;
+    if (f.includes('2x') || f.includes('12/12')) return [8, 20].includes(hour);
+    if (f.includes('3x') || f.includes('8/8')) return [0, 8, 16].includes(hour);
+    if (f.includes('4x') || f.includes('6/6')) return [0, 6, 12, 18].includes(hour);
+    if (f.includes('6x') || f.includes('4/4')) return [0, 4, 8, 12, 16, 20].includes(hour);
+    const hourlyMatch = f.match(/(\d+)h/);
+    if (hourlyMatch) {
+      const interval = parseInt(hourlyMatch[1]);
+      if (interval > 0) return (hour - 8) % interval === 0 || (hour + 24 - 8) % interval === 0;
+    }
+    return false;
+  };
+
+  const fetchUserPrescriptions = async (targetUserId: string, forceFetch = false) => {
+    // Allow if own profile OR if I'm a professional and this is my patient (or if manually forced)
+    if (!forceFetch && !isOwnProfile && !(myProfile?.is_professional && isPatientOfProf)) return;
+    
     setLoadingPrescriptions(true);
     const { data } = await supabase
       .from('prescriptions')
@@ -512,6 +541,12 @@ export default function Profile() {
         setPatientStatus(status);
         const accepted = status?.status === 'accepted';
         setIsPatientOfProf(accepted);
+        
+        // If professional is viewing an accepted patient, fetch clinical info
+        if (accepted && myProfile?.is_professional) {
+          fetchUserPrescriptions(targetUserId, true);
+          fetchClinicalHistory(targetUserId);
+        }
       }
     } catch (err) {
       console.error('Error fetching patient data:', err);
@@ -1042,6 +1077,16 @@ export default function Profile() {
             </button>
           )}
 
+          {(isOwnProfile || (myProfile?.is_professional && isPatientOfProf)) && (
+            <button 
+              onClick={() => setActiveTab('tracking')}
+              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'tracking' ? 'border-[#006747] text-[#006747] -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            >
+              <Activity className="w-4 h-4 text-[#006747]" />
+              <span className={activeTab === 'tracking' ? "text-[#006747]" : ""}>Acompanhamento</span>
+            </button>
+          )}
+
           {isOwnProfile && profile.is_professional && (
             <Link 
               to="/professional/patients"
@@ -1457,6 +1502,140 @@ export default function Profile() {
                    </div>
                    <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Sem histórico clínico</p>
                    <p className="text-xs text-gray-400 px-10">Os registos clínicos do paciente aparecerão aqui após as consultas.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'tracking' && (
+            <div className="space-y-6 px-2 pb-10">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-900 font-black uppercase tracking-widest text-xs">Acompanhamento de Medicação</h3>
+              </div>
+              {loadingPrescriptions ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
+                  <p className="mt-2 text-[10px] text-gray-400 font-black uppercase tracking-widest">Sincronizando...</p>
+                </div>
+              ) : prescriptions.length > 0 ? (
+                <div className="space-y-6">
+                  {prescriptions.map((presc) => (
+                    <div key={presc.id} className="bg-gray-50 rounded-[2.5rem] p-6 border border-gray-100 shadow-sm">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-[#006747]">
+                            <ShieldCheck className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Receita Digital</p>
+                            <span className="text-xs font-bold text-gray-900">#{presc.id.slice(0,8).toUpperCase()}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Data Emissão</p>
+                          <span className="text-xs font-bold text-gray-900">{new Date(presc.created_at).toLocaleDateString('pt-PT')}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        {(() => {
+                           const items = Array.isArray(presc.items) ? presc.items : (typeof presc.items === 'string' ? JSON.parse(presc.items) : []);
+                           return items.map((item: any, iIdx: number) => {
+                             const history = Object.entries(presc.taken_doses || {})
+                               .filter(([key, val]) => key.startsWith(`${iIdx}-`) && typeof val === 'string')
+                               .map(([key, val]) => {
+                                 const parts = key.split('-');
+                                 const dayIdx = parseInt(parts[1]);
+                                 const scheduledHour = parseInt(parts[2]);
+                                 
+                                 const startDate = new Date(presc.start_date || presc.created_at);
+                                 const scheduledTime = new Date(startDate);
+                                 scheduledTime.setDate(scheduledTime.getDate() + dayIdx);
+                                 scheduledTime.setHours(scheduledHour, 0, 0, 0);
+                                 
+                                 const actualTime = new Date(val as string);
+                                 const diffMs = Math.abs(actualTime.getTime() - scheduledTime.getTime());
+                                 const diffHours = diffMs / (1000 * 60 * 60);
+                                 const isWrong = diffHours > 1 || actualTime.toLocaleDateString('pt-PT') !== scheduledTime.toLocaleDateString('pt-PT');
+
+                                 return { timestamp: val as string, isWrong };
+                               })
+                               .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+                             const takenCount = history.length;
+                             const totalPlanned = parseDurationDays(item.duration) * (parseInt(item.frequency) || (item.frequency?.match(/(\d+)/)?.[1]) || 3);
+                             const perc = totalPlanned > 0 ? (takenCount / totalPlanned) * 100 : 0;
+
+                             return (
+                              <div key={iIdx} className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm space-y-4 group hover:border-emerald-200 transition-all">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-4">
+                                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center text-[#006747]">
+                                      <Pill className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-black text-gray-900 group-hover:text-[#006747] transition-colors">{item.medication}</p>
+                                      <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">{item.dosage} • {item.frequency}</p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right flex items-center space-x-4">
+                                    <div className="flex flex-col items-end">
+                                      <p className="text-xs font-black text-gray-900 leading-none">{takenCount}/{totalPlanned}</p>
+                                      <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-1">{perc.toFixed(0)}% Adesão</p>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-2xl border-2 border-emerald-50 flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform">
+                                      <div className="absolute inset-0 bg-emerald-500 transition-all duration-1000" style={{ height: `${Math.min(perc, 100)}%`, bottom: 0, top: 'auto', opacity: 0.15 }} />
+                                      <Check className={cn("w-5 h-5 transition-colors", perc >= 100 ? "text-emerald-500" : "text-gray-200")} />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {history.length > 0 && (
+                                  <div className="pt-4 border-t border-gray-50">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center">
+                                        <Clock className="w-3.5 h-3.5 mr-1.5" /> Últimos Registos
+                                      </p>
+                                      {takenCount > 3 && (
+                                        <span className="text-[8px] font-black text-[#006747] uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-full">+{takenCount - 3} mais</span>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {history.slice(0, 5).map((entry, tIdx) => {
+                                        const date = new Date(entry.timestamp);
+                                        return (
+                                          <div key={tIdx} className={cn(
+                                            "px-3 py-1.5 rounded-xl border transition-all flex items-center space-x-2",
+                                            entry.isWrong ? 'bg-red-50 border-red-100/50' : 'bg-emerald-50/30 border-emerald-100/30'
+                                          )}>
+                                            <p className={cn(
+                                              "text-[9px] font-bold",
+                                              entry.isWrong ? 'text-red-700' : 'text-emerald-700'
+                                            )}>
+                                              {date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' })} • {date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                            {entry.isWrong && <AlertCircle className="w-3 h-3 text-red-500 opacity-60" />}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                             );
+                           });
+                        })()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-24 bg-gray-50 rounded-[3rem] border border-dashed border-gray-200">
+                  <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-gray-50">
+                    <Activity className="w-10 h-10 text-gray-200" />
+                  </div>
+                  <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-1">Sem Acompanhamento Ativo</h4>
+                  <p className="text-xs text-gray-400 px-12 leading-relaxed">Não foram encontradas receitas ou registos de medicação para este paciente.</p>
                 </div>
               )}
             </div>

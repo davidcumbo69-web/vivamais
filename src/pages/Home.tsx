@@ -142,6 +142,18 @@ export default function Home() {
   const [selectedPatientPrescriptions, setSelectedPatientPrescriptions] = useState<any[]>([]);
   const [loadingPatientTracking, setLoadingPatientTracking] = useState(false);
 
+  const parseDurationDays = (durationStr: string) => {
+    if (!durationStr) return 1;
+    const d = durationStr.toString().toLowerCase();
+    const numMatch = d.match(/(\d+)/);
+    if (!numMatch) return 1;
+    
+    const num = parseInt(numMatch[1]);
+    if (d.includes('semana') || d.includes('week')) return num * 7;
+    if (d.includes('mês') || d.includes('mes') || d.includes('month')) return num * 30;
+    return num;
+  };
+
   const fetchPatientTracking = async (patientId: string) => {
     setLoadingPatientTracking(true);
     try {
@@ -1099,7 +1111,7 @@ export default function Home() {
                                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
                              const takenCount = history.length;
-                             const totalPlanned = (parseInt(item.frequency) || (item.frequency?.match(/(\d+)/)?.[1]) || 3) * (parseInt(item.duration) || 7);
+                             const totalPlanned = parseDurationDays(item.duration) * (parseInt(item.frequency) || (item.frequency?.match(/(\d+)/)?.[1]) || 3);
                              const perc = totalPlanned > 0 ? (takenCount / totalPlanned) * 100 : 0;
 
                              return (
