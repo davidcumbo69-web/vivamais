@@ -18,7 +18,9 @@ import {
   HeartPulse,
   User,
   Activity,
-  Check
+  Check,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
@@ -1067,23 +1069,50 @@ export default function Home() {
                       <div className="space-y-3">
                         {(() => {
                            const items = Array.isArray(presc.items) ? presc.items : (typeof presc.items === 'string' ? JSON.parse(presc.items) : []);
-                           return items.map((item: any, iIdx: number) => (
-                            <div key={iIdx} className="bg-white p-3 rounded-2xl border border-gray-100 flex items-center justify-between">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm" />
-                                <div>
-                                  <p className="text-sm font-bold text-gray-800 leading-none">{item.medication}</p>
-                                  <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase">{item.dosage} • {item.frequency}</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                {(() => {
-                                  // Count taken doses for this specific item
-                                  const takenCount = Object.keys(presc.taken_doses || {}).filter(k => k.startsWith(`${iIdx}-`)).length;
-                                  const totalPlanned = (parseInt(item.frequency) || 0) * (parseInt(item.duration) || 0);
-                                  const perc = totalPlanned > 0 ? (takenCount / totalPlanned) * 100 : 0;
-                                  
-                                  return (
+                           return items.map((item: any, iIdx: number) => {
+                             // Get history of taken doses with clinical auditory
+                             const history = Object.entries(presc.taken_doses || {})
+                               .filter(([key, val]) => key.startsWith(`${iIdx}-`) && typeof val === 'string')
+                               .map(([key, val]) => {
+                                 const parts = key.split('-');
+                                 const dayIdx = parseInt(parts[1]);
+                                 const scheduledHour = parseInt(parts[2]);
+                                 
+                                 // Reconstruct scheduled time
+                                 const startDate = new Date(presc.start_date || presc.created_at);
+                                 const scheduledTime = new Date(startDate);
+                                 scheduledTime.setDate(scheduledTime.getDate() + dayIdx);
+                                 scheduledTime.setHours(scheduledHour, 0, 0, 0);
+                                 
+                                 const actualTime = new Date(val as string);
+                                 const diffMs = Math.abs(actualTime.getTime() - scheduledTime.getTime());
+                                 const diffHours = diffMs / (1000 * 60 * 60);
+                                 
+                                 // "Wrong" if > 1h difference or different day
+                                 const isWrong = diffHours > 1 || actualTime.toLocaleDateString() !== scheduledTime.toLocaleDateString();
+
+                                 return {
+                                   timestamp: val as string,
+                                   isWrong
+                                 };
+                               })
+                               .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+                             const takenCount = history.length;
+                             const totalPlanned = (parseInt(item.frequency) || (item.frequency?.match(/(\d+)/)?.[1]) || 3) * (parseInt(item.duration) || 7);
+                             const perc = totalPlanned > 0 ? (takenCount / totalPlanned) * 100 : 0;
+
+                             return (
+                              <div key={iIdx} className="bg-white p-4 rounded-3xl border border-gray-100 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm" />
+                                    <div>
+                                      <p className="text-sm font-bold text-gray-800 leading-none">{item.medication}</p>
+                                      <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase">{item.dosage} • {item.frequency}</p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
                                     <div className="flex items-center space-x-3">
                                       <div className="flex flex-col items-end">
                                         <p className="text-xs font-black text-gray-900">{takenCount}/{totalPlanned}</p>
@@ -1094,11 +1123,32 @@ export default function Home() {
                                         <Check className="w-4 h-4 text-emerald-500" />
                                       </div>
                                     </div>
-                                  );
-                                })()}
+                                  </div>
+                                </div>
+
+                                {history.length > 0 && (
+                                  <div className="pt-3 border-t border-gray-50">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center">
+                                      <Clock className="w-3 h-3 mr-1" /> Registro de Tomadas
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {history.map((entry, tIdx) => {
+                                        const date = new Date(entry.timestamp);
+                                        return (
+                                          <div key={tIdx} className={`${entry.isWrong ? 'bg-red-50 border-red-100/50' : 'bg-emerald-50/50 border-emerald-100/50'} px-2 py-1 rounded-lg border transition-colors`}>
+                                            <p className={`text-[9px] font-bold ${entry.isWrong ? 'text-red-700' : 'text-emerald-700'} flex items-center`}>
+                                              {date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' })} às {date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                                              {entry.isWrong && <AlertCircle className="w-2.5 h-2.5 ml-1 opacity-70" />}
+                                            </p>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                           ));
+                             );
+                           });
                         })()}
                       </div>
                     </div>

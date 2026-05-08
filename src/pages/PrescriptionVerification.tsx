@@ -225,9 +225,17 @@ export default function DigitalPrescriptionView() {
   }
 
   const parseDurationDays = (durationStr: string) => {
-    const d = (durationStr || "").toLowerCase();
-    const match = d.match(/(\d+)\s*(dia|day)/);
-    return match ? parseInt(match[1]) : 1;
+    if (!durationStr) return 1;
+    const d = durationStr.toString().toLowerCase();
+    const numMatch = d.match(/(\d+)/);
+    if (!numMatch) return 1;
+    
+    const num = parseInt(numMatch[1]);
+    if (d.includes('semana') || d.includes('week')) return num * 7;
+    if (d.includes('mês') || d.includes('mes') || d.includes('month')) return num * 30;
+    
+    // Default to days if just a number is provided or if "dia" is found
+    return num;
   };
 
   const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-orange-500', 'bg-purple-500', 'bg-pink-500'];
@@ -251,12 +259,41 @@ export default function DigitalPrescriptionView() {
   const isPeriodActiveForHour = (freqStr: string, hour: number) => {
     const f = (freqStr || "").toLowerCase();
     
-    // Suporte para formatos "X por dia" ou "H/H horas"
-    if (f === '1x' || f.includes('24/24')) return hour === 8;
-    if (f === '2x' || f.includes('12/12')) return [8, 20].includes(hour);
-    if (f === '3x' || f.includes('8/8')) return [8, 16, 0].includes(hour);
-    if (f === '4x' || f.includes('6/6')) return [6, 12, 18, 0].includes(hour);
-    if (f === '6x' || f.includes('4/4')) return [4, 8, 12, 16, 20, 0].includes(hour);
+    // Clinical frequency mapping to standard hospital hours
+    // 1x/day or 24/24h -> 08:00
+    if (f.includes('1x') || f.includes('24/24') || f.includes('diária') || f.includes('diaria')) {
+      return hour === 8;
+    }
+    
+    // 2x/day or 12/12h -> 08:00, 20:00
+    if (f.includes('2x') || f.includes('12/12')) {
+      return [8, 20].includes(hour);
+    }
+    
+    // 3x/day or 8/8h -> 08:00, 16:00, 00:00
+    if (f.includes('3x') || f.includes('8/8')) {
+      return [0, 8, 16].includes(hour);
+    }
+    
+    // 4x/day or 6/6h -> 06:00, 12:00, 18:00, 00:00
+    if (f.includes('4x') || f.includes('6/6')) {
+      return [0, 6, 12, 18].includes(hour);
+    }
+    
+    // 6x/day or 4/4h -> 00, 04, 08, 12, 16, 20
+    if (f.includes('6x') || f.includes('4/4')) {
+      return [0, 4, 8, 12, 16, 20].includes(hour);
+    }
+    
+    // Case-specific hourly match (e.g., "10/10h")
+    const hourlyMatch = f.match(/(\d+)h/);
+    if (hourlyMatch) {
+      const interval = parseInt(hourlyMatch[1]);
+      if (interval > 0) {
+        // Simple relative calculation from 08:00 morning start
+        return (hour - 8) % interval === 0 || (hour + 24 - 8) % interval === 0;
+      }
+    }
     
     return false;
   };
@@ -392,13 +429,16 @@ export default function DigitalPrescriptionView() {
             </div>
 
             <div className="bg-[#030303] rounded border border-[#343536] p-6 mb-10">
-               <div className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 mb-6 border-b border-[#343536] pb-4">
+               <div className="grid grid-cols-[80px_repeat(21,1fr)] gap-1 mb-6 border-b border-[#343536] pb-4">
                   <div className="text-[10px] font-black text-gray-500 uppercase self-end">Hora</div>
-                  {Array.from({ length: 14 }).map((_, i) => {
+                  {Array.from({ length: 21 }).map((_, i) => {
                       const d = new Date(startTreatmentDate);
                       d.setDate(d.getDate() + i);
+                      const dur = Math.max(...items.map(item => parseDurationDays(item.duration)));
+                      const isPastDuration = i >= dur;
+
                       return (
-                        <div key={i} className="text-center">
+                        <div key={i} className={`text-center ${isPastDuration ? 'opacity-20' : 'opacity-100'}`}>
                             <p className="text-[8px] font-bold text-gray-600 uppercase mb-1">{getDayName(d)}</p>
                             <p className="text-[10px] font-bold text-gray-400">{d.getDate()}</p>
                         </div>
@@ -407,10 +447,10 @@ export default function DigitalPrescriptionView() {
                </div>
 
                {[0, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22].map(hour => (
-                  <div key={hour} className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 py-2 border-b border-white/[0.01] last:border-0">
+                  <div key={hour} className="grid grid-cols-[80px_repeat(21,1fr)] gap-1 py-1.5 border-b border-white/[0.01] last:border-0">
                       <div className="text-[10px] font-bold text-gray-500 self-center">{hour.toString().padStart(2, '0')}:00</div>
-                      {Array.from({ length: 14 }).map((_, dIdx) => (
-                        <div key={dIdx} className="flex flex-wrap items-center justify-center gap-1 min-h-[24px]">
+                      {Array.from({ length: 21 }).map((_, dIdx) => (
+                        <div key={dIdx} className="flex flex-wrap items-center justify-center gap-1 min-h-[22px]">
                             {items.map((item, mIdx) => {
                               const dur = parseDurationDays(item.duration);
                               if (dIdx < dur && isPeriodActiveForHour(item.frequency, hour)) {
@@ -549,13 +589,16 @@ export default function DigitalPrescriptionView() {
 
                 <div className="overflow-x-auto no-scrollbar">
                   <div className="min-w-[700px] print:min-w-0 print:w-full">
-                    <div className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 mb-4 border-b border-[#343536] pb-3 print:grid-cols-[60px_repeat(14,1fr)] print:border-gray-200">
+                    <div className="grid grid-cols-[80px_repeat(21,1fr)] gap-1 mb-4 border-b border-[#343536] pb-3 print:grid-cols-[60px_repeat(21,1fr)] print:border-gray-200">
                       <div />
-                      {Array.from({ length: 14 }).map((_, i) => {
+                      {Array.from({ length: 21 }).map((_, i) => {
                         const d = new Date(startTreatmentDate);
                         d.setDate(d.getDate() + i);
+                        const dur = Math.max(...items.map(item => parseDurationDays(item.duration)));
+                        const isPastDuration = i >= dur;
+
                         return (
-                          <div key={i} className="text-center">
+                          <div key={i} className={`text-center ${isPastDuration ? 'opacity-20' : 'opacity-100'}`}>
                             <p className="text-[8px] font-bold text-gray-600 uppercase tracking-tighter mb-1">{getDayName(d)}</p>
                             <p className="text-[10px] font-bold text-gray-400 print:text-black">{d.getDate()}</p>
                           </div>
@@ -564,10 +607,10 @@ export default function DigitalPrescriptionView() {
                     </div>
 
                     {[0, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22].map(hour => (
-                      <div key={hour} className="grid grid-cols-[80px_repeat(14,1fr)] gap-1 py-2 border-b border-white/[0.01] last:border-0 hover:bg-white/[0.02] transition-colors rounded group print:grid-cols-[60px_repeat(14,1fr)] print:border-gray-100">
+                      <div key={hour} className="grid grid-cols-[80px_repeat(21,1fr)] gap-1 py-1.5 border-b border-white/[0.01] last:border-0 hover:bg-white/[0.02] transition-colors rounded group print:grid-cols-[60px_repeat(21,1fr)] print:border-gray-100">
                         <div className="text-[10px] font-bold text-gray-500 group-hover:text-gray-300 transition-colors self-center print:text-black">{hour.toString().padStart(2, '0')}:00</div>
-                        {Array.from({ length: 14 }).map((_, dIdx) => (
-                          <div key={dIdx} className="flex flex-wrap items-center justify-center gap-1 min-h-[24px]">
+                        {Array.from({ length: 21 }).map((_, dIdx) => (
+                          <div key={dIdx} className="flex flex-wrap items-center justify-center gap-1 min-h-[22px]">
                             {items.map((item, mIdx) => {
                               const dur = parseDurationDays(item.duration);
                               const isActive = dIdx < dur && isPeriodActiveForHour(item.frequency, hour);
