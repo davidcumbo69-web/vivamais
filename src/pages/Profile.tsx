@@ -414,7 +414,8 @@ export default function Profile() {
       .from('prescriptions')
       .select(`
         *,
-        professional:professional_id(full_name, specialty, license_number)
+        professional:professional_id(full_name, specialty, license_number),
+        items:prescription_items(*)
       `)
       .eq('patient_id', targetUserId)
       .order('created_at', { ascending: false });
@@ -1520,24 +1521,16 @@ export default function Profile() {
               ) : prescriptions.length > 0 ? (
                 <div className="space-y-6">
                   {prescriptions.map((presc) => (
-                    <div key={presc.id} className="bg-gray-50 rounded-[2.5rem] p-6 border border-gray-100 shadow-sm">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-[#006747]">
-                            <ShieldCheck className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Receita Digital</p>
-                            <span className="text-xs font-bold text-gray-900">#{presc.id.slice(0,8).toUpperCase()}</span>
-                          </div>
+                    <div key={presc.id} className="bg-gray-50 rounded-3xl p-5 border border-gray-100">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                          <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">#{presc.id.slice(0,6).toUpperCase()}</span>
                         </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Data Emissão</p>
-                          <span className="text-xs font-bold text-gray-900">{new Date(presc.created_at).toLocaleDateString('pt-PT')}</span>
-                        </div>
+                        <span className="text-[10px] font-bold text-gray-400">{new Date(presc.created_at).toLocaleDateString('pt-PT')}</span>
                       </div>
 
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {(() => {
                            const items = Array.isArray(presc.items) ? presc.items : (typeof presc.items === 'string' ? JSON.parse(presc.items) : []);
                            return items.map((item: any, iIdx: number) => {
@@ -1556,6 +1549,7 @@ export default function Profile() {
                                  const actualTime = new Date(val as string);
                                  const diffMs = Math.abs(actualTime.getTime() - scheduledTime.getTime());
                                  const diffHours = diffMs / (1000 * 60 * 60);
+                                 
                                  const isWrong = diffHours > 1 || actualTime.toLocaleDateString('pt-PT') !== scheduledTime.toLocaleDateString('pt-PT');
 
                                  return { timestamp: val as string, isWrong };
@@ -1567,54 +1561,61 @@ export default function Profile() {
                              const perc = totalPlanned > 0 ? (takenCount / totalPlanned) * 100 : 0;
 
                              return (
-                              <div key={iIdx} className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm space-y-4 group hover:border-emerald-200 transition-all">
+                              <div key={iIdx} className="bg-white p-4 rounded-3xl border border-gray-100 space-y-3 group transition-all hover:border-emerald-100/50">
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-4">
-                                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center text-[#006747]">
-                                      <Pill className="w-5 h-5" />
-                                    </div>
+                                  <div className="flex items-center space-x-3">
+                                    <div className={cn(
+                                      "w-2 h-2 rounded-full shadow-sm blink-soft",
+                                      perc > 0 ? "bg-emerald-500" : "bg-gray-300"
+                                    )} />
                                     <div>
-                                      <p className="text-sm font-black text-gray-900 group-hover:text-[#006747] transition-colors">{item.medication}</p>
-                                      <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">{item.dosage} • {item.frequency}</p>
+                                      <p className="text-sm font-black text-gray-900 leading-none group-hover:text-emerald-700 transition-colors uppercase tracking-tight">{item.medication}</p>
+                                      <p className="text-[10px] text-gray-400 font-bold mt-2 uppercase tracking-widest leading-none">
+                                        {item.dosage || '1'} {item.form || ''} • {item.frequency}
+                                      </p>
                                     </div>
                                   </div>
-                                  <div className="text-right flex items-center space-x-4">
+                                  <div className="text-right flex items-center space-x-3">
                                     <div className="flex flex-col items-end">
                                       <p className="text-xs font-black text-gray-900 leading-none">{takenCount}/{totalPlanned}</p>
-                                      <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-1">{perc.toFixed(0)}% Adesão</p>
+                                      <p className={cn(
+                                        "text-[9px] font-black uppercase mt-1.5 tracking-tighter",
+                                        perc > 0 ? "text-emerald-500" : "text-gray-300"
+                                      )}>{perc.toFixed(0)}%</p>
                                     </div>
-                                    <div className="w-12 h-12 rounded-2xl border-2 border-emerald-50 flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform">
-                                      <div className="absolute inset-0 bg-emerald-500 transition-all duration-1000" style={{ height: `${Math.min(perc, 100)}%`, bottom: 0, top: 'auto', opacity: 0.15 }} />
-                                      <Check className={cn("w-5 h-5 transition-colors", perc >= 100 ? "text-emerald-500" : "text-gray-200")} />
+                                    <div className="w-10 h-10 rounded-full border-2 border-emerald-50 flex items-center justify-center relative overflow-hidden bg-gray-50/30">
+                                      <div 
+                                        className="absolute inset-0 bg-emerald-500 transition-all duration-1000" 
+                                        style={{ height: `${Math.min(perc, 100)}%`, bottom: 0, top: 'auto', opacity: 0.1 }} 
+                                      />
+                                      <Check className={cn(
+                                        "w-4 h-4 transition-colors", 
+                                        perc > 0 ? "text-emerald-500" : "text-gray-200"
+                                      )} />
                                     </div>
                                   </div>
                                 </div>
 
                                 {history.length > 0 && (
-                                  <div className="pt-4 border-t border-gray-50">
-                                    <div className="flex items-center justify-between mb-3">
-                                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center">
-                                        <Clock className="w-3.5 h-3.5 mr-1.5" /> Últimos Registos
-                                      </p>
-                                      {takenCount > 3 && (
-                                        <span className="text-[8px] font-black text-[#006747] uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-full">+{takenCount - 3} mais</span>
-                                      )}
-                                    </div>
+                                  <div className="pt-3 border-t border-gray-50">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2.5 flex items-center">
+                                      <Clock className="w-3 h-3 mr-1.5" /> Registro de Tomadas
+                                    </p>
                                     <div className="flex flex-wrap gap-2">
-                                      {history.slice(0, 5).map((entry, tIdx) => {
+                                      {history.map((entry, tIdx) => {
                                         const date = new Date(entry.timestamp);
                                         return (
                                           <div key={tIdx} className={cn(
-                                            "px-3 py-1.5 rounded-xl border transition-all flex items-center space-x-2",
-                                            entry.isWrong ? 'bg-red-50 border-red-100/50' : 'bg-emerald-50/30 border-emerald-100/30'
+                                            "px-2.5 py-1.5 rounded-xl border transition-all flex items-center space-x-2",
+                                            entry.isWrong ? 'bg-red-50 border-red-100/50' : 'bg-emerald-50/50 border-emerald-100/50'
                                           )}>
                                             <p className={cn(
-                                              "text-[9px] font-bold",
+                                              "text-[9px] font-black",
                                               entry.isWrong ? 'text-red-700' : 'text-emerald-700'
                                             )}>
                                               {date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' })} • {date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                                             </p>
-                                            {entry.isWrong && <AlertCircle className="w-3 h-3 text-red-500 opacity-60" />}
+                                            {entry.isWrong && <AlertCircle className="w-2.5 h-2.5 text-red-500" />}
                                           </div>
                                         );
                                       })}
