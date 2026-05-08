@@ -18,9 +18,11 @@ import {
   Plus,
   Image as ImageIcon,
   Trash2,
-  Layout
+  Layout,
+  User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { DEFAULT_AVATAR } from '../lib/constants';
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
@@ -415,8 +417,12 @@ export default function AdminDashboard() {
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-100 bg-gray-50">
-                          <img src={req.image_url || req.profiles?.avatar_url || 'https://i.pravatar.cc/150'} alt="" className="w-full h-full object-cover" />
+                        <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center">
+                          {req.image_url || req.profiles?.avatar_url ? (
+                            <img src={req.image_url || req.profiles?.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-6 h-6 text-gray-300" />
+                          )}
                         </div>
                         <div>
                           <h3 className="font-bold text-gray-900">{req.profiles?.full_name || req.profiles?.username}</h3>
@@ -513,13 +519,19 @@ export default function AdminDashboard() {
                         <p className="text-white text-xs line-clamp-2">{reel.caption}</p>
                      </div>
                   </div>
-                  <div className="p-4 flex flex-col flex-1">
-                     <div className="flex items-center space-x-3 mb-4">
-                        <img 
-                          src={reel.profiles?.avatar_url || 'https://i.pravatar.cc/150'} 
-                          className="w-10 h-10 rounded-full border border-gray-200" 
-                          alt="" 
-                        />
+                      <div className="p-4 flex flex-col flex-1">
+                         <div className="flex items-center space-x-3 mb-4">
+                            <div className="w-10 h-10 rounded-full border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
+                               {reel.profiles?.avatar_url ? (
+                                   <img 
+                                     src={reel.profiles.avatar_url} 
+                                     className="w-full h-full object-cover" 
+                                     alt="" 
+                                   />
+                               ) : (
+                                   <User className="w-5 h-5 text-gray-300" />
+                               )}
+                            </div>
                         <div>
                            <p className="text-sm font-bold">{reel.profiles?.username}</p>
                            <p className="text-[10px] text-gray-400">{new Date(reel.created_at).toLocaleDateString()}</p>

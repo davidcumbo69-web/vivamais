@@ -469,7 +469,7 @@ export default function ProfessionalDashboard() {
                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
                     <TrendingUp className="w-5 h-5" />
                 </div>
-                <p className="text-[10px] font-black uppercase text-white/60 tracking-wider">Receito Total</p>
+                <p className="text-[10px] font-black uppercase text-white/60 tracking-wider">Receita Total</p>
                 <p className="text-2xl font-black">{totalEarnings.toFixed(2)}€</p>
             </div>
 
@@ -486,7 +486,7 @@ export default function ProfessionalDashboard() {
                 <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-[#006747] mb-3">
                     <Stethoscope className="w-5 h-5" />
                 </div>
-                <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Dinheiro Serviços</p>
+                <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Receita de Serviços</p>
                 <p className="text-xl font-black text-gray-900">{bookingEarnings.toFixed(2)}€</p>
             </div>
 
@@ -494,7 +494,7 @@ export default function ProfessionalDashboard() {
                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-3">
                     <ShoppingBag className="w-5 h-5" />
                 </div>
-                <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Dinheiro Produtos</p>
+                <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Receita de Produtos</p>
                 <p className="text-xl font-black text-gray-900">{salesEarnings.toFixed(2)}€</p>
             </div>
 
@@ -583,7 +583,7 @@ export default function ProfessionalDashboard() {
         {loading ? (
             <div className="flex flex-col items-center justify-center py-24">
                 <div className="w-12 h-12 border-4 border-[#006747] border-t-transparent rounded-full animate-spin" />
-                <p className="mt-4 text-gray-400 font-bold uppercase tracking-widest text-[10px]">Sinronizando dados...</p>
+                <p className="mt-4 text-gray-400 font-bold uppercase tracking-widest text-[10px]">Sincronizando dados...</p>
             </div>
         ) : (
             <div className="space-y-8">
@@ -839,7 +839,7 @@ export default function ProfessionalDashboard() {
                                                         <div className="flex items-center space-x-2">
                                                             <span className="text-[9px] font-black uppercase bg-blue-100 text-blue-700 px-3 py-1 rounded-lg flex items-center">
                                                                 <Truck className="w-3 h-3 mr-1" />
-                                                                Aguardando Confirmar
+                                                                Aguardando Confirmação
                                                             </span>
                                                             <button 
                                                                 onClick={() => handleUpdateOrderStatus(order.id, 'pendente')}
@@ -1228,7 +1228,7 @@ export default function ProfessionalDashboard() {
                                 required
                                 type="text" 
                                 className="w-full bg-gray-50 border-gray-100 rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-[#006747] transition-all"
-                                placeholder="Cria um nome apelativo..."
+                                placeholder="Introduza um nome apelativo..."
                                 value={newService.name}
                                 onChange={e => setNewService({...newService, name: e.target.value})}
                             />

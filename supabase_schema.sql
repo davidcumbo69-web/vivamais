@@ -151,7 +151,7 @@ create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, username, full_name, avatar_url, email)
-  values (new.id, split_part(new.email, '@', 1), new.raw_user_meta_data->>'full_name', 'https://i.pravatar.cc/150?u=' || new.id, new.email);
+  values (new.id, split_part(new.email, '@', 1), new.raw_user_meta_data->>'full_name', 'https://api.dicebear.com/7.x/avataaars/svg?seed=' || new.id || '&backgroundColor=b6e3f4', new.email);
   return new;
 end;
 $$ language plpgsql security definer;
@@ -639,17 +639,49 @@ create table if not exists prescriptions (
   id uuid default uuid_generate_v4() primary key,
   patient_id uuid references profiles(id) on delete cascade not null,
   professional_id uuid references profiles(id) on delete cascade not null,
-  medication text not null,
-  dosage text not null,
-  frequency text not null,
-  duration text not null,
-  notes text,
   diagnosis text,
-  items jsonb default '[]'::jsonb,
   start_date date default current_date,
   signature_code text not null unique, -- Format: the-MMXVI-cedav-ROMAN1-ROMAN2
   pdf_url text, -- Store generated PDF URL
+  taken_doses jsonb default '{}'::jsonb, -- Store tracking of taken doses
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 15.1 Prescription items table
+create table if not exists prescription_items (
+  id uuid default uuid_generate_v4() primary key,
+  prescription_id uuid references prescriptions(id) on delete cascade not null,
+  medication text not null,
+  form text,
+  dosage text,
+  frequency text,
+  duration text,
+  special_instructions text,
+  color text,
+  total_units float,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table prescription_items enable row level security;
+
+create policy "Users can view items of prescriptions they have access to"
+on prescription_items for select
+using (
+  exists (
+    select 1 from prescriptions p
+    where p.id = prescription_id
+    and (p.patient_id = auth.uid() or p.professional_id = auth.uid())
+  )
+);
+
+create policy "Professionals can insert items for their prescriptions"
+on prescription_items for insert
+with check (
+  exists (
+    select 1 from prescriptions p
+    where p.id = prescription_id
+    and p.professional_id = auth.uid()
+  )
 );
 
 -- Storage bucket for prescription PDFs
@@ -714,7 +746,20 @@ begin
       'license_number', hp.license_number,
       'professional_specialty', hp.specialty,
       'diagnosis', p.diagnosis,
-      'items', p.items,
+      'items', (
+        select jsonb_agg(
+          jsonb_build_object(
+            'medication', pi.medication,
+            'form', pi.form,
+            'dosage', pi.dosage,
+            'frequency', pi.frequency,
+            'duration', pi.duration,
+            'special_instructions', pi.special_instructions,
+            'color', pi.color,
+            'total_units', pi.total_units
+          )
+        ) from public.prescription_items pi where pi.prescription_id = p.id
+      ),
       'pdf_url', p.pdf_url,
       'start_date', coalesce(p.start_date, p.created_at::date),
       'created_at', p.created_at

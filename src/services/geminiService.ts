@@ -1,6 +1,17 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+let genAI: any = null;
+
+function getAI() {
+  if (!genAI) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not defined. Please check your environment variables.");
+    }
+    genAI = new GoogleGenAI({ apiKey });
+  }
+  return genAI;
+}
 
 export interface AIDiagnosisOnlyResult {
   primaryDiagnosis: string;
@@ -52,8 +63,11 @@ export interface AIOcrResult {
 
 export interface AIEvolutionResult {
   summary: string;
+  patterns: string[];
   trends: string[];
-  suggestedConduct: string;
+  lastMedications: string[];
+  lastExams: string[];
+  recommendations: string[];
 }
 
 export interface AIMedicationSafetyResult {
@@ -70,6 +84,7 @@ export const geminiService = {
    * Suggests diagnosis and detailed clinical analysis (no treatment).
    */
   async analyzeClinicalHistory(historyData: any): Promise<AIDiagnosisOnlyResult> {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [
@@ -130,6 +145,7 @@ export const geminiService = {
    * Suggests a full prescription based on the clinical history.
    */
   async suggestPrescription(historyData: any, patientAllergies: string): Promise<AIPrescriptionSuggestionResult> {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [
@@ -175,6 +191,7 @@ export const geminiService = {
    * Extracts clinical history from an image (photo of paper records).
    */
   async processHistoryOCR(base64Image: string): Promise<AIOcrResult> {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [
@@ -220,9 +237,10 @@ export const geminiService = {
   },
 
   /**
-   * Compares multiple clinical histories to identify patterns.
+   * Compares multiple clinical histories to identify patterns, medications and exams.
    */
   async analyzePatientEvolution(histories: any[]): Promise<AIEvolutionResult> {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [
@@ -232,19 +250,19 @@ export const geminiService = {
         }
       ],
       config: {
-        systemInstruction: "Identifique padrões, recorrências e tendências na saúde do paciente (ex: febres recorrentes, agravamento de valores). Sugira condutas baseadas nessas tendências.",
+        systemInstruction: "Você é um analista médico de IA. Identifique padrões, recorrências e tendências na saúde do paciente. Extraia também as últimas medicações em curso, últimos exames realizados e sugira uma lista de condutas recomendadas.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
             summary: { type: Type.STRING },
-            trends: { 
-              type: Type.ARRAY, 
-              items: { type: Type.STRING } 
-            },
-            suggestedConduct: { type: Type.STRING }
+            patterns: { type: Type.ARRAY, items: { type: Type.STRING } },
+            trends: { type: Type.ARRAY, items: { type: Type.STRING } },
+            lastMedications: { type: Type.ARRAY, items: { type: Type.STRING } },
+            lastExams: { type: Type.ARRAY, items: { type: Type.STRING } },
+            recommendations: { type: Type.ARRAY, items: { type: Type.STRING } }
           },
-          required: ["summary", "trends", "suggestedConduct"]
+          required: ["summary", "patterns", "trends", "lastMedications", "lastExams", "recommendations"]
         }
       }
     });
@@ -261,6 +279,7 @@ export const geminiService = {
     patientAllergies: string,
     ongoingMedications: any[]
   ): Promise<AIMedicationSafetyResult> {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [

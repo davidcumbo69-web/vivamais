@@ -70,7 +70,7 @@ export default function EditProfile() {
         .eq('id', profile.id);
 
       if (error) throw error;
-      navigate('/profile');
+      navigate('/perfil');
     } catch (error) {
       console.error('Error updating profile:', error);
       alert('Erro ao atualizar perfil. Tente novamente.');

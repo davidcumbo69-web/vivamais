@@ -61,19 +61,19 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/reels" element={<Reels />} />
-          <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/my-orders" element={<MyOrders />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/profile/edit" element={<EditProfile />} />
-          <Route path="/profile/:userId" element={<Profile />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/loja-viva" element={<Marketplace />} />
+          <Route path="/minhas-encomendas" element={<MyOrders />} />
+          <Route path="/perfil" element={<Profile />} />
+          <Route path="/perfil/editar" element={<EditProfile />} />
+          <Route path="/perfil/:userId" element={<Profile />} />
+          <Route path="/definicoes" element={<Settings />} />
           <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/gamification" element={<Gamification />} />
-          <Route path="/appointments" element={<Appointments />} />
-          <Route path="/messages" element={<Messages />} />
+          <Route path="/conquistas" element={<Gamification />} />
+          <Route path="/consultas" element={<Appointments />} />
+          <Route path="/mensagens" element={<Messages />} />
           <Route path="/prescrever/:patientId" element={<CreatePrescription />} />
           <Route path="/professional/clinical-history/:patientId" element={<CreateClinicalHistory />} />
-          <Route path="/prescriptions" element={<MyPrescriptions />} />
+          <Route path="/historico-receitas" element={<MyPrescriptions />} />
           <Route path="/professional/dashboard" element={<ProfessionalDashboard />} />
           <Route path="/professional/patients" element={<MyPatients />} />
           <Route path="/verificar" element={<PrescriptionSearch />} />

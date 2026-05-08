@@ -175,10 +175,10 @@ export function FeedPost({ post }: FeedPostProps) {
         
         {/* User Info Overlay - Bottom Center */}
         <div className="absolute bottom-0 left-0 right-0 pb-2 md:pb-6 pt-12 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col items-center justify-end pointer-events-none">
-           <Link to={`/profile/${post.user.id}`} className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 border-white overflow-hidden shadow-2xl mb-2 pointer-events-auto cursor-pointer active:scale-95 transition-transform group">
+           <Link to={`/perfil/${post.user.id}`} className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 border-white overflow-hidden shadow-2xl mb-2 pointer-events-auto cursor-pointer active:scale-95 transition-transform group">
               <img src={post.user.avatar} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="" />
            </Link>
-           <Link to={`/profile/${post.user.id}`} className="flex flex-col items-center group pointer-events-auto">
+           <Link to={`/perfil/${post.user.id}`} className="flex flex-col items-center group pointer-events-auto">
               <div className="flex items-center space-x-1 mb-0.5">
                  <span className="text-white font-bold text-sm leading-none drop-shadow-lg group-hover:text-emerald-400 transition-colors">{post.user.username}</span>
                  {post.user.isProf && <ShieldCheck className="w-4 h-4 text-[#006747] fill-white" />}
@@ -337,7 +337,7 @@ export function FeedPost({ post }: FeedPostProps) {
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <Link 
-            to={`/profile/${post.user.id}`} 
+            to={`/perfil/${post.user.id}`} 
             className="font-semibold mr-2 hover:text-[#006747] transition-colors inline-block"
             onClick={(e) => e.stopPropagation()}
           >

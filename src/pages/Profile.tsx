@@ -17,6 +17,8 @@ import { cn } from '../lib/utils';
 import { geminiService, AIEvolutionResult, AIMedicationSafetyResult } from '../services/geminiService';
 import { motion, AnimatePresence } from 'motion/react';
 
+import { DEFAULT_AVATAR } from '../lib/constants';
+
 function ServiceCard({ svc, user }: { svc: any, user: any, key?: any }) {
   const [isSaved, setIsSaved] = useState(false);
 
@@ -681,7 +683,7 @@ export default function Profile() {
         <div className="flex items-center space-x-4">
           {isOwnProfile && (
             <Link 
-              to="/settings" 
+              to="/definicoes" 
               className="group relative w-14 h-14 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300"
               title="Definições"
             >
@@ -727,12 +729,16 @@ export default function Profile() {
       {/* Profile Bio */}
       <div className="flex flex-row items-center md:items-start space-x-6 md:space-x-12 mb-10">
         <div className="relative flex-shrink-0">
-             <div className="w-20 h-20 md:w-32 md:h-32 rounded-full border-2 border-[#006747] p-1 shadow-sm">
-                <img 
-                    src={profile.avatar_url || `https://i.pravatar.cc/150?u=${user.username}`} 
-                    className="w-full h-full rounded-full object-cover" 
-                    alt="" 
-                />
+             <div className="w-20 h-20 md:w-32 md:h-32 rounded-full border-2 border-[#006747] p-1 shadow-sm overflow-hidden bg-gray-50 flex items-center justify-center">
+                {profile.avatar_url ? (
+                    <img 
+                        src={profile.avatar_url} 
+                        className="w-full h-full rounded-full object-cover" 
+                        alt="" 
+                    />
+                ) : (
+                    <UserIcon className="w-1/2 h-1/2 text-gray-300" />
+                )}
              </div>
              {profile.is_professional && (
                 <div className="absolute -bottom-1 -right-1 bg-[#006747] rounded-full p-1.5 border-2 border-white shadow-md">
@@ -762,7 +768,7 @@ export default function Profile() {
             </div>
             {isOwnProfile ? (
               <>
-                <Link to="/profile/edit" className="bg-gray-100 hover:bg-gray-200 px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors font-sans">Editar Perfil</Link>
+                <Link to="/perfil/editar" className="bg-gray-100 hover:bg-gray-200 px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors font-sans">Editar Perfil</Link>
                 {profile.is_professional && (
                   <Link to="/professional/dashboard" className="bg-[#006747] text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-all hover:bg-emerald-800 shadow-sm shadow-emerald-100">Área Profissional</Link>
                 )}
@@ -801,7 +807,7 @@ export default function Profile() {
                   </button>
                 )}
                 <Link 
-                  to={`/messages?userId=${profile.id}`}
+                  to={`/mensagens?userId=${profile.id}`}
                   className="bg-white border-2 border-emerald-50 text-[#006747] px-4 py-1.5 rounded-lg text-sm font-bold transition-all hover:bg-emerald-50 flex items-center space-x-2"
                 >
                   <MessageSquare className="w-4 h-4" />
@@ -850,7 +856,7 @@ export default function Profile() {
         <div className="flex md:hidden items-center space-x-2 mb-6">
              {isOwnProfile ? (
                <>
-                 <Link to="/profile/edit" className="flex-1 bg-gray-100 py-2 rounded-lg text-sm font-bold text-center">Editar Perfil</Link>
+                 <Link to="/perfil/editar" className="flex-1 bg-gray-100 py-2 rounded-lg text-sm font-bold text-center">Editar Perfil</Link>
                  {profile.is_professional && (
                     <Link to="/professional/dashboard" className="flex-1 bg-[#006747] text-white py-2 rounded-lg text-sm font-bold text-center">Área Pro</Link>
                  )}
@@ -871,7 +877,7 @@ export default function Profile() {
                    </button>
                  )}
                  <Link 
-                   to={`/messages?userId=${profile.id}`}
+                   to={`/mensagens?userId=${profile.id}`}
                    className="flex-1 bg-white border-2 border-emerald-50 text-[#006747] py-2 rounded-lg text-sm font-bold text-center flex items-center justify-center space-x-2"
                  >
                    <MessageSquare className="w-4 h-4" />
@@ -922,7 +928,7 @@ export default function Profile() {
                <Stethoscope className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
             </Link>
             
-            <Link to="/explore" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+            <Link to="/" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
                <Microscope className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
             </Link>
 
@@ -930,25 +936,25 @@ export default function Profile() {
                <Film className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
             </Link>
 
-            <Link to="/messages" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+            <Link to="/mensagens" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
                <MessageSquare className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
             </Link>
 
             {profile.is_professional ? (
-              <Link to="/create" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+              <Link to="/professional/dashboard" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
                 <Hospital className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
               </Link>
             ) : (
-              <Link to="/gamification" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+              <Link to="/conquistas" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
                 <Apple className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
               </Link>
             )}
 
-            <Link to="/appointments" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+            <Link to="/consultas" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
                <CalendarCheck2 className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
             </Link>
 
-            <Link to="/marketplace" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
+            <Link to="/loja-viva" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
                <Pill className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
             </Link>
 
@@ -984,7 +990,7 @@ export default function Profile() {
               Complete o seu perfil para aumentar a sua credibilidade na plataforma e garantir que todos os seus dados são autênticos.
             </p>
             <Link 
-              to="/profile/edit"
+              to="/perfil/editar"
               className="flex items-center space-x-1 bg-[#006747] text-white px-4 py-2 rounded-xl text-[10px] font-bold hover:bg-emerald-800 transition-all active:scale-95 shadow-sm shadow-emerald-100"
             >
               <span>Completar</span>
@@ -1505,7 +1511,7 @@ export default function Profile() {
                 <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
                    <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Sem encomendas</p>
                    <p className="text-xs text-gray-400 px-10">Ainda não realizou compras no Marketplace VIVA.</p>
-                   <Link to="/marketplace" className="mt-6 inline-block text-[#006747] font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-6 py-3 rounded-2xl hover:bg-emerald-100 transition-all">Ir para a Loja</Link>
+                   <Link to="/loja-viva" className="mt-6 inline-block text-[#006747] font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-6 py-3 rounded-2xl hover:bg-emerald-100 transition-all">Ir para a Loja</Link>
                 </div>
               )}
             </div>
@@ -1549,7 +1555,7 @@ export default function Profile() {
                 <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
                    <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Sem marcações</p>
                    <p className="text-xs text-gray-400 px-10">Ainda não marcou nenhuma consulta na rede VIVA.</p>
-                   <Link to="/appointments" className="mt-6 inline-block text-[#006747] font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-6 py-3 rounded-2xl hover:bg-emerald-100 transition-all">Explorar Serviços</Link>
+                   <Link to="/consultas" className="mt-6 inline-block text-[#006747] font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-6 py-3 rounded-2xl hover:bg-emerald-100 transition-all">Explorar Serviços</Link>
                 </div>
               )}
             </div>
@@ -1766,27 +1772,70 @@ export default function Profile() {
                 <section>
                   <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center">
                     <Activity className="w-4 h-4 mr-2 text-[#006747]" />
-                    Padrões e Tendências Identificadas
+                    Padrões e Tendências
                   </h4>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {evolutionResult.patterns.map((pattern, i) => (
+                      <div key={i} className="flex items-center space-x-3 p-3 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
+                        <CheckCircle2 className="w-3 h-3 text-[#006747]" />
+                        <span className="text-[10px] font-bold text-gray-700">{pattern}</span>
+                      </div>
+                    ))}
                     {evolutionResult.trends.map((trend, i) => (
-                      <div key={i} className="flex items-center space-x-3 p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
-                        <CheckCircle2 className="w-4 h-4 text-[#006747]" />
-                        <span className="text-xs font-bold text-gray-700">{trend}</span>
+                      <div key={i} className="flex items-center space-x-3 p-3 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                        <Activity className="w-3 h-3 text-blue-600" />
+                        <span className="text-[10px] font-bold text-gray-700">{trend}</span>
                       </div>
                     ))}
                   </div>
                 </section>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <section>
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center">
+                      <Pill className="w-4 h-4 mr-2 text-[#006747]" />
+                      Últimas Medicações
+                    </h4>
+                    <div className="space-y-2">
+                      {evolutionResult.lastMedications.length > 0 ? evolutionResult.lastMedications.map((med, i) => (
+                        <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-[10px] font-bold text-gray-600">
+                          {med}
+                        </div>
+                      )) : <p className="text-[10px] text-gray-400 italic">Nenhum registado</p>}
+                    </div>
+                  </section>
+
+                  <section>
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center">
+                      <Microscope className="w-4 h-4 mr-2 text-[#006747]" />
+                      Exames Realizados
+                    </h4>
+                    <div className="space-y-2">
+                      {evolutionResult.lastExams.length > 0 ? evolutionResult.lastExams.map((exam, i) => (
+                        <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-[10px] font-bold text-gray-600">
+                          {exam}
+                        </div>
+                      )) : <p className="text-[10px] text-gray-400 italic">Nenhum registado</p>}
+                    </div>
+                  </section>
+                </div>
+
                 <section>
                   <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center">
                     <Stethoscope className="w-4 h-4 mr-2 text-[#006747]" />
-                    Conduta Recomendada
+                    Condutas Recomendadas
                   </h4>
-                  <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100">
-                    <p className="text-sm text-gray-600 leading-relaxed font-medium italic">
-                      "{evolutionResult.suggestedConduct}"
-                    </p>
+                  <div className="space-y-3">
+                    {evolutionResult.recommendations.map((rec, i) => (
+                      <div key={i} className="p-4 bg-[#f8fafc] rounded-2xl border border-gray-100 flex items-start space-x-3">
+                         <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <Sparkles className="w-3 h-3 text-[#006747]" />
+                         </div>
+                         <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                            {rec}
+                         </p>
+                      </div>
+                    ))}
                   </div>
                 </section>
               </div>

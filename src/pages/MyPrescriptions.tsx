@@ -45,7 +45,8 @@ export default function MyPrescriptions() {
         .from('prescriptions')
         .select(`
           *,
-          professional:professional_id(full_name, specialty, license_number)
+          professional:professional_id(full_name, specialty, license_number),
+          items:prescription_items(*)
         `)
         .eq('patient_id', user?.id)
         .order('created_at', { ascending: false });
@@ -60,7 +61,7 @@ export default function MyPrescriptions() {
   };
 
   const filteredPrescriptions = prescriptions.filter(p => 
-    p.medication?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.items?.some((i: any) => i.medication?.toLowerCase().includes(searchQuery.toLowerCase())) ||
     p.professional?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.diagnosis?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -124,10 +125,10 @@ export default function MyPrescriptions() {
                       </div>
                       
                       <h3 className="text-xl font-black text-gray-900 tracking-tighter mb-1.5 group-hover:text-[#006747] transition-colors">
-                        {presc.medication || 'Tratamento Múltiplo'}
+                        {presc.items?.[0]?.medication || 'Tratamento Múltiplo'}
                         {(presc.items?.length > 1) && (
                           <span className="ml-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                            +{presc.items.length - 1} itens
+                            +{presc.items.length - 1}
                           </span>
                         )}
                       </h3>
@@ -135,7 +136,9 @@ export default function MyPrescriptions() {
                       <div className="flex flex-wrap items-center gap-3">
                          <div className="flex items-center space-x-1.5 bg-gray-50 px-2.5 py-1 rounded-lg">
                             <Clock className="w-3 h-3 text-gray-400" />
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">{presc.frequency}</span>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">
+                              {presc.items?.[0]?.frequency || 'Vários'}
+                            </span>
                          </div>
                          {presc.diagnosis && (
                            <div className="flex items-center space-x-1.5 bg-emerald-50/50 px-2.5 py-1 rounded-lg">
@@ -177,7 +180,7 @@ export default function MyPrescriptions() {
             <h3 className="text-2xl font-black text-gray-900 tracking-tighter mb-2">Sem receitas emitidas</h3>
             <p className="text-gray-400 font-medium max-w-sm mx-auto text-sm mb-8">O seu histórico de prescrições digitais aparecerá aqui assim que um profissional as emitir.</p>
             <Link 
-              to="/messages" 
+              to="/mensagens" 
               className="inline-flex items-center space-x-2 bg-gray-900 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-lg"
             >
               <span>Falar com um Profissional</span>

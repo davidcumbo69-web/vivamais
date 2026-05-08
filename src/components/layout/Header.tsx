@@ -13,7 +13,7 @@ export function Header() {
         </Link>
         
         <div className="flex items-center space-x-5">
-          <Link to="/messages" className="relative text-gray-700 hover:text-[#006747] transition-colors">
+          <Link to="/mensagens" className="relative text-gray-700 hover:text-[#006747] transition-colors">
             <MessageSquare className="w-6 h-6" />
             <span className="absolute -top-1 -right-1 bg-red-500 w-2 h-2 rounded-full border border-white" />
           </Link>

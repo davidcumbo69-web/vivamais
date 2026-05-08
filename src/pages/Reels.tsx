@@ -2,13 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import React from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { HeartPulse, Brain, Syringe, Music, Share2, ShieldCheck, Plus, Play, Pause, Loader2, Camera, X } from 'lucide-react';
+import { HeartPulse, Brain, Syringe, Music, Share2, ShieldCheck, Plus, Play, Pause, Loader2, Camera, X, User } from 'lucide-react';
 import { useVitus } from '../hooks/useVitus';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
 import { ReelsCarousel } from '../components/feed/ReelsCarousel';
 import { CreateReelModal } from '../components/feed/CreateReelModal';
+
+import { DEFAULT_AVATAR } from '../lib/constants';
 
 export default function Reels() {
   const [searchParams] = useSearchParams();
@@ -83,7 +85,7 @@ export default function Reels() {
           user: {
             id: p.profiles?.id,
             username: p.profiles?.username || 'viva_user',
-            avatar: p.profiles?.avatar_url || 'https://i.pravatar.cc/150',
+            avatar: p.profiles?.avatar_url || DEFAULT_AVATAR,
             isProf: p.profiles?.is_professional || false
           },
           caption: p.caption,
@@ -248,7 +250,7 @@ export default function Reels() {
             <div className="relative z-10 px-4 pb-20 md:pb-12 flex justify-between items-end w-full">
               <div className="flex-1 mr-6">
                 <div className="flex items-center mb-4">
-                  <Link to={`/profile/${reel.user.id}`} className="flex items-center group pointer-events-auto">
+                  <Link to={`/perfil/${reel.user.id}`} className="flex items-center group pointer-events-auto">
                     <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden mr-3 shadow-lg group-hover:scale-105 transition-transform">
                       <img src={reel.user.avatar} className="w-full h-full object-cover" alt="" />
                     </div>

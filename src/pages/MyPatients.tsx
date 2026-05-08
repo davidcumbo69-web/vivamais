@@ -12,13 +12,22 @@ import {
   MessageSquare,
   ChevronRight,
   HeartPulse,
-  LayoutDashboard
+  TrendingUp,
+  LayoutDashboard,
+  Brain,
+  AlertCircle,
+  History,
+  Pill,
+  FileText
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Header } from '../components/layout/Header';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { geminiService, AIEvolutionResult } from '../services/geminiService';
+
+import { DEFAULT_AVATAR } from '../lib/constants';
 
 export default function MyPatients() {
   const { profile, loading: authLoading } = useAuth();
@@ -28,11 +37,17 @@ export default function MyPatients() {
   const [patients, setPatients] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // AI Evolution State
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiResult, setAiResult] = useState<AIEvolutionResult | null>(null);
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [analyzingPatient, setAnalyzingPatient] = useState<any>(null);
 
   useEffect(() => {
     if (profile) {
       if (!profile.is_professional) {
-        navigate('/profile');
+        navigate('/perfil');
         return;
       }
       fetchData();
@@ -110,6 +125,37 @@ export default function MyPatients() {
     } catch (error) {
       console.error('Error performing action:', error);
       alert('Erro ao processar solicitação.');
+    }
+  };
+
+  const handleAnalyzeEvolution = async (patient: any) => {
+    setAnalyzingPatient(patient);
+    setIsAnalyzing(true);
+    setAiResult(null);
+    setShowAiModal(true);
+
+    try {
+      // Fetch patient's clinical history
+      const { data: histories, error } = await supabase
+        .from('clinical_histories')
+        .select('*')
+        .eq('patient_id', patient.user_id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (!histories || histories.length === 0) {
+        throw new Error('Nenhuma história clínica encontrada para este paciente.');
+      }
+
+      const result = await geminiService.analyzePatientEvolution(histories);
+      setAiResult(result);
+    } catch (error: any) {
+      console.error('Error analyzing evolution:', error);
+      alert(error.message || 'Erro ao analisar evolução do paciente.');
+      setShowAiModal(false);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -228,18 +274,24 @@ export default function MyPatients() {
                     className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between group hover:border-emerald-200 transition-all"
                   >
                     <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-                      <Link to={`/profile/${patient.user_id}`} className="relative group/avatar">
-                        <img 
-                          src={patient.profiles.avatar_url || `https://i.pravatar.cc/150?u=${patient.profiles.username}`} 
-                          className="w-16 h-16 rounded-3xl object-cover shadow-sm group-hover:scale-105 transition-transform" 
-                          alt="" 
-                        />
+                      <Link to={`/perfil/${patient.user_id}`} className="relative group/avatar">
+                        <div className="w-16 h-16 rounded-3xl overflow-hidden shadow-sm group-hover:scale-105 transition-transform bg-gray-50 flex items-center justify-center">
+                          {patient.profiles.avatar_url ? (
+                            <img 
+                              src={patient.profiles.avatar_url} 
+                              className="w-full h-full object-cover" 
+                              alt="" 
+                            />
+                          ) : (
+                            <User className="w-8 h-8 text-gray-300" />
+                          )}
+                        </div>
                         <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-xl p-1 border-4 border-white">
                           <CheckCircle2 className="w-3 h-3 text-white" />
                         </div>
                       </Link>
                       <div className="min-w-0">
-                        <Link to={`/profile/${patient.user_id}`} className="block group/name">
+                        <Link to={`/perfil/${patient.user_id}`} className="block group/name">
                           <h3 className="font-black text-gray-900 group-hover/name:text-[#006747] transition-colors truncate">
                             {patient.profiles.full_name || patient.profiles.username}
                           </h3>
@@ -261,6 +313,14 @@ export default function MyPatients() {
                     </div>
                     
                     <div className="flex items-center space-x-2">
+                       <button 
+                         onClick={() => handleAnalyzeEvolution(patient)}
+                         className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-purple-50 text-purple-700 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-100 transition-all border border-purple-100/50"
+                         title="Análise de Evolução IA"
+                       >
+                          <Brain className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Análise IA</span>
+                       </button>
                        <Link 
                          to={`/professional/clinical-history/${patient.user_id}`}
                          className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-emerald-50 text-[#006747] px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100/50"
@@ -270,7 +330,7 @@ export default function MyPatients() {
                           <span className="hidden sm:inline">História Clínica</span>
                        </Link>
                        <Link 
-                         to={`/profile/${patient.user_id}`}
+                         to={`/perfil/${patient.user_id}`}
                          className="flex-1 sm:flex-none flex items-center justify-center space-x-2 bg-gray-50 text-gray-600 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 hover:text-[#006747] transition-all"
                        >
                           <User className="w-3.5 h-3.5" />
@@ -309,19 +369,25 @@ export default function MyPatients() {
                     className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-emerald-100 flex flex-col sm:flex-row sm:items-center justify-between group hover:shadow-md transition-all"
                   >
                     <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-                      <Link to={`/profile/${req.user_id}`} className="relative group/avatar">
-                        <img 
-                          src={req.profiles.avatar_url || `https://i.pravatar.cc/150?u=${req.profiles.username}`} 
-                          className="w-16 h-16 rounded-3xl object-cover shadow-sm group-hover/avatar:scale-105 transition-transform" 
-                          alt="" 
-                        />
+                      <Link to={`/perfil/${req.user_id}`} className="relative group/avatar">
+                        <div className="w-16 h-16 rounded-3xl overflow-hidden shadow-sm group-hover/avatar:scale-105 transition-transform bg-gray-50 flex items-center justify-center">
+                          {req.profiles.avatar_url ? (
+                            <img 
+                              src={req.profiles.avatar_url} 
+                              className="w-full h-full object-cover" 
+                              alt="" 
+                            />
+                          ) : (
+                            <User className="w-8 h-8 text-gray-300" />
+                          )}
+                        </div>
                         <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-xl p-1 border-4 border-white animate-pulse">
                           <Clock className="w-3 h-3 text-white" />
                         </div>
                       </Link>
                       <div className="min-w-0">
                          <div className="flex items-center space-x-2">
-                           <Link to={`/profile/${req.user_id}`} className="group/name">
+                           <Link to={`/perfil/${req.user_id}`} className="group/name">
                              <h3 className="font-black text-gray-900 group-hover/name:text-[#006747] transition-colors truncate">
                                {req.profiles.full_name || req.profiles.username}
                              </h3>
@@ -366,6 +432,192 @@ export default function MyPatients() {
           )}
         </div>
       </div>
+
+      {/* AI Evolution Modal */}
+      <AnimatePresence>
+        {showAiModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isAnalyzing && setShowAiModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden"
+            >
+              <div className="p-8 max-h-[80vh] overflow-y-auto no-scrollbar">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-purple-100 rounded-2xl">
+                      <Brain className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 leading-none">Evolução do Paciente</h2>
+                      <p className="text-[10px] text-purple-600 font-black uppercase tracking-widest mt-1">Análise por Inteligência Artificial</p>
+                    </div>
+                  </div>
+                  {!isAnalyzing && (
+                    <button
+                      onClick={() => setShowAiModal(false)}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all"
+                    >
+                      <XCircle className="w-6 h-6" />
+                    </button>
+                  )}
+                </div>
+
+                {isAnalyzing ? (
+                  <div className="py-20 text-center">
+                    <div className="relative w-20 h-20 mx-auto mb-6">
+                      <div className="absolute inset-0 border-4 border-purple-100 rounded-full" />
+                      <div className="absolute inset-0 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                      <Brain className="absolute inset-0 m-auto w-8 h-8 text-purple-600 animate-pulse" />
+                    </div>
+                    <h3 className="text-lg font-black text-gray-900 mb-2">Analisando Histórico...</h3>
+                    <p className="text-gray-400 text-sm max-w-xs mx-auto">
+                      A processar todos os registos clínicos do paciente para identificar padrões e tendências.
+                    </p>
+                  </div>
+                ) : aiResult && (
+                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {/* Identification */}
+                    <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-2xl">
+                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow-sm">
+                        {analyzingPatient?.profiles?.avatar_url ? (
+                          <img 
+                            src={analyzingPatient.profiles.avatar_url} 
+                            className="w-full h-full object-cover" 
+                            alt="" 
+                          />
+                        ) : (
+                          <User className="w-5 h-5 text-gray-300" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Paciente</p>
+                        <p className="text-sm font-black text-gray-900">{analyzingPatient?.profiles?.full_name}</p>
+                      </div>
+                    </div>
+
+                    {/* Summary */}
+                    <section>
+                      <div className="flex items-center space-x-2 mb-4">
+                        <TrendingUp className="w-4 h-4 text-[#006747]" />
+                        <h4 className="text-xs font-black uppercase tracking-widest text-[#006747]">Resumo da Evolução</h4>
+                      </div>
+                      <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100 text-sm leading-relaxed text-gray-700">
+                        {aiResult.summary}
+                      </div>
+                    </section>
+
+                    {/* Medications & Exams */}
+                    <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex items-center space-x-2 mb-4">
+                          <Pill className="w-4 h-4 text-rose-600" />
+                          <h4 className="text-xs font-black uppercase tracking-widest text-rose-600">Últimas Medicações</h4>
+                        </div>
+                        <ul className="space-y-2">
+                          {(aiResult.lastMedications ?? []).length > 0 ? (
+                            aiResult.lastMedications.map((med, idx) => (
+                              <li key={idx} className="flex items-start space-x-2 p-3 bg-rose-50/30 rounded-xl border border-rose-50">
+                                <div className="w-1.5 h-1.5 bg-rose-400 rounded-full mt-1.5 flex-shrink-0" />
+                                <span className="text-[11px] font-bold text-gray-700 leading-tight">{med}</span>
+                              </li>
+                            ))
+                          ) : (
+                            <p className="text-[10px] text-gray-400 italic">Nenhuma medicação identificada.</p>
+                          )}
+                        </ul>
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2 mb-4">
+                          <FileText className="w-4 h-4 text-amber-600" />
+                          <h4 className="text-xs font-black uppercase tracking-widest text-amber-600">Exames Realizados</h4>
+                        </div>
+                        <ul className="space-y-2">
+                          {(aiResult.lastExams ?? []).length > 0 ? (
+                            aiResult.lastExams.map((exam, idx) => (
+                              <li key={idx} className="flex items-start space-x-2 p-3 bg-amber-50/30 rounded-xl border border-amber-50">
+                                <div className="w-1.5 h-1.5 bg-amber-400 rounded-full mt-1.5 flex-shrink-0" />
+                                <span className="text-[11px] font-bold text-gray-700 leading-tight">{exam}</span>
+                              </li>
+                            ))
+                          ) : (
+                            <p className="text-[10px] text-gray-400 italic">Nenhum exame identificado.</p>
+                          )}
+                        </ul>
+                      </div>
+                    </section>
+
+                    {/* Patterns & Trends */}
+                    <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex items-center space-x-2 mb-4">
+                          <History className="w-4 h-4 text-purple-600" />
+                          <h4 className="text-xs font-black uppercase tracking-widest text-purple-600">Padrões Identificados</h4>
+                        </div>
+                        <ul className="space-y-2">
+                          {(aiResult.patterns ?? []).map((pattern, idx) => (
+                            <li key={idx} className="flex items-start space-x-2 p-3 bg-purple-50/30 rounded-xl border border-purple-50">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-purple-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-[11px] font-bold text-gray-700 leading-tight">{pattern}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2 mb-4">
+                          <TrendingUp className="w-4 h-4 text-blue-600" />
+                          <h4 className="text-xs font-black uppercase tracking-widest text-blue-600">Tendências Críticas</h4>
+                        </div>
+                        <ul className="space-y-2">
+                          {(aiResult.trends ?? []).map((trend, idx) => (
+                            <li key={idx} className="flex items-start space-x-2 p-3 bg-blue-50/30 rounded-xl border border-blue-50">
+                              <AlertCircle className="w-3.5 h-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-[11px] font-bold text-gray-700 leading-tight">{trend}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </section>
+
+                    {/* Recommendations */}
+                    <section className="p-6 bg-red-50/30 rounded-3xl border border-red-100">
+                      <div className="flex items-center space-x-2 mb-4">
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                        <h4 className="text-xs font-black uppercase tracking-widest text-red-600">Conduta Recomendada</h4>
+                      </div>
+                      <ul className="space-y-3">
+                        {(aiResult.recommendations ?? []).map((rec, idx) => (
+                          <li key={idx} className="flex items-start space-x-3 text-sm text-gray-700 leading-relaxed">
+                            <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <span className="text-[10px] font-black text-red-700">{idx + 1}</span>
+                            </div>
+                            <span className="font-bold">{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+
+                    <button
+                      onClick={() => setShowAiModal(false)}
+                      className="w-full py-4 bg-[#006747] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-100"
+                    >
+                      Entendido
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

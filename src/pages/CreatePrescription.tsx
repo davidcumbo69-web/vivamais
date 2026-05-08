@@ -40,6 +40,7 @@ export default function CreatePrescription() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [currentSignature, setCurrentSignature] = useState<string>('');
   const printRef = React.useRef<HTMLDivElement>(null);
@@ -74,15 +75,17 @@ export default function CreatePrescription() {
         endDate: '' 
       }];
     }
-    return prefill.aiMedications.map((m, idx) => ({
-      medication: m.name,
+    return prefill.aiMedications.map((m: any, idx: number) => ({
+      medication: m.name || '',
       form: 'Comprimido', // Default
-      dosage: m.dosage.match(/\d+/) ? m.dosage.match(/\d+/)![0] : '1',
-      frequency: m.instructions.toLowerCase().includes('8/8') ? '8/8h' : 
-                 m.instructions.toLowerCase().includes('12/12') ? '12/12h' : 
-                 m.instructions.toLowerCase().includes('6/6') ? '6/6h' : '3x',
-      duration: m.duration.match(/\d+/) ? m.duration.match(/\d+/)![0] : '7',
-      specialInstructions: m.instructions,
+      dosage: m.dosage ? (m.dosage.match(/\d+/) ? m.dosage.match(/\d+/)![0] : m.dosage) : '1',
+      frequency: m.instructions ? (
+        m.instructions.toLowerCase().includes('8/8') ? '8/8h' : 
+        m.instructions.toLowerCase().includes('12/12') ? '12/12h' : 
+        m.instructions.toLowerCase().includes('6/6') ? '6/6h' : '3x'
+      ) : '3x',
+      duration: m.duration ? (m.duration.match(/\d+/) ? m.duration.match(/\d+/)![0] : m.duration) : '7',
+      specialInstructions: m.instructions || '',
       color: availableColors[idx % availableColors.length].value,
       totalUnits: 0,
       endDate: ''
@@ -199,6 +202,12 @@ export default function CreatePrescription() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!professionalData?.id) {
+      setError('Aguarde carregar seus dados profissionais ou verifique se está logado como profissional.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -208,87 +217,41 @@ export default function CreatePrescription() {
       const signature = `the-MMXVI-cedav-${r1}-${r2}`;
       setCurrentSignature(signature);
 
-      const { data, error: insertError } = await supabase.from('prescriptions').insert({
+      const insertData = {
         patient_id: patientId,
         professional_id: professionalData.id,
-        professional_name: professionalData.full_name,
-        diagnosis: formData.diagnosis,
-        start_date: formData.startDate,
-        items: formData.items,
+        diagnosis: formData.diagnosis || 'Consulta Geral',
+        start_date: formData.startDate || new Date().toISOString().split('T')[0],
         signature_code: signature
-      }).select().single();
+      };
 
-      if (insertError) throw insertError;
-      if (!data) throw new Error("No data returned");
+      const { data, error: insertError } = await supabase.from('prescriptions').insert(insertData).select().single();
 
-      // Phase 2: PDF Generation
-      setGenerationProgress(20);
-      
-      if (printRef.current && mapPrintRef.current) {
-        setGenerationProgress(40);
-        
-        // Capture Main Prescription
-        const dataUrl = await toPng(printRef.current, {
-          quality: 0.95,
-          backgroundColor: '#030303',
-          pixelRatio: 2,
-        });
+      if (insertError) {
+        console.error('Erro de inserção no Supabase:', insertError);
+        throw insertError;
+      }
+      if (!data) throw new Error("Não foi possível obter os dados da receita após guardar.");
 
-        // Capture Therapeutic Map
-        const mapDataUrl = await toPng(mapPrintRef.current, {
-          quality: 0.95,
-          backgroundColor: '#030303',
-          pixelRatio: 2,
-        });
+      // Guardar itens relacionados
+      if (formData.items.length > 0) {
+        const relationalItems = formData.items.map(item => ({
+          prescription_id: data.id,
+          medication: item.medication || 'Medicamento',
+          form: item.form,
+          dosage: item.dosage,
+          frequency: item.frequency,
+          duration: item.duration,
+          special_instructions: item.specialInstructions,
+          color: item.color,
+          total_units: item.totalUnits
+        }));
 
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
-        });
-
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-
-        // Page 1: Main Prescription
-        const imgProps = pdf.getImageProperties(dataUrl);
-        const mainImgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, mainImgHeight);
-        
-        // Page 2: Therapeutic Map
-        pdf.addPage();
-        const mapImgProps = pdf.getImageProperties(mapDataUrl);
-        const mapImgHeight = (mapImgProps.height * pdfWidth) / mapImgProps.width;
-        pdf.addImage(mapDataUrl, 'PNG', 0, 0, pdfWidth, Math.min(mapImgHeight, pdfHeight));
-        
-        const pdfBlob = pdf.output('blob');
-        const fileName = `receita_${data.id}.pdf`;
-        
-        setGenerationProgress(70);
-        
-        // Upload to Supabase Storage
-        const { error: uploadError } = await supabase.storage
-          .from('prescription-pdfs')
-          .upload(fileName, pdfBlob, {
-            contentType: 'application/pdf',
-            upsert: true
-          });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('prescription-pdfs')
-          .getPublicUrl(fileName);
-
-        setGenerationProgress(90);
-
-        // Update prescription with PDF URL
-        await supabase.from('prescriptions')
-          .update({ pdf_url: publicUrl })
-          .eq('id', data.id);
+        const { error: itemsError } = await supabase.from('prescription_items').insert(relationalItems);
+        if (itemsError) console.error('Erro ao guardar itens relacionados:', itemsError);
       }
 
-      // Update clinical history with prescription info if it was initiated from there
+      // Atualizar histórico clínico se aplicável
       if (prefill?.clinicalHistoryId) {
         await supabase
           .from('clinical_histories')
@@ -301,10 +264,15 @@ export default function CreatePrescription() {
 
       setGenerationProgress(100);
       setSuccess(true);
-      setTimeout(() => navigate(`/verificar-receita/${data.id}`), 1000);
-    } catch (err) {
-      console.error('Submission error:', err);
-      setError('Erro ao salvar e gerar PDF. Verifique sua conexão.');
+      
+      // Limpar rascunho
+      localStorage.removeItem('prescription_draft');
+      
+      // Mostrar modal de sucesso
+      setTimeout(() => setShowSuccessModal(true), 500);
+    } catch (err: any) {
+      console.error('Erro na submissão:', err);
+      setError(err.message || 'Ocorreu um erro ao processar a receita. Verifique a sua ligação.');
     } finally {
       setLoading(false);
     }
@@ -313,7 +281,42 @@ export default function CreatePrescription() {
   if (initialLoading) return <div className="h-screen bg-[#0a0a0a] flex items-center justify-center"><Loader2 className="w-8 h-8 text-white/20 animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#030303] text-[#D7DADC] font-sans selection:bg-[#FF4500] selection:text-white">
+    <div className="min-h-screen bg-[#030303] text-[#D7DADC] font-sans selection:bg-[#FF4500] selection:text-white relative">
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="w-full max-w-sm bg-[#1A1A1B] border border-[#343536] rounded-2xl p-6 shadow-2xl"
+          >
+            <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500 mb-4 mx-auto">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+            
+            <h3 className="text-xl font-black text-white tracking-tight text-center mb-2">Receita Gerada!</h3>
+            <p className="text-sm text-gray-400 text-center mb-8 px-2">
+              A receita já foi gerada, agora é só acompanhar o seu paciente.
+            </p>
+
+            <div className="space-y-3">
+              <button 
+                onClick={() => navigate(`/perfil/${patientId}`)}
+                className="w-full py-4 bg-[#D7DADC] text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95"
+              >
+                Perfil do Paciente
+              </button>
+              <button 
+                onClick={() => navigate('/')}
+                className="w-full py-4 bg-transparent border border-[#343536] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#272729] transition-all active:scale-95"
+              >
+                Fechar
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Top Navbar mimic */}
       <div className="h-12 bg-[#1A1A1B] border-b border-[#343536] fixed top-0 w-full z-50 flex items-center px-4 md:px-8">
         <div className="flex items-center space-x-3">
@@ -406,7 +409,7 @@ export default function CreatePrescription() {
                     onClick={addItem}
                     className="flex items-center space-x-2 text-[11px] font-bold text-[#D7DADC] bg-[#343536] px-4 py-2 rounded-full hover:bg-[#444546] transition-colors"
                   >
-                    <span>+ Add Drug</span>
+                    <span>+ Medicamento</span>
                   </button>
                 </div>
 
@@ -498,7 +501,7 @@ export default function CreatePrescription() {
                 <div className="flex items-center space-x-6">
                   <div className="flex items-center space-x-1.5 cursor-pointer text-gray-500 hover:bg-white/5 p-2 rounded">
                     <ShieldCheck className="w-5 h-5 text-[#FF4500]" />
-                    <span className="text-xs font-bold">Secure Draft</span>
+                    <span className="text-xs font-bold">Rascunho Seguro</span>
                   </div>
                 </div>
                 <button 
@@ -509,15 +512,15 @@ export default function CreatePrescription() {
                   {loading ? (
                     <div className="flex items-center space-x-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>{generationProgress > 0 ? `Generating PDF ${generationProgress}%` : 'Posting...'}</span>
+                      <span>{generationProgress > 0 ? `A guardar receita...` : 'A publicar...'}</span>
                     </div>
                   ) : success ? (
                     <div className="flex items-center space-x-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Prescribed!</span>
+                      <span>Prescrito!</span>
                     </div>
                   ) : (
-                    <span>Post Recipe</span>
+                    <span>Guardar Receita</span>
                   )}
                   {loading && generationProgress > 0 && (
                     <div 
@@ -763,7 +766,7 @@ export default function CreatePrescription() {
         <div className="space-y-4 hidden lg:block">
           <div className="bg-[#1A1A1B] border border-[#343536] rounded overflow-hidden">
             <div className="h-9 bg-[#343536] p-3 flex items-center">
-              <span className="text-[10px] font-bold text-white uppercase tracking-widest">About Community</span>
+              <span className="text-[10px] font-bold text-white uppercase tracking-widest">Sobre a Comunidade</span>
             </div>
             <div className="p-4 space-y-4">
               <div className="flex items-center space-x-3">
@@ -781,14 +784,14 @@ export default function CreatePrescription() {
               <div className="space-y-4 pt-4 border-t border-[#343536]">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h4 className="text-sm font-bold">Active Professional</h4>
+                    <h4 className="text-sm font-bold">Profissional Ativo</h4>
                     <p className="text-[10px] text-gray-500">{professionalData?.full_name}</p>
                   </div>
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 </div>
                 <div className="flex justify-between items-center">
                   <div>
-                    <h4 className="text-sm font-bold">License Verified</h4>
+                    <h4 className="text-sm font-bold">Licença Verificada</h4>
                     <p className="text-[10px] text-gray-500">{professionalData?.license_number}</p>
                   </div>
                   <ShieldCheck className="w-4 h-4 text-[#FF4500]" />
@@ -798,7 +801,7 @@ export default function CreatePrescription() {
           </div>
 
           <div className="bg-[#1A1A1B] border border-[#343536] rounded p-4">
-            <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Patient Integrity</h4>
+            <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Integridade do Paciente</h4>
             <div className="flex items-center space-x-4 mb-4">
               <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-500">
                 <User className="w-6 h-6" />

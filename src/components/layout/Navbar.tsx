@@ -8,30 +8,30 @@ export function Navbar() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   
-  const isChatOpenOnMobile = location.pathname === '/messages' && searchParams.has('userId');
+  const isChatOpenOnMobile = location.pathname === '/mensagens' && searchParams.has('userId');
   
   const navItems = [
-    { icon: Stethoscope, label: 'Feed', path: '/' },
-    { icon: ShieldCheck, label: 'Acesso', path: '/verificar' },
-    { icon: Film, label: 'Reels', path: '/reels' },
-    { icon: CalendarCheck, label: 'Consultas', path: '/appointments' },
-    { icon: MessageSquare, label: 'Mensagens', path: '/messages' },
-    { icon: FileText, label: 'Receitas', path: '/prescriptions' },
+    { icon: Stethoscope, label: 'Vital', path: '/' },
+    { icon: ShieldCheck, label: 'Validar', path: '/verificar' },
+    { icon: Film, label: 'Educação', path: '/reels' },
+    { icon: CalendarCheck, label: 'Consultas', path: '/consultas' },
+    { icon: MessageSquare, label: 'Mensagens', path: '/mensagens' },
+    { icon: FileText, label: 'Receitas', path: '/historico-receitas' },
     ...(profile?.is_professional ? [
-      { icon: Hospital, label: 'Criar', path: '/create' }
+      { icon: Hospital, label: 'Criar', path: '/professional/dashboard' }
     ] : [
-      { icon: Apple, label: 'Game', path: '/gamification' }
+      { icon: Apple, label: 'Saúde', path: '/conquistas' }
     ]),
-    { icon: Pill, label: 'Mercado', path: '/marketplace' },
-    { icon: UserIcon, label: 'Perfil', path: '/profile' },
+    { icon: Pill, label: 'Loja VIVA', path: '/loja-viva' },
+    { icon: UserIcon, label: 'Perfil', path: '/perfil' },
   ];
 
   const bottomNavItems = [
     { icon: Stethoscope, label: 'Início', path: '/' },
-    { icon: ShieldCheck, label: 'Acesso', path: '/verificar' },
-    { icon: Pill, label: 'Mercado', path: '/marketplace' },
-    { icon: CalendarCheck, label: 'Agenda', path: '/appointments' },
-    { icon: UserIcon, label: 'Perfil', path: '/profile' },
+    { icon: ShieldCheck, label: 'Validar', path: '/verificar' },
+    { icon: Pill, label: 'Loja', path: '/loja-viva' },
+    { icon: CalendarCheck, label: 'Agenda', path: '/consultas' },
+    { icon: UserIcon, label: 'Perfil', path: '/perfil' },
   ];
 
   return (

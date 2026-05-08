@@ -20,6 +20,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 // PrescriptionModal removed in favor of full page navigation
+import { DEFAULT_AVATAR } from '../lib/constants';
 
 function ChatMessage({ msg, isMine, user }: { msg: Message, isMine: boolean, user: any }) {
   const [isSaved, setIsSaved] = useState(false);
@@ -527,8 +528,12 @@ export default function Messages() {
                 )}
               >
                 <div className="relative flex-shrink-0">
-                  <div className="w-12 h-12 rounded-full overflow-hidden shadow-sm">
-                    <img src={conv.avatar_url || `https://i.pravatar.cc/150?u=${conv.username}`} alt="" className="w-full h-full object-cover" />
+                  <div className="w-12 h-12 rounded-full overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center border border-gray-100">
+                    {conv.avatar_url ? (
+                      <img src={conv.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-6 h-6 text-gray-300" />
+                    )}
                   </div>
                   {conv.unread_count > 0 && (
                     <div className="absolute -top-1 -right-1 bg-[#006747] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
@@ -580,9 +585,13 @@ export default function Messages() {
                 >
                   <ArrowLeft className="w-5 h-5 text-gray-600" />
                 </button>
-                <Link to={`/profile/${selectedConversation.user_id}`} className="flex items-center space-x-3 group">
-                   <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm">
-                      <img src={selectedConversation.avatar_url || `https://i.pravatar.cc/150?u=${selectedConversation.username}`} alt="" className="w-full h-full object-cover" />
+                <Link to={`/perfil/${selectedConversation.user_id}`} className="flex items-center space-x-3 group">
+                   <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center border border-gray-100">
+                      {selectedConversation.avatar_url ? (
+                        <img src={selectedConversation.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-5 h-5 text-gray-300" />
+                      )}
                    </div>
                    <div>
                       <div className="flex items-center space-x-1">

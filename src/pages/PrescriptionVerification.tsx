@@ -30,10 +30,13 @@ import { toPng } from 'html-to-image';
 
 interface PrescriptionItem {
   medication: string;
+  form?: string;
   dosage: string;
   frequency: string;
   duration: string;
-  notes: string;
+  special_instructions?: string;
+  color?: string;
+  total_units?: number;
 }
 
 interface Prescription {
@@ -341,7 +344,7 @@ export default function DigitalPrescriptionView() {
                     </div>
                     <div className="w-10 text-right">
                       <p className="text-sm font-black text-white">
-                        {(item as any).totalUnits || (parseInt(item.frequency) * parseInt(item.duration))}<span className="text-[10px] text-gray-500 ml-0.5 font-bold">x</span>
+                        {item.total_units || (parseInt(item.frequency) * parseInt(item.duration))}<span className="text-[10px] text-gray-500 ml-0.5 font-bold">x</span>
                       </p>
                     </div>
                   </div>
@@ -524,12 +527,12 @@ export default function DigitalPrescriptionView() {
                           {item.frequency}/dia · {item.duration} dias
                         </p>
                         <p className="text-[10px] font-medium text-gray-500 mt-1">
-                          {item.notes || (item as any).specialInstructions || "Sem observações"}
+                          {item.special_instructions || "Sem observações"}
                         </p>
                       </div>
                       <div className="w-10 text-right">
                         <p className="text-sm font-black text-white print:text-black">
-                          {(item as any).totalUnits || (parseInt(item.frequency) * parseInt(item.duration))}<span className="text-[10px] text-gray-500 ml-0.5 font-bold">x</span>
+                          {item.total_units || (parseInt(item.frequency) * parseInt(item.duration))}<span className="text-[10px] text-gray-500 ml-0.5 font-bold">x</span>
                         </p>
                       </div>
                     </div>
@@ -698,7 +701,7 @@ export default function DigitalPrescriptionView() {
                   <p className="text-[10px] text-emerald-500 font-bold">ATIVO</p>
                 </div>
                 <div>
-                  <p className="text-sm font-bold">Created</p>
+                  <p className="text-sm font-bold">Criada em</p>
                   <p className="text-[10px] text-gray-500">{new Date(prescription.created_at).toLocaleDateString('pt-PT')}</p>
                 </div>
               </div>

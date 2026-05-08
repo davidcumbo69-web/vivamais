@@ -178,6 +178,13 @@ export default function CreateClinicalHistory() {
         const base64Content = (reader.result as string).split(',')[1];
         const result = await geminiService.processHistoryOCR(base64Content);
         
+        // Helper to extract numbers from potentially messy strings (e.g., "70 kg" -> 70)
+        const extractNum = (val: string | undefined): string => {
+          if (!val) return '';
+          const match = val.match(/\d+(\.\d+)?/);
+          return match ? match[0] : val;
+        };
+
         setFormData(prev => ({
           ...prev,
           mainComplaint: result.mainComplaint || prev.mainComplaint,
@@ -188,16 +195,16 @@ export default function CreateClinicalHistory() {
           habitualMedication: result.habitualMedication || prev.habitualMedication,
           hereditaryDiseases: result.hereditaryDiseases || prev.hereditaryDiseases,
           physicalExamObservations: result.physicalExamObservations || prev.physicalExamObservations,
-          weight: result.weight || prev.weight,
-          height: result.height || prev.height,
-          temperature: result.temperature || prev.temperature,
+          weight: extractNum(result.weight) || prev.weight,
+          height: extractNum(result.height) || prev.height,
+          temperature: extractNum(result.temperature) || prev.temperature,
           bloodPressure: result.bloodPressure || prev.bloodPressure,
-          heartRate: result.heartRate || prev.heartRate,
-          respiratoryRate: result.respiratoryRate || prev.respiratoryRate,
-          spo2: result.spo2 || prev.spo2
+          heartRate: extractNum(result.heartRate) || prev.heartRate,
+          respiratoryRate: extractNum(result.respiratoryRate) || prev.respiratoryRate,
+          spo2: extractNum(result.spo2) || prev.spo2
         }));
         
-        showNotification('Histórico digitalizado com sucesso! Alguns campos foram preenchidos.');
+        showNotification('Histórico digitalizado com sucesso! Os sinais vitais e histórico foram preenchidos.');
       };
       reader.readAsDataURL(file);
     } catch (err) {
@@ -318,15 +325,40 @@ export default function CreateClinicalHistory() {
   const applyAiSuggestion = () => {
     if (!aiResult) return;
     
+    const structuredNotes = [
+      `DIAGNÓSTICO IA: ${aiResult.primaryDiagnosis} (${aiResult.cid10})`,
+      `------------------------------------------`,
+      `EXPLICAÇÃO FISIOLÓGICA:`,
+      aiResult.explanations.physiological,
+      ``,
+      `ANÁLISE PATOLÓGICA:`,
+      aiResult.explanations.pathological,
+      ``,
+      `ANÁLISE CLÍNICA:`,
+      aiResult.explanations.clinical,
+      ``,
+      `CONTEXTO SOCIAL E AMBIENTAL:`,
+      aiResult.explanations.socialEnvironmental,
+      aiResult.explanations.genetic ? `\n\nFATORES GENÉTICOS:\n${aiResult.explanations.genetic}` : '',
+      ``,
+      `DIAGNÓSTICOS DIFERENCIAIS:`,
+      (aiResult.differentialDiagnoses ?? []).join('; '),
+      ``,
+      `RECOMENDAÇÕES DE EXAME FÍSICO:`,
+      `- Áreas Críticas: ${(aiResult.guidance?.areasToExamine ?? []).join(', ')}`,
+      `- Perguntas Chave: ${(aiResult.guidance?.questionsToAsk ?? []).join(', ')}`,
+      `- Manobras: ${(aiResult.guidance?.maneuversToPerform ?? []).join(', ')}`
+    ].join('\n');
+
     setFormData(prev => ({
       ...prev,
       primaryDiagnosis: `${aiResult.primaryDiagnosis} (${aiResult.cid10})`,
-      requestedExams: aiResult.recommendedExams.join(', '),
-      clinicalNotes: `Explicação Fisiológica: ${aiResult.explanations.physiological}\n\nExplicação Patológica: ${aiResult.explanations.pathological}\n\nDiagnósticos Diferenciais: ${aiResult.differentialDiagnoses.join(', ')}\n\nÁreas a examinar: ${aiResult.guidance.areasToExamine.join(', ')}`
+      requestedExams: (aiResult.recommendedExams ?? []).join(', '),
+      clinicalNotes: structuredNotes
     }));
     
     setShowAiModal(false);
-    showNotification('Sugestões aplicadas ao formulário!');
+    showNotification('Sugestões detalhadas aplicadas ao formulário!');
   };
 
   // IMC Calculation
@@ -458,7 +490,7 @@ export default function CreateClinicalHistory() {
           } 
         });
       } else {
-        navigate(`/profile/${patientId}`);
+        navigate(`/perfil/${patientId}`);
       }
     } catch (err) {
       console.error('Error saving clinical history:', err);
@@ -1218,7 +1250,7 @@ export default function CreateClinicalHistory() {
                     Diagnósticos Diferenciais
                   </h4>
                   <div className="flex flex-wrap gap-2">
-                    {aiResult.differentialDiagnoses.map((d, i) => (
+                    {(aiResult.differentialDiagnoses ?? []).map((d, i) => (
                       <span key={i} className="px-4 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold border border-gray-100">
                         {d}
                       </span>
@@ -1237,7 +1269,7 @@ export default function CreateClinicalHistory() {
                     <div>
                       <span className="text-[8px] font-black uppercase text-amber-700 tracking-widest block mb-2">Áreas Críticas para Examinar</span>
                       <ul className="space-y-1.5">
-                        {aiResult.guidance.areasToExamine.map((a, i) => (
+                        {(aiResult.guidance?.areasToExamine ?? []).map((a, i) => (
                           <li key={i} className="flex items-center text-[10px] font-bold text-amber-900/70">
                             <div className="w-1.5 h-1.5 bg-amber-400 rounded-full mr-2" />
                             {a}
@@ -1250,7 +1282,7 @@ export default function CreateClinicalHistory() {
                       <div>
                         <span className="text-[8px] font-black uppercase text-amber-700 tracking-widest block mb-2">Perguntas Específicas</span>
                         <ul className="space-y-1.5">
-                          {aiResult.guidance.questionsToAsk.map((q, i) => (
+                          {(aiResult.guidance?.questionsToAsk ?? []).map((q, i) => (
                             <li key={i} className="flex items-center text-[10px] font-bold text-amber-900/70">
                               <Plus className="w-2.5 h-2.5 text-amber-400 mr-2" />
                               {q}
@@ -1261,7 +1293,7 @@ export default function CreateClinicalHistory() {
                       <div>
                         <span className="text-[8px] font-black uppercase text-amber-700 tracking-widest block mb-2">Manobras Recomendadas</span>
                         <ul className="space-y-1.5">
-                          {aiResult.guidance.maneuversToPerform.map((m, i) => (
+                          {(aiResult.guidance?.maneuversToPerform ?? []).map((m, i) => (
                             <li key={i} className="flex items-center text-[10px] font-bold text-amber-900/70">
                               <RotateCcw className="w-2.5 h-2.5 text-amber-400 mr-2" />
                               {m}
@@ -1280,7 +1312,7 @@ export default function CreateClinicalHistory() {
                     Exames Complementares Recomendados
                   </h4>
                   <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {aiResult.recommendedExams.map((e, i) => (
+                    {(aiResult.recommendedExams ?? []).map((e, i) => (
                       <li key={i} className="flex items-center space-x-2 text-xs font-bold text-gray-700 bg-white p-3 rounded-2xl border border-gray-100">
                         <CheckCircle2 className="w-4 h-4 text-[#006747]" />
                         <span>{e}</span>

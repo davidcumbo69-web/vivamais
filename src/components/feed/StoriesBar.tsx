@@ -105,7 +105,7 @@ export function StoriesBar() {
                 )}
               </div>
               <Link 
-                to={`/profile/${reel.profiles?.id}`}
+                to={`/perfil/${reel.profiles?.id}`}
                 onClick={(e) => e.stopPropagation()}
                 className="text-[11px] mt-1 max-w-[64px] truncate text-gray-800 font-bold hover:text-[#006747] transition-colors"
               >

@@ -5,6 +5,8 @@ import { Film, ShieldCheck, Play, Loader2, Plus } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { cn } from '../../lib/utils';
 
+import { DEFAULT_AVATAR } from '../../lib/constants';
+
 interface ReelsCarouselProps {
   onAddClick?: () => void;
 }
@@ -108,7 +110,7 @@ export function ReelsCarousel({ onAddClick }: ReelsCarouselProps) {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-2">
               <div className="flex items-center space-x-1 mb-1">
                 <div className="w-4 h-4 rounded-full border border-white/50 overflow-hidden">
-                   <img src={reel.profiles?.avatar_url || 'https://i.pravatar.cc/150'} alt="" className="w-full h-full object-cover" />
+                   <img src={reel.profiles?.avatar_url || DEFAULT_AVATAR} alt="" className="w-full h-full object-cover" />
                 </div>
                 <span className="text-[8px] text-white font-bold truncate max-w-[60px] drop-shadow-sm">
                    {reel.profiles?.username}

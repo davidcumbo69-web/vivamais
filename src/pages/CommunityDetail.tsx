@@ -28,6 +28,7 @@ import {
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { DEFAULT_AVATAR } from '../lib/constants';
 
 function GroupMessage({ msg, user, group, onDelete, onReply }: { msg: any, user: any, group: any, onDelete: (id: string) => void, onReply: (msg: any) => void, key?: any }) {
   const [isSaved, setIsSaved] = useState(false);
@@ -80,7 +81,7 @@ function GroupMessage({ msg, user, group, onDelete, onReply }: { msg: any, user:
   return (
     <div className="flex space-x-4 group/msg">
       <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm border border-white shrink-0">
-        <img src={msg.profiles?.avatar_url || 'https://i.pravatar.cc/150'} alt="" />
+        <img src={msg.profiles?.avatar_url || DEFAULT_AVATAR} alt="" />
       </div>
       <div className="bg-white px-5 py-4 rounded-3xl shadow-sm border border-gray-100 flex-1 relative">
         {/* Save button */}
@@ -542,7 +543,7 @@ export default function CommunityDetail() {
                             <div className="flex items-center space-x-4 mt-4">
                                <div className="flex items-center space-x-1">
                                   <div className="w-5 h-5 rounded-full overflow-hidden">
-                                     <img src={topic.profiles?.avatar_url || 'https://i.pravatar.cc/150'} alt="" />
+                                     <img src={topic.profiles?.avatar_url || DEFAULT_AVATAR} alt="" />
                                   </div>
                                   <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Por {topic.profiles?.username}</span>
                                </div>
@@ -760,7 +761,7 @@ export default function CommunityDetail() {
                       />
                       <div className="flex items-center space-x-3 mb-4">
                          <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm">
-                            <img src={selectedTopic.profiles?.avatar_url || 'https://i.pravatar.cc/150'} alt="" />
+                            <img src={selectedTopic.profiles?.avatar_url || DEFAULT_AVATAR} alt="" />
                          </div>
                          <div>
                             <p className="font-black text-gray-900 text-sm">u/{selectedTopic.profiles?.username}</p>

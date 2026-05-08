@@ -35,7 +35,7 @@ export default function Settings() {
     {
       title: 'Conta',
       items: [
-        { icon: User, label: 'Editar Perfil', path: '/profile/edit', color: 'text-[#006747]' },
+        { icon: User, label: 'Editar Perfil', path: '/perfil/editar', color: 'text-[#006747]' },
         { icon: Smartphone, label: 'Dispositivos e Apps', path: '/settings/devices', color: 'text-green-500' },
       ]
     },

@@ -24,6 +24,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { supabase, type Post } from '../lib/supabase';
 import CreateCommunityModal from '../components/modals/CreateCommunityModal';
 
+import { DEFAULT_AVATAR } from '../lib/constants';
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<any>('para_ti');
   const navigate = useNavigate();
@@ -410,7 +412,7 @@ export default function Home() {
           user: {
             id: p.profiles?.id,
             username: p.profiles?.username || 'viva_user',
-            avatar: p.profiles?.avatar_url || 'https://i.pravatar.cc/150',
+            avatar: p.profiles?.avatar_url || DEFAULT_AVATAR,
             isProf: p.profiles?.is_professional || false
           },
           content: p.image_url || p.content_url,
@@ -485,8 +487,12 @@ export default function Home() {
           {profile?.is_professional && (
             <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-4 shadow-sm mx-4 md:mx-0">
                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100">
-                    <img src={profile?.avatar_url || "https://i.pravatar.cc/150"} alt="" className="w-full h-full object-cover" />
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-5 h-5 text-gray-300" />
+                    )}
                   </div>
                   <button 
                     onClick={() => setShowCreateModal(true)}
@@ -776,10 +782,14 @@ export default function Home() {
         {/* Right Sidebar - Desktop Only Suggestions */}
         <aside className="hidden lg:block w-[320px] ml-12 py-4">
            {/* Current User Info */}
-           <Link to="/profile" className="flex items-center justify-between mb-6 group">
+            <Link to="/perfil" className="flex items-center justify-between mb-6 group">
               <div className="flex items-center space-x-3">
-                 <div className="w-11 h-11 rounded-full overflow-hidden border border-gray-100 group-hover:scale-105 transition-transform">
-                    <img src={profile?.avatar_url || "https://i.pravatar.cc/150?u=me"} alt="" className="w-full h-full object-cover" />
+                 <div className="w-11 h-11 rounded-full overflow-hidden border border-gray-100 group-hover:scale-105 transition-transform bg-gray-50 flex items-center justify-center">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-6 h-6 text-gray-300" />
+                    )}
                  </div>
                  <div>
                     <p className="text-sm font-bold leading-none group-hover:text-[#006747] transition-colors">{profile?.username || 'viva_user'}</p>
@@ -805,8 +815,12 @@ export default function Home() {
               {suggestedProfessionals.length > 0 ? suggestedProfessionals.map((sug) => (
                 <div key={sug.id} className="flex justify-between items-center">
                     <Link to={`/search?q=${sug.username}`} className="flex items-center space-x-3 group">
-                        <div className="w-8 h-8 rounded-full overflow-hidden group-hover:scale-105 transition-transform border border-gray-100">
-                            <img src={sug.avatar_url || "https://i.pravatar.cc/150"} alt="" className="w-full h-full object-cover" />
+                        <div className="w-8 h-8 rounded-full overflow-hidden group-hover:scale-105 transition-transform border border-gray-100 bg-gray-50 flex items-center justify-center">
+                            {sug.avatar_url ? (
+                                <img src={sug.avatar_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-4 h-4 text-gray-300" />
+                            )}
                         </div>
                         <div>
                             <div className="flex items-center">
@@ -920,10 +934,10 @@ export default function Home() {
                </div>
                
                <Link 
-                 to={profile?.is_professional ? "/professional-dashboard" : "/my-prescriptions"}
+                 to={profile?.is_professional ? "/professional/dashboard" : "/historico-receitas"}
                  className="w-full mt-5 block text-center py-2.5 bg-white border border-emerald-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#006747] hover:bg-[#006747] hover:text-white transition-all shadow-sm"
                >
-                  {profile?.is_professional ? 'Painel de Gestão' : 'Ver Meu Farmaco'}
+                  {profile?.is_professional ? 'Painel de Gestão' : 'Ver Meu Histórico'}
                </Link>
             </div>
 
@@ -934,7 +948,7 @@ export default function Home() {
                  <div className="flex -space-x-1.5">
                     {[1,2,3].map(i => (
                        <div key={i} className="w-5 h-5 rounded-full border-2 border-white bg-gray-100 overflow-hidden">
-                          <img src={`https://i.pravatar.cc/100?u=${i}`} className="w-full h-full object-cover" />
+                          <img src={`${DEFAULT_AVATAR}&seed=${i}`} className="w-full h-full object-cover" />
                        </div>
                     ))}
                  </div>
@@ -955,8 +969,8 @@ export default function Home() {
 
            {/* Small Footer */}
            <div className="mt-10 text-[10px] text-gray-300 font-medium uppercase tracking-widest leading-loose">
-              Sobre • Ajuda • Imprensa • Privatidade • Termos • Localizações • Idioma • VIVA verified
-              <p className="mt-4">© 2024 VIVA+ DO SNS</p>
+              Sobre • Ajuda • Imprensa • Privacidade • Termos • Localizações • Idioma • VIVA verified
+              <p className="mt-4">© 2026 VIVA+ DO SNS</p>
            </div>
         </aside>
       </div>
@@ -998,7 +1012,7 @@ export default function Home() {
 
                 <div className="space-y-3">
                   <Link
-                    to="/profile/edit"
+                    to="/perfil/editar"
                     className="w-full bg-[#006747] text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 shadow-lg shadow-emerald-100/50 hover:bg-emerald-800 transition-all active:scale-95"
                   >
                     <span>Completar Agora</span>
