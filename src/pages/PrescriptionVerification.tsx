@@ -52,7 +52,6 @@ interface Prescription {
   license_number: string;
   patient_name: string;
   patient_username: string;
-  pdf_url?: string;
   taken_doses?: Record<string, boolean>;
 }
 
@@ -75,12 +74,6 @@ export default function DigitalPrescriptionView() {
   const downloadPDF = async () => {
     if (!prescription) return;
     
-    // If we have a pre-generated URL, use it directly
-    if (prescription.pdf_url) {
-      window.open(prescription.pdf_url, '_blank');
-      return;
-    }
-
     if (!prescriptionRef.current || !mapPrintRef.current) return;
     
     setDownloading(true);

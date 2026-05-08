@@ -643,7 +643,8 @@ create table if not exists prescriptions (
   diagnosis text,
   start_date date default current_date,
   signature_code text not null unique, -- Format: the-MMXVI-cedav-ROMAN1-ROMAN2
-  pdf_url text, -- Store generated PDF URL
+  patient_name text,
+  professional_name text,
   taken_doses jsonb default '{}'::jsonb, -- Store tracking of taken doses
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -741,8 +742,8 @@ begin
       'signature_code', p.signature_code,
       'patient_id', p.patient_id,
       'professional_id', p.professional_id,
-      'professional_name', coalesce(prof_profile.full_name, 'Profissional Identificado'),
-      'patient_name', coalesce(pat_profile.full_name, 'Paciente Identificado'),
+      'professional_name', coalesce(p.professional_name, prof_profile.full_name, 'Profissional Identificado'),
+      'patient_name', coalesce(p.patient_name, pat_profile.full_name, 'Paciente Identificado'),
       'patient_username', pat_profile.username,
       'license_number', hp.license_number,
       'professional_specialty', hp.specialty,
@@ -761,7 +762,7 @@ begin
           )
         ) from public.prescription_items pi where pi.prescription_id = p.id
       ),
-      'pdf_url', p.pdf_url,
+      'taken_doses', p.taken_doses,
       'start_date', coalesce(p.start_date, p.created_at::date),
       'created_at', p.created_at
     ) into result
@@ -775,6 +776,14 @@ begin
   return result;
 end;
 $$;
+
+-- Alias for consistency with some frontend calls if needed
+create or replace function public.search_prescription_by_code(search_signature text)
+returns json as $$
+begin
+    return public.get_prescription_by_signature_code(search_signature)::json;
+end;
+$$ language plpgsql security definer;
 
 alter table prescriptions enable row level security;
 

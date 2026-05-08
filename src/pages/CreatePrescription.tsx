@@ -220,6 +220,8 @@ export default function CreatePrescription() {
       const insertData = {
         patient_id: patientId,
         professional_id: professionalData.id,
+        patient_name: patientData?.full_name || 'Paciente',
+        professional_name: professionalData?.full_name || 'Profissional',
         diagnosis: formData.diagnosis || 'Consulta Geral',
         start_date: formData.startDate || new Date().toISOString().split('T')[0],
         signature_code: signature
@@ -232,6 +234,30 @@ export default function CreatePrescription() {
         throw insertError;
       }
       if (!data) throw new Error("Não foi possível obter os dados da receita após guardar.");
+
+      // Send automated message to patient chat with structured prescription card format
+      try {
+        const medsSummary = formData.items.length > 1 
+          ? `${formData.items[0].medication} (+${formData.items.length - 1} itens)`
+          : formData.items[0].medication;
+
+        const summary = {
+          id: signature,
+          medication: medsSummary,
+          dosage: `${formData.items[0].dosage} ${formData.items[0].form}`,
+          frequency: formData.items[0].frequency,
+          patientUsername: patientData?.username || 'paciente'
+        };
+
+        await supabase.from('direct_messages').insert({
+          sender_id: user.id,
+          receiver_id: patientId,
+          content: `___PRESCRIPTION:${JSON.stringify(summary)}`,
+          is_system: true
+        });
+      } catch (chatErr) {
+        console.error('Error sending prescription message:', chatErr);
+      }
 
       // Guardar itens relacionados
       if (formData.items.length > 0) {

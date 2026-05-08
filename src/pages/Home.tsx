@@ -145,7 +145,10 @@ export default function Home() {
     try {
       const { data, error } = await supabase
         .from('prescriptions')
-        .select('*')
+        .select(`
+          *,
+          items:prescription_items(*)
+        `)
         .eq('patient_id', patientId)
         .order('created_at', { ascending: false });
       
@@ -267,16 +270,19 @@ export default function Home() {
     try {
       const { data, error } = await supabase
         .from('prescriptions')
-        .select('*')
+        .select(`
+          *,
+          items:prescription_items(*)
+        `)
         .eq('patient_id', user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       if (data) {
-        // Ensure items is an array (sometimes Supabase returns it as a string if not properly typed)
+        // Ensure items is an array
         const parsedData = data.map(p => ({
           ...p,
-          items: Array.isArray(p.items) ? p.items : (typeof p.items === 'string' ? JSON.parse(p.items) : [])
+          items: Array.isArray(p.items) ? p.items : []
         }));
         setUserPrescriptions(parsedData);
       }
