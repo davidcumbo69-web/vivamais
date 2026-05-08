@@ -168,7 +168,12 @@ export default function DigitalPrescriptionView() {
     const doseKey = `${medIdx}-${dIdx}-${hour}`;
     setUpdatingDose(doseKey);
     
-    const newTakenDoses = { ...takenDoses, [doseKey]: !takenDoses[doseKey] };
+    const now = new Date();
+    // If it was already taken, we untake it (null), otherwise we take it (ISO string)
+    const newTakenDoses = { 
+      ...takenDoses, 
+      [doseKey]: takenDoses[doseKey] ? false : now.toISOString() 
+    } as Record<string, string | boolean>;
     
     try {
       const { error: updateError } = await supabase
@@ -178,10 +183,9 @@ export default function DigitalPrescriptionView() {
 
       if (updateError) throw updateError;
       
-      setTakenDoses(newTakenDoses);
+      setTakenDoses(newTakenDoses as any);
     } catch (err) {
       console.error('Error updating dose:', err);
-      // Optional: Show toast error
     } finally {
       setUpdatingDose(null);
     }
@@ -580,16 +584,30 @@ export default function DigitalPrescriptionView() {
                                 const isTaken = takenDoses[doseKey];
                                 
                                 return (
-                                  <div 
+                                  <button 
                                     key={mIdx}
+                                    onClick={() => toggleDose(mIdx, dIdx, hour)}
+                                    disabled={!!updatingDose}
                                     style={{ backgroundColor: (item as any).color || dotColors[mIdx % dotColors.length] }}
                                     className={`
-                                      w-3 h-3 rounded-full flex items-center justify-center
-                                      ${isTaken ? 'opacity-30' : 'opacity-100'}
+                                      w-4 h-4 rounded-full flex items-center justify-center transition-all active:scale-95 group/dot relative
+                                      ${isTaken ? 'opacity-30' : 'opacity-100 hover:scale-110'}
                                     `}
+                                    title={isTaken ? `Tomado às ${new Date(isTaken as string).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}` : `Marcar como tomado (${hour}:00)`}
                                   >
-                                    {isTaken && <Check className="w-2 h-2 text-white stroke-[4]" />}
-                                  </div>
+                                    {isTaken ? (
+                                      <Check className="w-2.5 h-2.5 text-white stroke-[4]" />
+                                    ) : (
+                                      <div className="absolute inset-0 rounded-full border-2 border-white/30 opacity-0 group-hover/dot:opacity-100 transition-opacity" />
+                                    )}
+                                    
+                                    {/* Tooltip for taken time */}
+                                    {isTaken && (
+                                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-[8px] rounded opacity-0 group-hover/dot:opacity-100 transition-opacity whitespace-nowrap z-10 font-black uppercase">
+                                        Tomado {new Date(isTaken as string).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                                      </div>
+                                    )}
+                                  </button>
                                 );
                               }
                               return null;

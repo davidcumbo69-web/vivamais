@@ -16,7 +16,9 @@ import {
   TrendingUp, 
   Coins, 
   HeartPulse,
-  User
+  User,
+  Activity,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVitus } from '../hooks/useVitus';
@@ -134,11 +136,37 @@ export default function Home() {
 
   const todaySchedule = React.useMemo(() => getTodaySchedule(), [userPrescriptions, profile]);
 
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [selectedPatientPrescriptions, setSelectedPatientPrescriptions] = useState<any[]>([]);
+  const [loadingPatientTracking, setLoadingPatientTracking] = useState(false);
+
+  const fetchPatientTracking = async (patientId: string) => {
+    setLoadingPatientTracking(true);
+    try {
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setSelectedPatientPrescriptions(data || []);
+    } catch (err) {
+      console.error('Error fetching patient tracking:', err);
+    } finally {
+      setLoadingPatientTracking(false);
+    }
+  };
+
   const handleToggleDoseInFeed = async (prescId: string, doseKey: string) => {
     const presc = userPrescriptions.find(p => p.id === prescId);
     if (!presc) return;
 
-    const newTakenDoses = { ...(presc.taken_doses || {}), [doseKey]: true };
+    const now = new Date();
+    const newTakenDoses = { 
+      ...(presc.taken_doses || {}), 
+      [doseKey]: presc.taken_doses?.[doseKey] ? false : now.toISOString() 
+    } as Record<string, string | boolean>;
     
     try {
       const { error } = await supabase
@@ -856,7 +884,14 @@ export default function Home() {
                   {profile?.is_professional ? (
                     recentPatients.length > 0 ? (
                       recentPatients.map((p, idx) => (
-                        <div key={idx} className="flex items-center justify-between group cursor-pointer" onClick={() => navigate(`/search?q=${p.patient_name}`)}>
+                        <div 
+                          key={idx} 
+                          className="flex items-center justify-between group cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-xl transition-all" 
+                          onClick={() => {
+                            setSelectedPatientId(p.patient_id);
+                            fetchPatientTracking(p.patient_id);
+                          }}
+                        >
                            <div className="flex items-center space-x-3">
                               <div className="w-8 h-8 rounded-lg bg-white border border-emerald-100 flex items-center justify-center text-[10px] font-bold text-[#006747]">
                                 {p.patient_name[0]}
@@ -866,7 +901,7 @@ export default function Home() {
                                  <p className="text-[9px] text-gray-400 font-bold uppercase">@{p.patient_username || 'paciente'}</p>
                               </div>
                            </div>
-                           <span className="text-[8px] font-black text-gray-300 uppercase">{new Date(p.created_at).toLocaleDateString('pt-PT')}</span>
+                           <Activity className="w-3.5 h-3.5 text-gray-200 group-hover:text-[#006747] transition-colors" />
                         </div>
                       ))
                     ) : (
@@ -974,6 +1009,113 @@ export default function Home() {
            </div>
         </aside>
       </div>
+
+      <AnimatePresence>
+        {selectedPatientId && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white rounded-[2.5rem] p-0 max-w-lg w-full shadow-2xl border border-white/20 relative overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-[#006747]">
+                    <Activity className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-gray-900 tracking-tight">Acompanhamento</h3>
+                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Estado da Medicação</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedPatientId(null)}
+                  className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <Plus className="w-5 h-5 rotate-45" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {loadingPatientTracking ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
+                    <p className="mt-2 text-[10px] text-gray-400 font-black uppercase tracking-widest">Sincronizando...</p>
+                  </div>
+                ) : selectedPatientPrescriptions.length > 0 ? (
+                  selectedPatientPrescriptions.map((presc, pIdx) => (
+                    <div key={presc.id} className="bg-gray-50 rounded-3xl p-5 border border-gray-100">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                          <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">#{presc.id.slice(0,6)}</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-400">{new Date(presc.created_at).toLocaleDateString('pt-PT')}</span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {(() => {
+                           const items = Array.isArray(presc.items) ? presc.items : (typeof presc.items === 'string' ? JSON.parse(presc.items) : []);
+                           return items.map((item: any, iIdx: number) => (
+                            <div key={iIdx} className="bg-white p-3 rounded-2xl border border-gray-100 flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm" />
+                                <div>
+                                  <p className="text-sm font-bold text-gray-800 leading-none">{item.medication}</p>
+                                  <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase">{item.dosage} • {item.frequency}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                {(() => {
+                                  // Count taken doses for this specific item
+                                  const takenCount = Object.keys(presc.taken_doses || {}).filter(k => k.startsWith(`${iIdx}-`)).length;
+                                  const totalPlanned = (parseInt(item.frequency) || 0) * (parseInt(item.duration) || 0);
+                                  const perc = totalPlanned > 0 ? (takenCount / totalPlanned) * 100 : 0;
+                                  
+                                  return (
+                                    <div className="flex items-center space-x-3">
+                                      <div className="flex flex-col items-end">
+                                        <p className="text-xs font-black text-gray-900">{takenCount}/{totalPlanned}</p>
+                                        <p className="text-[9px] font-black text-emerald-500 uppercase">{perc.toFixed(0)}%</p>
+                                      </div>
+                                      <div className="w-10 h-10 rounded-full border-2 border-emerald-50 flex items-center justify-center relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-emerald-500 transition-all duration-1000" style={{ height: `${perc}%`, bottom: 0, top: 'auto', opacity: 0.1 }} />
+                                        <Check className="w-4 h-4 text-emerald-500" />
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                           ));
+                        })()}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <p className="text-sm text-gray-400 italic">Nenhum histórico encontrado.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 bg-gray-50 border-t border-gray-100">
+                <button 
+                  onClick={() => navigate(`/perfil/${selectedPatientId}`)}
+                  className="w-full py-4 bg-[#006747] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition-all active:scale-95 shadow-lg shadow-emerald-100/50"
+                >
+                  Ver Perfil Completo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <CreateReelModal 
         isOpen={showCreateReelModal} 

@@ -17,6 +17,7 @@ create table if not exists profiles (
   email text,
   license_number text,
   is_verified boolean default false,
+  is_admin boolean default false,
   xp_level integer default 1,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -788,6 +789,11 @@ using (auth.uid() = professional_id);
 create policy "Everyone can view a prescription by ID (for verification)"
 on prescriptions for select
 using (true);
+
+create policy "Patients can update tracking on their own prescriptions"
+on prescriptions for update
+using (auth.uid() = patient_id)
+with check (auth.uid() = patient_id);
 
 create policy "Professionals can create prescriptions"
 on prescriptions for insert
