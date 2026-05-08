@@ -132,6 +132,16 @@ export default function Profile() {
   const [clinicalHistories, setClinicalHistories] = useState<any[]>([]);
   const [loadingHistories, setLoadingHistories] = useState(false);
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+  const [expandedPrescriptions, setExpandedPrescriptions] = useState<Set<string>>(new Set());
+
+  const togglePrescription = (id: string) => {
+    setExpandedPrescriptions(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
   const [savedItems, setSavedItems] = useState<any[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -1520,21 +1530,55 @@ export default function Profile() {
                 </div>
               ) : prescriptions.length > 0 ? (
                 <div className="space-y-6">
-                  {prescriptions.map((presc) => (
-                    <div key={presc.id} className="bg-gray-50 rounded-3xl p-5 border border-gray-100">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-2">
-                          <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                          <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">#{presc.id.slice(0,6).toUpperCase()}</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-gray-400">{new Date(presc.created_at).toLocaleDateString('pt-PT')}</span>
-                      </div>
+                  {prescriptions.map((presc) => {
+                    const isExpanded = expandedPrescriptions.has(presc.id);
+                    return (
+                      <div key={presc.id} className="bg-gray-50 rounded-3xl p-5 border border-gray-100 transition-all hover:bg-white/50">
+                        <button 
+                          onClick={() => togglePrescription(presc.id)}
+                          className="w-full flex items-center justify-between group/header"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className={cn(
+                              "w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-gray-50 transition-all group-hover/header:scale-105",
+                              isExpanded ? "text-emerald-500" : "text-gray-400"
+                            )}>
+                              <ShieldCheck className="w-5 h-5" />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1.5 flex items-center">
+                                <Activity className="w-3 h-3 mr-1 text-emerald-300" />
+                                {presc.diagnosis || 'Diagnóstico não especificado'}
+                              </p>
+                              <div className="flex items-center space-x-2">
+                                <span className={cn(
+                                  "text-xs font-bold transition-colors",
+                                  isExpanded ? "text-[#006747]" : "text-gray-900"
+                                )}>
+                                  Receita #{presc.id.slice(0,6).toUpperCase()}
+                                </span>
+                                <span className="w-1 h-1 rounded-full bg-gray-200" />
+                                <span className="text-[10px] font-bold text-gray-400">
+                                  {new Date(presc.created_at).toLocaleDateString('pt-PT')}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className={cn(
+                            "w-8 h-8 rounded-xl flex items-center justify-center transition-all",
+                            isExpanded ? "bg-emerald-50 text-emerald-500 rotate-180" : "bg-white border border-gray-100 text-gray-400"
+                          )}>
+                            <ChevronDown className="w-4 h-4" />
+                          </div>
+                        </button>
 
-                      <div className="space-y-3">
-                        {(() => {
-                           const items = Array.isArray(presc.items) ? presc.items : (typeof presc.items === 'string' ? JSON.parse(presc.items) : []);
-                           return items.map((item: any, iIdx: number) => {
-                             const history = Object.entries(presc.taken_doses || {})
+                        {isExpanded && (
+                          <div className="space-y-3 pt-6 mt-5 border-t border-gray-100">
+                            {(() => {
+                               const items = Array.isArray(presc.items) ? presc.items : (typeof presc.items === 'string' ? JSON.parse(presc.items) : []);
+                               return items.map((item: any, iIdx: number) => {
+                                 const history = Object.entries(presc.taken_doses || {})
                                .filter(([key, val]) => key.startsWith(`${iIdx}-`) && typeof val === 'string')
                                .map(([key, val]) => {
                                  const parts = key.split('-');
@@ -1626,11 +1670,13 @@ export default function Profile() {
                              );
                            });
                         })()}
-                      </div>
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              ) : (
+                  );
+                })}
+              </div>
+            ) : (
                 <div className="text-center py-24 bg-gray-50 rounded-[3rem] border border-dashed border-gray-200">
                   <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-gray-50">
                     <Activity className="w-10 h-10 text-gray-200" />
