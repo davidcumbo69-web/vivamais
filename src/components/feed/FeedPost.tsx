@@ -204,15 +204,15 @@ export function FeedPost({ post }: FeedPostProps) {
         {renderMedia()}
         
         {/* User Info Overlay - Bottom Right */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-end space-x-3 pointer-events-none">
-           <Link to={`/perfil/${post.user.id}`} className="flex flex-col items-end group pointer-events-auto text-right">
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 md:px-6 md:pb-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-end space-x-3 pointer-events-none">
+           <Link to={`/perfil/${post.user.id}`} className="flex flex-col items-end group pointer-events-auto text-right drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
               <div className="flex items-center space-x-1 mb-0.5">
-                 <span className="text-white font-bold text-sm md:text-base leading-none drop-shadow-lg group-hover:text-emerald-400 transition-colors">{post.user.username}</span>
+                 <span className="text-white font-bold text-sm md:text-base leading-none group-hover:text-emerald-400 transition-colors">{post.user.username}</span>
                  {post.user.isProf && <ShieldCheck className="w-4 h-4 text-emerald-500 fill-white" />}
               </div>
-              <span className="text-white/80 text-[10px] font-black uppercase tracking-widest drop-shadow-md">{post.category}</span>
+              <span className="text-white/90 text-[10px] font-black uppercase tracking-widest">{post.category}</span>
            </Link>
-           <Link to={`/perfil/${post.user.id}`} className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 border-white overflow-hidden shadow-2xl pointer-events-auto cursor-pointer active:scale-95 transition-transform group shrink-0">
+           <Link to={`/perfil/${post.user.id}`} className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 border-white overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.6)] pointer-events-auto cursor-pointer active:scale-95 transition-transform group shrink-0">
               <img src={post.user.avatar} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="" />
            </Link>
         </div>

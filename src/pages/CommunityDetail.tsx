@@ -701,7 +701,14 @@ export default function CommunityDetail() {
                     <div className="flex items-center space-x-3 text-xs text-gray-400 font-bold uppercase tracking-widest">
                        <Clock className="w-4 h-4" />
                        <span>Criada em {new Date(group.created_at).toLocaleDateString()}</span>
-                       {group.creator && <span className="ml-2">• Por {group.creator.username}</span>}
+                       {group.creator && (
+                        <div className="flex items-center space-x-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                           <div className="w-5 h-5 rounded-full overflow-hidden shrink-0">
+                              <img src={group.creator.avatar_url} className="w-full h-full object-cover" alt="" />
+                           </div>
+                           <span className="text-[10px] text-[#006747] font-bold">Criado por {group.creator.username}</span>
+                        </div>
+                     )}
                     </div>
                     <button 
                       onClick={() => setShowCreateTopic(true)}
