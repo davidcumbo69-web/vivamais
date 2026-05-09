@@ -10,6 +10,7 @@ import {
   ShieldCheck, 
   Plus, 
   ImagePlus, 
+  Play,
   Syringe, 
   Loader2, 
   Trophy, 
@@ -204,6 +205,7 @@ export default function Home() {
   const [newPostCaption, setNewPostCaption] = useState('');
   const [newPostFile, setNewPostFile] = useState<File | null>(null);
   const [newPostCategory, setNewPostCategory] = useState('Saúde Pública');
+  const [newPostType, setNewPostType] = useState<'image' | 'video'>('image');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -414,7 +416,8 @@ export default function Home() {
     setLoadingPosts(true);
     
     try {
-      let query = supabase
+      // Fetch regular posts
+      let postsQuery = supabase
         .from('posts')
         .select(`
           *,
@@ -429,10 +432,28 @@ export default function Home() {
           )
         `)
         .neq('category', 'Reels')
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false });
+
+      // Fetch video posts
+      let videosQuery = supabase
+        .from('post_videos')
+        .select(`
+          *,
+          profiles (
+            id,
+            username,
+            avatar_url,
+            is_professional
+          ),
+          video_likes!left (
+            user_id
+          )
+        `)
+        .eq('is_approved', true)
         .order('created_at', { ascending: false });
 
       if (activeTab === 'a_seguir' && user) {
-        // Fetch IDs of professionals the user follows
         const { data: followData, error: followError } = await supabase
           .from('professional_followers')
           .select('professional_id')
@@ -443,21 +464,26 @@ export default function Home() {
         const followedIds = followData.map(f => f.professional_id);
         
         if (followedIds.length > 0) {
-          query = query.in('user_id', followedIds);
+          postsQuery = postsQuery.in('user_id', followedIds);
+          videosQuery = videosQuery.in('user_id', followedIds);
         } else {
-          // If not following anyone, clear posts and return early
           setPosts([]);
           setLoadingPosts(false);
           return;
         }
       }
 
-      const { data, error } = await query;
+      const [postsResult, videosResult] = await Promise.allSettled([
+        postsQuery,
+        videosQuery
+      ]);
 
-      if (error) throw error;
+      let allFormattedPosts: any[] = [];
 
-      if (data) {
-        const formattedPosts = data.map(p => ({
+      // Process regular posts
+      if (postsResult.status === 'fulfilled' && !postsResult.value.error) {
+        const postsData = postsResult.value.data || [];
+        allFormattedPosts = [...allFormattedPosts, ...postsData.map(p => ({
           id: p.id,
           user: {
             id: p.profiles?.id,
@@ -469,11 +495,41 @@ export default function Home() {
           caption: p.caption,
           likes: p.likes_count || 0,
           category: p.category,
+          post_type: 'image' as const,
           isLiked: user ? (p.likes || []).some((l: any) => l.user_id === user.id) : false,
-          time: new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }));
-        setPosts(formattedPosts);
+          time: new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          raw_created_at: p.created_at
+        }))];
+      } else if (postsResult.status === 'rejected' || (postsResult.status === 'fulfilled' && postsResult.value.error)) {
+        console.error('Error fetching regular posts:', postsResult.status === 'fulfilled' ? postsResult.value.error : postsResult.reason);
       }
+
+      // Process video posts
+      if (videosResult.status === 'fulfilled' && !videosResult.value.error) {
+        const videosData = videosResult.value.data || [];
+        allFormattedPosts = [...allFormattedPosts, ...videosData.map(v => ({
+          id: v.id,
+          user: {
+            id: v.profiles?.id,
+            username: v.profiles?.username || 'viva_user',
+            avatar: v.profiles?.avatar_url || DEFAULT_AVATAR,
+            isProf: v.profiles?.is_professional || false
+          },
+          content: v.youtube_url || '',
+          youtube_url: v.youtube_url,
+          caption: v.caption,
+          likes: v.likes_count || 0,
+          category: v.category,
+          post_type: 'video' as const,
+          isLiked: user ? (v.video_likes || []).some((l: any) => l.user_id === user.id) : false,
+          time: new Date(v.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          raw_created_at: v.created_at
+        }))];
+      } else if (videosResult.status === 'rejected' || (videosResult.status === 'fulfilled' && videosResult.value.error)) {
+        console.error('Error fetching video posts:', videosResult.status === 'fulfilled' ? videosResult.value.error : videosResult.reason);
+      }
+
+      setPosts(allFormattedPosts.sort((a, b) => new Date(b.raw_created_at).getTime() - new Date(a.raw_created_at).getTime()));
     } catch (err) {
       console.error('Error fetching posts:', err);
     } finally {
@@ -483,43 +539,72 @@ export default function Home() {
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !profile?.is_professional || !newPostFile) return;
+    if (!user || !profile?.is_professional) return;
+    if (newPostType === 'image' && !newPostFile) return;
 
     setIsSubmitting(true);
     try {
-      const fileExt = newPostFile.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `posts/${user.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('post-images')
-        .upload(filePath, newPostFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('post-images')
-        .getPublicUrl(filePath);
-
-      const { error } = await supabase
-        .from('posts')
-        .insert({
-          user_id: user.id,
-          content_url: publicUrl,
-          image_url: publicUrl,
-          caption: newPostCaption,
-          category: newPostCategory,
-          likes_count: 0
-        });
-
-      if (error) throw error;
+      let publicUrl = '';
       
+      if (newPostType === 'image' && newPostFile) {
+        const fileExt = newPostFile.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const filePath = `posts/${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(filePath, newPostFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl: url } } = supabase.storage
+          .from('post-images')
+          .getPublicUrl(filePath);
+        publicUrl = url;
+      }
+
+      if (newPostType === 'video') {
+        const { error: videoError } = await supabase
+          .from('post_videos')
+          .insert({
+            user_id: user.id,
+            caption: newPostCaption,
+            category: newPostCategory,
+            likes_count: 0,
+            is_approved: false
+          });
+        if (videoError) throw videoError;
+      } else {
+        const { error: postError } = await supabase
+          .from('posts')
+          .insert({
+            user_id: user.id,
+            content_url: publicUrl,
+            image_url: publicUrl,
+            caption: newPostCaption,
+            category: newPostCategory,
+            likes_count: 0,
+            is_approved: true
+          });
+        if (postError) throw postError;
+      }
+      
+      showAlert(
+        newPostType === 'video' ? 'Pedido Enviado' : 'Publicado', 
+        newPostType === 'video' 
+          ? 'O seu pedido de publicação de vídeo foi enviado para análise da equipa VIVA+.' 
+          : 'A sua publicação foi partilhada com sucesso!',
+        'success'
+      );
+
       setNewPostCaption('');
       setNewPostFile(null);
+      setNewPostType('image');
       setShowCreateModal(false);
       fetchPosts();
     } catch (err) {
       console.error('Error creating post:', err);
+      showAlert('Erro', 'Não foi possível processar a sua publicação.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -550,8 +635,27 @@ export default function Home() {
                   >
                     Partilhar conhecimento de saúde...
                   </button>
-                  <button onClick={() => setShowCreateModal(true)} className="p-2 text-[#006747] hover:bg-emerald-50 rounded-full transition-colors">
-                    <ImagePlus className="w-6 h-6" />
+                  <button 
+                    onClick={() => {
+                        setNewPostType('image');
+                        setShowCreateModal(true);
+                    }} 
+                    className="p-2 text-[#006747] hover:bg-emerald-50 rounded-full transition-colors flex items-center space-x-1"
+                    title="Publicar Foto"
+                  >
+                    <ImagePlus className="w-5 h-5" />
+                    <span className="text-[10px] font-bold uppercase hidden md:inline">Foto</span>
+                  </button>
+                  <button 
+                    onClick={() => {
+                        setNewPostType('video');
+                        setShowCreateModal(true);
+                    }} 
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors flex items-center space-x-1"
+                    title="Publicar Vídeo YouTube"
+                  >
+                    <Play className="w-5 h-5" />
+                    <span className="text-[10px] font-bold uppercase hidden md:inline">Vídeo</span>
                   </button>
                </div>
             </div>
@@ -749,9 +853,16 @@ export default function Home() {
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
                 className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative z-10"
               >
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                   <h3 className="font-bold text-lg">Nova Publicação Oficial</h3>
-                   <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-black">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                   <div>
+                     <h3 className="font-black text-lg uppercase tracking-tight text-[#006747]">
+                        {newPostType === 'video' ? 'Solicitar Post de Vídeo' : 'Nova Publicação Oficial'}
+                     </h3>
+                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        {newPostType === 'video' ? 'Aprovação por Admin Necessária' : 'Visível para a comunidade'}
+                     </p>
+                   </div>
+                   <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-black p-2 hover:bg-gray-100 rounded-full transition-all">
                      <Plus className="w-6 h-6 rotate-45" />
                    </button>
                 </div>
@@ -772,54 +883,66 @@ export default function Home() {
                    </div>
                    
                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-gray-400 uppercase">Legenda / Conteúdo</label>
+                      <label className="text-xs font-bold text-gray-400 uppercase">
+                        {newPostType === 'video' ? 'Descrição do Vídeo (YouTube)' : 'Legenda / Conteúdo'}
+                      </label>
                       <textarea 
                         value={newPostCaption}
                         onChange={(e) => setNewPostCaption(e.target.value)}
-                        placeholder="O que quer partilhar com a comunidade?"
+                        placeholder={newPostType === 'video' ? "Explique sobre o que é este vídeo..." : "O que quer partilhar com a comunidade?"}
                         className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#006747] min-h-[100px] resize-none"
                         required
                       />
-                   </div>
+                    </div>
 
-                   <div className="space-y-2">
-                      <label className="text-xs font-bold text-gray-400 uppercase font-sans">Conteúdo Visual (Imagem)</label>
-                      <div 
-                        onClick={() => document.getElementById('post-file-input')?.click()}
-                        className="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
-                      >
-                        {newPostFile ? (
-                          <div className="text-center">
-                            <ImagePlus className="w-8 h-8 text-[#006747] mx-auto mb-2" />
-                            <p className="text-sm font-bold text-gray-700">{newPostFile.name}</p>
-                            <p className="text-[10px] text-gray-400">Clique para mudar</p>
-                          </div>
-                        ) : (
-                          <div className="text-center">
-                            <Plus className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                            <p className="text-sm font-medium text-gray-400">Carregar fotografia ou infográfico</p>
-                          </div>
-                        )}
-                        <input 
-                          id="post-file-input"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setNewPostFile(e.target.files?.[0] || null)}
-                          className="hidden"
-                          required
-                        />
+                    {newPostType === 'image' ? (
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase font-sans">Conteúdo Visual (Imagem)</label>
+                        <div 
+                          onClick={() => document.getElementById('post-file-input')?.click()}
+                          className="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
+                        >
+                          {newPostFile ? (
+                            <div className="text-center">
+                              <ImagePlus className="w-8 h-8 text-[#006747] mx-auto mb-2" />
+                              <p className="text-sm font-bold text-gray-700">{newPostFile.name}</p>
+                              <p className="text-[10px] text-gray-400">Clique para mudar</p>
+                            </div>
+                          ) : (
+                            <div className="text-center">
+                              <Plus className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                              <p className="text-sm font-medium text-gray-400">Carregar fotografia ou infográfico</p>
+                            </div>
+                          )}
+                          <input 
+                            id="post-file-input"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setNewPostFile(e.target.files?.[0] || null)}
+                            className="hidden"
+                            required
+                          />
+                        </div>
                       </div>
-                   </div>
+                    ) : (
+                        <div className="bg-[#006747]/5 p-4 rounded-2xl border border-[#006747]/10 flex items-start space-x-3">
+                            <Clock className="w-5 h-5 text-[#006747] shrink-0 mt-0.5" />
+                            <div className="text-xs text-emerald-900 font-medium leading-relaxed">
+                                <p className="font-bold mb-1">Criação de Post de Vídeo</p>
+                                <p className="opacity-80">Explique o tema do vídeo na descrição acima. O administrador irá analisar o pedido e associar o link de incorporação do YouTube.</p>
+                            </div>
+                        </div>
+                    )}
 
-                   <button 
+                    <button 
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || (newPostType === 'image' && !newPostFile) || !newPostCaption}
                     className="w-full bg-[#006747] text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 hover:bg-emerald-800 transition-all disabled:opacity-50"
                    >
                      {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                        <>
-                         <Syringe className="w-4 h-4 mr-2" />
-                         <span>Publicar no Feed SNS</span>
+                         {newPostType === 'video' ? <Clock className="w-4 h-4 mr-2" /> : <Syringe className="w-4 h-4 mr-2" />}
+                         <span>{newPostType === 'video' ? 'Solicitar Aprovação de Vídeo' : 'Publicar no Feed SNS'}</span>
                        </>
                      )}
                    </button>

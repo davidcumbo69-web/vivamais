@@ -22,6 +22,8 @@ type FeedPostProps = {
     likes: number;
     category: string;
     time: string;
+    post_type?: 'image' | 'video';
+    youtube_url?: string;
     isLiked?: boolean;
   };
 };
@@ -84,10 +86,13 @@ export function FeedPost({ post }: FeedPostProps) {
     setLikeCount(prev => newLikedState ? prev + 1 : prev - 1);
     
     try {
+      const table = post.post_type === 'video' ? 'video_likes' : 'likes';
+      const idField = post.post_type === 'video' ? 'video_id' : 'post_id';
+
       if (newLikedState) {
         // Add like
-        await supabase.from('likes').insert({
-          post_id: post.id,
+        await supabase.from(table).insert({
+          [idField]: post.id,
           user_id: user.id
         });
 
@@ -97,9 +102,9 @@ export function FeedPost({ post }: FeedPostProps) {
         }
       } else {
         // Remove like
-        await supabase.from('likes')
+        await supabase.from(table)
           .delete()
-          .eq('post_id', post.id)
+          .eq(idField, post.id)
           .eq('user_id', user.id);
       }
     } catch (err) {
@@ -108,6 +113,31 @@ export function FeedPost({ post }: FeedPostProps) {
       setIsLiked(!newLikedState);
       setLikeCount(prev => newLikedState ? prev - 1 : prev + 1);
     }
+  };
+
+  const renderMedia = () => {
+    if (post.post_type === 'video') {
+      let videoSrc = post.youtube_url || post.content;
+      
+      // If the admin pasted the whole iframe tag, extract the src URL
+      if (videoSrc.includes('<iframe')) {
+        const match = videoSrc.match(/src="([^"]+)"/);
+        videoSrc = match ? match[1] : '';
+      }
+
+      return (
+        <iframe 
+          src={videoSrc} 
+          className="w-full h-full" 
+          title="YouTube video player"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+          allowFullScreen
+        />
+      );
+    }
+    return (
+      <img src={post.content} className="w-full h-full object-cover" alt="" />
+    );
   };
 
   const handleSave = async () => {
@@ -170,8 +200,8 @@ export function FeedPost({ post }: FeedPostProps) {
   return (
     <div className="bg-white border border-gray-200 mb-4 rounded-xl shadow-sm md:max-w-[700px] md:mx-auto overflow-hidden">
       {/* Media with Overlaid User Info */}
-      <div className="relative aspect-video bg-gray-200 overflow-hidden md:rounded-sm border-y border-gray-50 sm:border-none" onDoubleClick={handleLike}>
-        <img src={post.content} className="w-full h-full object-cover" alt="" />
+      <div className="relative aspect-video bg-gray-200 overflow-hidden md:rounded-sm border-y border-gray-50 sm:border-none" onDoubleClick={post.post_type !== 'video' ? handleLike : undefined}>
+        {renderMedia()}
         
         {/* User Info Overlay - Bottom Center */}
         <div className="absolute bottom-0 left-0 right-0 pb-2 md:pb-6 pt-12 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col items-center justify-end pointer-events-none">

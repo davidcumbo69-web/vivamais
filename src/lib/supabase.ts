@@ -125,6 +125,18 @@ export type Post = {
   profiles?: Profile;
 };
 
+export type PostVideo = {
+  id: string;
+  user_id: string;
+  caption: string;
+  youtube_url?: string;
+  category: string;
+  is_approved: boolean;
+  likes_count: number;
+  created_at: string;
+  profiles?: Profile;
+};
+
 export type WellnessService = {
   id: string;
   name: string;

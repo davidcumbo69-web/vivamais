@@ -23,9 +23,11 @@ import {
   X,
   Plus,
   MoreHorizontal,
-  ClipboardList
+  ClipboardList,
+  Play
 } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
+import { FeedPost } from '../components/feed/FeedPost';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { DEFAULT_AVATAR } from '../lib/constants';
@@ -147,6 +149,9 @@ export default function CommunityDetail() {
   const [isMember, setIsMember] = useState(false);
   const [joining, setJoining] = useState(false);
   const [activeTab, setActiveTab] = useState<'temas'>('temas');
+  const [groupVideos, setGroupVideos] = useState<any[]>([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
+  const [selectedVideoForModal, setSelectedVideoForModal] = useState<any | null>(null);
   
   // Topic Creation State
   const [showCreateTopic, setShowCreateTopic] = useState(false);
@@ -171,8 +176,29 @@ export default function CommunityDetail() {
     if (group && user) {
       checkMembership();
       fetchTopics();
+      fetchGroupVideos();
     }
   }, [group, user]);
+
+  const fetchGroupVideos = async () => {
+    if (!group) return;
+    setLoadingVideos(true);
+    try {
+      const { data, error } = await supabase
+        .from('post_videos')
+        .select('*, profiles:user_id(*)')
+        .eq('user_id', group.creator_id)
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) setGroupVideos(data);
+    } catch (err) {
+      console.error('Error fetching group videos:', err);
+    } finally {
+      setLoadingVideos(false);
+    }
+  };
 
   useEffect(() => {
     if (!selectedTopic) return;
@@ -500,6 +526,41 @@ export default function CommunityDetail() {
           </div>
         </div>
       </div>
+
+      {/* Video Carousel Section - Compact Row */}
+      {groupVideos.length > 0 && (
+        <div className="bg-white border-b border-gray-100 py-3 shadow-sm sticky top-[72px] z-20">
+          <div className="max-w-4xl mx-auto px-4 flex items-center space-x-4">
+             <div className="flex-shrink-0 flex items-center pr-4 border-r border-gray-100 h-10">
+                <div className="w-1.5 h-6 bg-[#006747] rounded-full mr-2" />
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">VIVA+ TV</span>
+             </div>
+             <div className="flex-1 flex space-x-3 overflow-x-auto scrollbar-hide py-1">
+                {groupVideos.map(video => (
+                  <button 
+                    key={video.id}
+                    onClick={() => setSelectedVideoForModal(video)}
+                    className="flex-shrink-0 w-24 h-[50px] bg-black rounded-lg overflow-hidden relative group border border-gray-200 transition-all hover:border-[#006747] hover:scale-105"
+                  >
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors z-10" />
+                    <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                       <Play className="w-4 h-4 text-white fill-current" />
+                    </div>
+                    {/* Simple YouTube Thumbnail Logic */}
+                    <img 
+                      src={`https://img.youtube.com/vi/${(video.youtube_url || '').match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/user\/\S+|\/ytscreeningroom\?v=))([\w\-]{10,12})/)?.[1] || ''}/default.jpg`} 
+                      className="w-full h-full object-cover"
+                      alt="" 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop';
+                      }}
+                    />
+                  </button>
+                ))}
+             </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-5xl mx-auto px-4 pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
         {/* Main Content Area */}
@@ -842,6 +903,47 @@ export default function CommunityDetail() {
                    </div>
                 </form>
              </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Video Detail Modal */}
+      <AnimatePresence>
+        {selectedVideoForModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-lg overflow-y-auto overflow-x-hidden">
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.9, y: 30 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.9, y: 30 }}
+               className="w-full max-w-2xl relative"
+             >
+                <button 
+                  onClick={() => setSelectedVideoForModal(null)}
+                  className="absolute -top-14 right-0 p-3 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
+                >
+                  <X className="w-8 h-8" />
+                </button>
+                <div className="rounded-[2.5rem] overflow-hidden shadow-2xl">
+                  <FeedPost 
+                    post={{
+                      id: selectedVideoForModal.id,
+                      user: {
+                        id: selectedVideoForModal.profiles?.id || '',
+                        username: selectedVideoForModal.profiles?.username || 'Especialista',
+                        avatar: selectedVideoForModal.profiles?.avatar_url || DEFAULT_AVATAR,
+                        isProf: selectedVideoForModal.profiles?.is_professional || false
+                      },
+                      content: selectedVideoForModal.youtube_url || '',
+                      caption: selectedVideoForModal.caption || '',
+                      likes: selectedVideoForModal.likes_count || 0,
+                      category: selectedVideoForModal.category || group.category || 'Saúde',
+                      time: new Date(selectedVideoForModal.created_at).toLocaleDateString(),
+                      post_type: 'video',
+                      youtube_url: selectedVideoForModal.youtube_url
+                    }}
+                  />
+                </div>
+             </motion.div>
           </div>
         )}
       </AnimatePresence>

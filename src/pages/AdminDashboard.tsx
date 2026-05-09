@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Search,
   Play,
+  FileText,
   Film,
   Megaphone,
   Plus,
@@ -28,10 +29,11 @@ export default function AdminDashboard() {
   const { profile } = useAuth();
   const [requests, setRequests] = useState<ProfessionalVerification[]>([]);
   const [pendingReels, setPendingReels] = useState<Post[]>([]);
+  const [pendingVideos, setPendingVideos] = useState<Post[]>([]);
   const [ads, setAds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'reels' | 'ads'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'reels' | 'ads' | 'videos'>('users');
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -66,6 +68,8 @@ export default function AdminDashboard() {
         fetchRequests();
       } else if (activeTab === 'reels') {
         fetchReels();
+      } else if (activeTab === 'videos') {
+        fetchVideos();
       } else {
         fetchAds();
       }
@@ -196,6 +200,27 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
+  const fetchVideos = async () => {
+    setLoading(true);
+    try {
+      const { data, error: videoError } = await supabase
+        .from('post_videos')
+        .select('*, profiles(*)')
+        .eq('is_approved', filter === 'approved')
+        .order('created_at', { ascending: false });
+
+      if (videoError) {
+        setError(videoError.message);
+      } else {
+        setPendingVideos(data || []);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAction = async (request: ProfessionalVerification, action: 'approved' | 'rejected', notes?: string) => {
     // Security check: Only davidcumbo69@gmail.com can perform these actions
     if (profile?.email !== 'davidcumbo69@gmail.com') {
@@ -263,6 +288,45 @@ export default function AdminDashboard() {
       console.error('Error in handleAction:', err);
       showNotification(err.message || 'Erro inesperado ao processar ação.', 'error');
       setError(err.message);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleVideoAction = async (videoId: string, approved: boolean, youtubeUrl?: string) => {
+    if (profile?.email !== 'davidcumbo69@gmail.com') {
+      showNotification('⚠️ Ação não permitida para a sua conta.', 'error');
+      return;
+    }
+
+    if (approved && !youtubeUrl) {
+      showNotification('⚠️ Insira o link de incorporação do YouTube.', 'error');
+      return;
+    }
+
+    setProcessingId(videoId);
+    try {
+      if (approved) {
+        const { error } = await supabase
+          .from('post_videos')
+          .update({ 
+            is_approved: true,
+            youtube_url: youtubeUrl
+          })
+          .eq('id', videoId);
+        if (error) throw error;
+        showNotification('✅ Vídeo aprovado com sucesso!');
+      } else {
+        const { error } = await supabase
+          .from('post_videos')
+          .delete()
+          .eq('id', videoId);
+        if (error) throw error;
+        showNotification('❌ Pedido de vídeo eliminado.', 'success');
+      }
+      fetchVideos();
+    } catch (err: any) {
+      showNotification(err.message || 'Erro ao processar vídeo.', 'error');
     } finally {
       setProcessingId(null);
     }
@@ -351,6 +415,17 @@ export default function AdminDashboard() {
                   <span>Reels</span>
                 </button>
                 <button
+                  onClick={() => setActiveTab('videos')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2 ${
+                    activeTab === 'videos' 
+                      ? 'bg-[#006747] text-white shadow-md' 
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  <span>Vídeos</span>
+                </button>
+                <button
                   onClick={() => setActiveTab('ads')}
                   className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2 ${
                     activeTab === 'ads' 
@@ -398,7 +473,7 @@ export default function AdminDashboard() {
             <Loader2 className="w-8 h-8 animate-spin text-[#006747] mb-2" />
             <p className="text-gray-400 text-sm">A carregar dados...</p>
           </div>
-        ) : (activeTab === 'users' ? requests : activeTab === 'reels' ? pendingReels : ads).length === 0 ? (
+        ) : (activeTab === 'users' ? requests : activeTab === 'reels' ? pendingReels : activeTab === 'videos' ? pendingVideos : ads).length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
             <Clock className="w-12 h-12 text-gray-200 mx-auto mb-4" />
             <p className="text-gray-400 font-medium">Não existem itens nesta categoria.</p>
@@ -496,6 +571,102 @@ export default function AdminDashboard() {
                         <XCircle className="w-4 h-4" />
                         <span>Rejeitar</span>
                       </button>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        ) : activeTab === 'videos' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <AnimatePresence>
+              {pendingVideos.map((video) => (
+                <motion.div
+                  key={video.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col"
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center">
+                          {video.profiles?.avatar_url ? (
+                            <img src={video.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-6 h-6 text-gray-300" />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900">{video.profiles?.full_name || video.profiles?.username}</h3>
+                          <p className="text-xs text-gray-400">{new Date(video.created_at).toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        !video.is_approved ? 'bg-yellow-50 text-yellow-600' : 'bg-green-50 text-green-600'
+                      }`}>
+                        {video.is_approved ? 'Aprovado' : 'Pendente'}
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-2 mb-4">
+                      <div className="flex items-center text-xs text-gray-500 italic">
+                        <FileText className="w-3 h-3 mr-2" />
+                        <span>Legenda Sugerida:</span>
+                      </div>
+                      <p className="text-sm font-medium text-gray-700">
+                        {video.caption}
+                      </p>
+                    </div>
+
+                    {filter === 'approved' && video.youtube_url && (
+                        <div className="bg-emerald-50 rounded-xl p-4 space-y-2">
+                             <div className="flex items-center text-xs text-emerald-600 font-bold">
+                                <Play className="w-3 h-3 mr-2" />
+                                <span>Link de Incorporação:</span>
+                             </div>
+                             <p className="text-xs font-mono text-emerald-800 break-all">{video.youtube_url}</p>
+                        </div>
+                    )}
+                  </div>
+
+                  {!video.is_approved && (
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 space-y-3 mt-auto">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Link de Incorporação (YouTube Embed URL)</label>
+                        <input 
+                          type="text"
+                          id={`youtube-url-${video.id}`}
+                          placeholder="https://www.youtube.com/embed/..."
+                          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs focus:ring-2 focus:ring-[#006747] focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <button
+                          onClick={() => {
+                            const url = (document.getElementById(`youtube-url-${video.id}`) as HTMLInputElement).value;
+                            handleVideoAction(video.id, true, url);
+                          }}
+                          disabled={!!processingId}
+                          className="flex-1 bg-green-600 text-white rounded-xl py-2.5 text-sm font-bold flex items-center justify-center space-x-2 hover:bg-green-700 transition-colors shadow-lg shadow-green-100 disabled:opacity-50"
+                        >
+                          {processingId === video.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                            <>
+                              <CheckCircle className="w-4 h-4" />
+                              <span>Aprovar com Link</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleVideoAction(video.id, false)}
+                          disabled={!!processingId}
+                          className="flex-1 bg-white text-red-600 border border-red-100 rounded-xl py-2.5 text-sm font-bold flex items-center justify-center space-x-2 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          <span>Rejeitar</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </motion.div>
