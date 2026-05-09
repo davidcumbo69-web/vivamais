@@ -241,29 +241,73 @@ export default function CommunityDetail() {
   }, [selectedTopic]);
 
   const fetchGroup = async () => {
-    const { data, error } = await supabase
-      .from('health_groups')
-      .select('*, creator:creator_id(username, avatar_url)')
-      .eq('name', name)
-      .single();
-    
-    if (data) {
-      setGroup(data);
+    try {
+      if (!name) return;
+      
+      const decodedName = decodeURIComponent(name);
+      
+      // Attempt to fetch group with creator info from profiles table
+      const { data, error } = await supabase
+        .from('health_groups')
+        .select(`
+          *,
+          creator:creator_id(username, avatar_url)
+        `)
+        .ilike('name', decodedName)
+        .maybeSingle();
+      
+      if (error) {
+        console.warn('Complex fetch failed, trying basic fetch:', error.message);
+        const { data: basicData, error: basicError } = await supabase
+          .from('health_groups')
+          .select('*')
+          .ilike('name', decodedName)
+          .maybeSingle();
+          
+        if (basicError) throw basicError;
+        if (basicData) {
+          // If basic fetch worked, try to get creator info separately if missing
+          if (basicData.creator_id) {
+             const { data: profileData } = await supabase
+               .from('profiles')
+               .select('username, avatar_url')
+               .eq('id', basicData.creator_id)
+               .maybeSingle();
+             basicData.creator = profileData;
+          }
+          setGroup(basicData);
+        }
+      } else if (data) {
+        setGroup(data);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar o grupo:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const checkMembership = async () => {
-    if (!user || !group) return;
+    if (!user || !group) {
+      setIsMember(false);
+      return;
+    }
+
+    // O criador do grupo já é membro automaticamente
+    if (group.creator_id === user.id) {
+      setIsMember(true);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('health_group_members')
         .select('*')
         .eq('group_id', group.id)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows found", which is normal
+      if (error) {
         console.warn('Membership check failed:', error.message);
         return;
       }
@@ -288,6 +332,10 @@ export default function CommunityDetail() {
 
   const handleJoinLeave = async () => {
     if (!user || !group) return;
+    
+    // O criador não pode sair do próprio grupo
+    if (group.creator_id === user.id) return;
+
     setJoining(true);
 
     try {

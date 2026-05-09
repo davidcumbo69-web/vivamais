@@ -343,7 +343,7 @@ export default function Home() {
       const { data, error } = await supabase
         .from('health_groups')
         .select('*')
-        .order('member_count', { ascending: false });
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       if (data) setGroups(data);
@@ -357,6 +357,10 @@ export default function Home() {
   const handleJoinGroup = async (e: React.MouseEvent, groupId: string) => {
     e.stopPropagation();
     if (!user) return;
+
+    // Se o usuário for o criador, ele já é membro e não pode sair (opcional, mas seguro)
+    const selectedGroup = groups.find(g => g.id === groupId);
+    if (selectedGroup?.creator_id === user.id) return;
 
     const isMember = userGroups.has(groupId);
 
@@ -802,12 +806,12 @@ export default function Home() {
                             onClick={(e) => handleJoinGroup(e, group.id)}
                             className={cn(
                               "px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm border",
-                              userGroups.has(group.id)
+                              (userGroups.has(group.id) || group.creator_id === user?.id)
                                 ? "bg-white text-gray-400 border-gray-100 hover:bg-gray-50"
                                 : "bg-[#006747] text-white border-[#006747] hover:bg-emerald-800"
                             )}
                           >
-                            {userGroups.has(group.id) ? 'Aderido' : 'Aderir'}
+                            {(userGroups.has(group.id) || group.creator_id === user?.id) ? 'Aderido' : 'Aderir'}
                           </button>
                         </div>
                       ))
