@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, Plus, Loader2 } from 'lucide-react';
+import { ShieldCheck, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { CreateReelModal } from './CreateReelModal';
+import { Skeleton } from '../ui/Skeleton';
 
 export function StoriesBar() {
   const [reels, setReels] = useState<any[]>([]);
@@ -75,10 +76,10 @@ export function StoriesBar() {
 
         {loading ? (
           <div className="flex space-x-4">
-             {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex flex-col items-center flex-shrink-0 animate-pulse">
-                   <div className="w-14 h-14 rounded-full bg-gray-100 border-2 border-gray-200 p-[2px]" />
-                   <div className="w-10 h-2 bg-gray-50 rounded mt-2" />
+             {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex flex-col items-center flex-shrink-0">
+                   <Skeleton className="w-14 h-14 rounded-full" />
+                   <Skeleton className="w-10 h-2 mt-2" />
                 </div>
              ))}
           </div>

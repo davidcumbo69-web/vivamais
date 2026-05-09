@@ -23,6 +23,7 @@ import { AdCarousel } from '../components/ads/AdCarousel';
 import { useVitus } from '../hooks/useVitus';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { Skeleton } from '../components/ui/Skeleton';
 
 function AppointmentCard({ svc, user, onClick }: { svc: any, user: any, onClick: () => void, key?: any }) {
   const [isSaved, setIsSaved] = useState(false);
@@ -223,9 +224,29 @@ export default function Appointments() {
       </header>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 animate-pulse">
-            <div className="w-12 h-12 border-4 border-[#006747] border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-gray-400 font-black text-[10px] uppercase tracking-widest">A carregar serviços...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-white rounded-[2rem] p-6 border border-gray-100 space-y-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-4">
+                  <Skeleton className="w-14 h-14 rounded-2xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+                <Skeleton className="w-16 h-6 rounded-full" />
+              </div>
+              <Skeleton className="h-12 w-full" />
+              <div className="flex justify-between items-center pt-6 border-t border-gray-50">
+                <div className="flex space-x-4">
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+                <Skeleton className="w-24 h-10 rounded-2xl" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

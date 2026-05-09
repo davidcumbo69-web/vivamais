@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Film, ShieldCheck, Play, Loader2, Plus } from 'lucide-react';
+import { Film, ShieldCheck, Play, Plus } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { cn } from '../../lib/utils';
+import { Skeleton } from '../ui/Skeleton';
 
 import { DEFAULT_AVATAR } from '../../lib/constants';
 
@@ -59,8 +60,19 @@ export function ReelsCarousel({ onAddClick }: ReelsCarouselProps) {
 
   if (loading) {
     return (
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-4 shadow-sm mx-4 md:mx-0 flex flex-col items-center justify-center py-10">
-        <Loader2 className="w-6 h-6 animate-spin text-[#006747] opacity-20" />
+      <div className="bg-white border border-gray-200 rounded-xl py-6 px-4 mb-4 mx-4 md:mx-0 shadow-sm relative overflow-hidden">
+        <div className="flex items-center justify-between mb-4 px-2">
+          <div className="flex items-center space-x-2">
+            <Skeleton className="w-5 h-5" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <Skeleton className="h-3 w-12" />
+        </div>
+        <div className="flex space-x-3 overflow-hidden">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="flex-shrink-0 w-32 aspect-[9/16] rounded-xl" />
+          ))}
+        </div>
       </div>
     );
   }

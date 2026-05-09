@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAlert } from '../hooks/useAlert';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
+import { Skeleton } from '../components/ui/Skeleton';
 import { ReelsCarousel } from '../components/feed/ReelsCarousel';
 import { CreateReelModal } from '../components/feed/CreateReelModal';
 
@@ -191,8 +192,30 @@ export default function Reels() {
 
   if (loading && reels.length === 0) {
     return (
-      <div className="h-screen flex items-center justify-center bg-black">
-        <Loader2 className="w-10 h-10 animate-spin text-[#006747]" />
+      <div className="h-screen w-full bg-black relative flex items-center justify-center">
+        <div className="h-full w-full max-w-lg bg-zinc-900 overflow-hidden relative">
+          <Skeleton className="absolute inset-0 w-full h-full bg-zinc-900" />
+          <div className="absolute bottom-10 left-4 right-20 space-y-4">
+            <div className="flex items-center space-x-3">
+              <Skeleton className="w-10 h-10 rounded-full bg-emerald-950/30" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24 bg-emerald-950/30" />
+                <Skeleton className="h-3 w-32 bg-emerald-950/30" />
+              </div>
+            </div>
+            <Skeleton className="h-4 w-3/4 bg-emerald-950/30" />
+            <Skeleton className="h-4 w-1/2 bg-emerald-950/30" />
+            <Skeleton className="h-8 w-32 rounded-full bg-emerald-950/30" />
+          </div>
+          <div className="absolute bottom-20 right-4 space-y-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="flex flex-col items-center space-y-2">
+                <Skeleton className="w-12 h-12 rounded-full bg-emerald-950/30" />
+                <Skeleton className="h-2 w-4 bg-emerald-950/30" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

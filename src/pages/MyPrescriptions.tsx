@@ -14,6 +14,8 @@ import {
   Copy,
   Check
 } from 'lucide-react';
+import { Header } from '../components/layout/Header';
+import { Skeleton } from '../components/ui/Skeleton';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 
@@ -89,9 +91,25 @@ export default function MyPrescriptions() {
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24">
-             <Loader2 className="w-10 h-10 animate-spin text-[#006747]/20 mb-4" />
-             <p className="text-xs font-black text-gray-400 uppercase tracking-widest">A carregar o seu historial...</p>
+          <div className="grid grid-cols-1 gap-4">
+             {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm flex items-center space-x-6">
+                    <Skeleton className="w-16 h-16 rounded-[1.5rem] shrink-0" />
+                    <div className="flex-1 space-y-3">
+                         <div className="flex items-center space-x-2">
+                             <Skeleton className="h-3 w-20" />
+                             <Skeleton className="h-1 w-1 rounded-full" />
+                             <Skeleton className="h-3 w-16" />
+                         </div>
+                         <Skeleton className="h-7 w-2/3" />
+                         <div className="flex space-x-3">
+                            <Skeleton className="h-4 w-20 rounded-lg" />
+                            <Skeleton className="h-4 w-32 rounded-lg" />
+                         </div>
+                    </div>
+                    <Skeleton className="w-32 h-10 rounded-xl hidden md:block" />
+                </div>
+             ))}
           </div>
         ) : filteredPrescriptions.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">

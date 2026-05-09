@@ -17,6 +17,7 @@ import {
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { Skeleton } from '../components/ui/Skeleton';
 import { Header } from '../components/layout/Header';
 
 function ProductCard({ product, user, setSelectedProduct }: { product: any, user: any, setSelectedProduct: any, key?: any }) {
@@ -256,8 +257,18 @@ export default function Marketplace() {
         {/* Product Grid */}
         {loading ? (
              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {[1,2,3,4].map(i => (
-                    <div key={i} className="aspect-[4/5] bg-gray-50 rounded-[2.5rem] animate-pulse" />
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="space-y-4">
+                        <Skeleton className="aspect-[4/5] w-full rounded-[2.5rem]" />
+                        <div className="space-y-2">
+                           <div className="flex justify-between">
+                             <Skeleton className="h-3 w-1/3" />
+                             <Skeleton className="h-3 w-1/4" />
+                           </div>
+                           <Skeleton className="h-5 w-full" />
+                           <Skeleton className="h-3 w-1/2" />
+                        </div>
+                    </div>
                 ))}
              </div>
         ) : (

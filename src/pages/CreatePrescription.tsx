@@ -20,6 +20,7 @@ import {
   Check
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Skeleton } from '../components/ui/Skeleton';
 import { motion } from 'motion/react';
 import jsPDF from 'jspdf';
 import { toPng } from 'html-to-image';
@@ -304,7 +305,45 @@ export default function CreatePrescription() {
     }
   };
 
-  if (initialLoading) return <div className="h-screen bg-[#0a0a0a] flex items-center justify-center"><Loader2 className="w-8 h-8 text-white/20 animate-spin" /></div>;
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-[#030303] pt-20 px-4 md:px-8">
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr,312px] gap-6">
+          <div className="space-y-4">
+            <div className="bg-[#1A1A1B] border border-[#343536] rounded p-6 space-y-6">
+              <div className="flex items-center space-x-4">
+                <Skeleton className="w-12 h-12 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
+              <div className="space-y-4">
+                <Skeleton className="h-8 w-3/4" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            </div>
+            <div className="bg-[#1A1A1B] border border-[#343536] rounded p-6 space-y-4">
+              <Skeleton className="h-6 w-32" />
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} className="h-20 w-full" />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="hidden lg:block space-y-4">
+            <Skeleton className="h-48 w-full rounded" />
+            <Skeleton className="h-64 w-full rounded" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#030303] text-[#D7DADC] font-sans selection:bg-[#FF4500] selection:text-white relative">

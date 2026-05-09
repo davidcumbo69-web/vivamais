@@ -9,6 +9,7 @@ import {
   CalendarRange
 } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
+import { Skeleton, ProfileHeaderSkeleton, PostSkeleton, CommunityCardSkeleton } from '../components/ui/Skeleton';
 import { useAuth } from '../hooks/useAuth';
 import { useAlert } from '../hooks/useAlert';
 import { useVitus } from '../hooks/useVitus';
@@ -707,8 +708,15 @@ export default function Profile() {
 
   if (loadingProfile) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#006747]" />
+      <div className="pb-20 max-w-4xl mx-auto md:pb-10 pt-4 px-4 overflow-x-hidden">
+        <Skeleton className="w-full aspect-[21/5] rounded-[2rem] mb-8" />
+        <ProfileHeaderSkeleton />
+        <div className="flex space-x-4 mb-8 overflow-x-auto scrollbar-hide">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-10 w-24 rounded-full flex-shrink-0" />)}
+        </div>
+        <div className="grid grid-cols-3 gap-1">
+          {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="aspect-square w-full rounded-sm" />)}
+        </div>
       </div>
     );
   }
@@ -1200,9 +1208,17 @@ export default function Profile() {
           {activeTab === 'services' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
               {loadingServices ? (
-                <div className="col-span-full flex justify-center py-12">
-                   <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
-                </div>
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm flex items-center space-x-4">
+                    <Skeleton className="w-20 h-20 rounded-2xl flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-3 w-1/4" />
+                      <Skeleton className="h-4 w-1/2 mt-2" />
+                    </div>
+                    <Skeleton className="w-10 h-10 rounded-xl" />
+                  </div>
+                ))
               ) : services.length > 0 ? (
                 services.map(svc => (
                   <ServiceCard 
@@ -1223,8 +1239,22 @@ export default function Profile() {
           {activeTab === 'prescriptions' && (
             <div className="min-h-screen bg-gray-50 -mx-4 -mb-20 px-6 pt-10 pb-32 font-sans">
               {loadingPrescriptions ? (
-                <div className="flex justify-center py-12">
-                   <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
+                <div className="max-w-4xl mx-auto space-y-8">
+                  <div className="bg-white rounded-[2.5rem] p-10 border border-gray-100 shadow-sm">
+                    <div className="flex justify-between mb-10">
+                      <div className="space-y-4">
+                        <Skeleton className="h-8 w-64" />
+                        <Skeleton className="h-4 w-48" />
+                      </div>
+                      <div className="space-y-2 text-right">
+                        <Skeleton className="h-3 w-32 ml-auto" />
+                        <Skeleton className="h-3 w-40 ml-auto" />
+                      </div>
+                    </div>
+                    <div className="space-y-6">
+                      {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)}
+                    </div>
+                  </div>
                 </div>
               ) : prescriptions.length > 0 ? (
                 prescriptions.map(presc => {
@@ -1430,10 +1460,13 @@ export default function Profile() {
                     <button 
                       onClick={handleAnalyzeEvolution}
                       disabled={evolutionLoading || clinicalHistories.length < 2}
-                      className="group relative flex items-center space-x-2 text-[#006747] bg-emerald-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all disabled:opacity-50"
+                      className="group relative flex items-center space-x-2 text-[#006747] bg-emerald-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all disabled:opacity-50 overflow-hidden"
                     >
-                      {evolutionLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
-                      <span>Evolução IA</span>
+                      {evolutionLoading && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+                      )}
+                      <Brain className={cn("w-3 h-3", evolutionLoading && "animate-pulse")} />
+                      <span>{evolutionLoading ? 'Analisando...' : 'Evolução IA'}</span>
                     </button>
                   )}
                 </div>
@@ -1449,8 +1482,19 @@ export default function Profile() {
               </div>
 
               {loadingHistories ? (
-                <div className="flex justify-center py-20">
-                   <Loader2 className="w-10 h-10 animate-spin text-[#006747] opacity-20" />
+                <div className="space-y-4">
+                   {[1, 2, 3].map(i => (
+                     <div key={i} className="bg-white rounded-[2.5rem] p-6 border border-gray-100">
+                       <div className="flex items-center space-x-4 mb-4">
+                         <Skeleton className="w-12 h-12 rounded-2xl" />
+                         <div className="space-y-2">
+                           <Skeleton className="h-5 w-48" />
+                           <Skeleton className="h-3 w-32" />
+                         </div>
+                       </div>
+                       <Skeleton className="h-20 w-full rounded-2xl" />
+                     </div>
+                   ))}
                 </div>
               ) : clinicalHistories.length > 0 ? (
                 <div className="space-y-4">
@@ -1656,9 +1700,21 @@ export default function Profile() {
                 </div>
               </div>
               {loadingPrescriptions ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
-                  <p className="mt-2 text-[10px] text-gray-400 font-black uppercase tracking-widest">Sincronizando...</p>
+                <div className="space-y-4">
+                  {[...Array(2)].map((_, i) => (
+                    <div key={i} className="bg-gray-50 rounded-3xl p-5 border border-gray-100 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <Skeleton className="w-10 h-10 rounded-2xl" />
+                          <div className="space-y-2">
+                            <Skeleton className="h-3 w-32" />
+                            <Skeleton className="h-4 w-40" />
+                          </div>
+                        </div>
+                        <Skeleton className="w-8 h-8 rounded-xl" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : prescriptions.length > 0 ? (
                 <div className="space-y-6">
@@ -1823,8 +1879,19 @@ export default function Profile() {
           {activeTab === 'orders' && (
             <div className="space-y-4 px-2">
               {loadingOrders ? (
-                <div className="flex justify-center py-12">
-                   <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
+                <div className="space-y-4">
+                   {[...Array(3)].map((_, i) => (
+                     <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                           <Skeleton className="w-12 h-12 rounded-xl" />
+                           <div className="space-y-2">
+                              <Skeleton className="h-4 w-32" />
+                              <Skeleton className="h-3 w-24" />
+                           </div>
+                        </div>
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                     </div>
+                   ))}
                 </div>
               ) : orders.length > 0 ? (
                 orders.map(order => (
@@ -1878,8 +1945,19 @@ export default function Profile() {
           {activeTab === 'appointments' && (
             <div className="space-y-4 px-2">
               {loadingAppointments ? (
-                <div className="flex justify-center py-12">
-                   <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
+                <div className="space-y-4">
+                   {[...Array(3)].map((_, i) => (
+                     <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                           <Skeleton className="w-12 h-12 rounded-xl" />
+                           <div className="space-y-2">
+                              <Skeleton className="h-4 w-40" />
+                              <Skeleton className="h-3 w-48" />
+                           </div>
+                        </div>
+                        <Skeleton className="h-8 w-16 rounded-full" />
+                     </div>
+                   ))}
                 </div>
               ) : appointments.length > 0 ? (
                 appointments.map(bk => (
@@ -1922,9 +2000,9 @@ export default function Profile() {
           {activeTab === 'posts' && (
             <div className="grid grid-cols-3 gap-1 md:gap-4">
               {loadingPosts ? (
-                <div className="col-span-3 flex justify-center py-10">
-                  <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
-                </div>
+                [1, 2, 3, 4, 5, 6].map(i => (
+                  <Skeleton key={i} className="aspect-square w-full rounded-lg" />
+                ))
               ) : posts.length > 0 ? (
                 posts.map((post) => (
                   <div key={post.id} className="aspect-square bg-gray-100 hover:opacity-90 transition-opacity cursor-pointer overflow-hidden rounded-lg border border-gray-100">
@@ -1943,9 +2021,9 @@ export default function Profile() {
           {activeTab === 'reels' && (
             <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-1 md:gap-2">
               {loadingReels ? (
-                <div className="col-span-full flex justify-center py-10">
-                  <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
-                </div>
+                [1, 2, 3, 4, 5, 6].map(i => (
+                  <Skeleton key={i} className="aspect-[9/16] w-full rounded-lg" />
+                ))
               ) : reels.length > 0 ? (
                 reels.map((reel) => (
                   <div key={reel.id} className="aspect-[9/16] bg-black hover:opacity-90 transition-opacity cursor-pointer overflow-hidden rounded-lg relative">
@@ -1987,9 +2065,15 @@ export default function Profile() {
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {loadingCommunities ? (
-                    <div className="col-span-full flex flex-col items-center justify-center py-20">
-                       <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
-                    </div>
+                    [1, 2, 3, 4].map(i => (
+                      <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center space-x-4">
+                         <Skeleton className="w-14 h-14 rounded-2xl flex-shrink-0" />
+                         <div className="flex-1 space-y-2">
+                            <Skeleton className="h-5 w-3/4" />
+                            <Skeleton className="h-3 w-1/2" />
+                         </div>
+                      </div>
+                    ))
                   ) : communities.length > 0 ? (
                     communities.map((community) => (
                       <Link 
@@ -2027,9 +2111,9 @@ export default function Profile() {
           {activeTab === 'saved' && (
             <div className="grid grid-cols-3 gap-1 md:gap-2">
               {loadingSaved ? (
-                <div className="col-span-full flex justify-center py-10">
-                  <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
-                </div>
+                [1, 2, 3, 4, 5, 6].map(i => (
+                  <Skeleton key={i} className="aspect-square w-full rounded-sm" />
+                ))
               ) : savedItems.length > 0 ? (
                 savedItems.map((item) => (
                   <Link 

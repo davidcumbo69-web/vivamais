@@ -23,6 +23,7 @@ import {
   User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Skeleton } from '../components/ui/Skeleton';
 import { DEFAULT_AVATAR } from '../lib/constants';
 
 export default function AdminDashboard() {
@@ -469,9 +470,26 @@ export default function AdminDashboard() {
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-[#006747] mb-2" />
-            <p className="text-gray-400 text-sm">A carregar dados...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 space-y-4">
+                <div className="flex items-center space-x-3">
+                  <Skeleton className="w-12 h-12 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Skeleton className="h-10 rounded-xl" />
+                  <Skeleton className="h-10 rounded-xl" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (activeTab === 'users' ? requests : activeTab === 'reels' ? pendingReels : activeTab === 'videos' ? pendingVideos : ads).length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">

@@ -32,6 +32,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Header } from '../components/layout/Header';
 import { cn } from '../lib/utils';
+import { Skeleton } from '../components/ui/Skeleton';
 import { geminiService, AIDiagnosisOnlyResult } from '../services/geminiService';
 
 interface Step {
@@ -502,8 +503,39 @@ export default function CreateClinicalHistory() {
 
   if (initialLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
-        <div className="w-10 h-10 border-4 border-[#006747] border-t-transparent rounded-full animate-spin" />
+      <div className="pb-20 min-h-screen bg-[#f8fafc]">
+        <Header />
+        <div className="max-w-4xl mx-auto pt-6 px-4">
+          <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-gray-100 mb-6">
+            <div className="flex items-center justify-between mb-8">
+               <div className="flex items-center space-x-4">
+                  <Skeleton className="w-10 h-10 rounded-2xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+               </div>
+               <Skeleton className="h-10 w-24 rounded-2xl" />
+            </div>
+            <div className="space-y-4">
+              <div className="flex justify-between">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+              <Skeleton className="h-2 w-full rounded-full" />
+            </div>
+          </div>
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-12 w-full rounded-2xl" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

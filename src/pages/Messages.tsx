@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { Skeleton, MessageItemSkeleton } from '../components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
 // PrescriptionModal removed in favor of full page navigation
 import { DEFAULT_AVATAR } from '../lib/constants';
@@ -514,9 +515,9 @@ export default function Messages() {
 
         <div className="flex-1 overflow-y-auto">
           {loadingConversations ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
-            </div>
+            Array.from({ length: 8 }).map((_, i) => (
+              <MessageItemSkeleton key={i} />
+            ))
           ) : filteredConversations.length > 0 ? (
             filteredConversations.map((conv) => (
               <button
@@ -627,8 +628,12 @@ export default function Messages() {
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 bg-[#f8f9fa]">
               {loadingMessages ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
+                <div className="space-y-6">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className={cn("flex", i % 2 === 0 ? "justify-end" : "justify-start")}>
+                      <Skeleton className={cn("h-12 w-2/3 rounded-2xl", i % 2 === 0 ? "rounded-tr-none" : "rounded-tl-none")} />
+                    </div>
+                  ))}
                 </div>
               ) : messages.length > 0 ? (
                 <>

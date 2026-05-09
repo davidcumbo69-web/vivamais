@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { FeedPost } from '../components/feed/FeedPost';
+import { TopicSkeleton, VideoThumbnailSkeleton, Skeleton } from '../components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { DEFAULT_AVATAR } from '../lib/constants';
@@ -443,8 +444,34 @@ export default function CommunityDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#006747]" />
+      <div className="min-h-screen bg-[#dae0e6] font-sans">
+        <Header />
+        <div className="max-w-5xl mx-auto px-4 pt-4">
+           <Skeleton className="h-40 w-full mb-8 rounded-[2.5rem]" />
+        </div>
+        <div className="bg-white border-b border-gray-300 shadow-sm relative z-10 pb-4">
+           <div className="max-w-4xl mx-auto px-4">
+              <div className="flex items-end -mt-10 mb-4">
+                 <Skeleton className="w-24 h-24 rounded-full border-[6px] border-white shrink-0" />
+                 <div className="ml-5 mb-2 flex-1 space-y-2">
+                    <Skeleton className="h-8 w-1/3" />
+                    <Skeleton className="h-4 w-1/4" />
+                 </div>
+              </div>
+           </div>
+        </div>
+        <main className="max-w-5xl mx-auto px-4 pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+           <div className="lg:col-span-8 space-y-4">
+              <div className="flex justify-between items-center mb-6">
+                 <Skeleton className="h-8 w-40" />
+                 <Skeleton className="h-10 w-32 rounded-xl" />
+              </div>
+              {[1, 2, 3].map(i => <TopicSkeleton key={i} />)}
+           </div>
+           <div className="lg:col-span-4">
+              <Skeleton className="h-64 w-full rounded-md" />
+           </div>
+        </main>
       </div>
     );
   }
@@ -536,7 +563,9 @@ export default function CommunityDetail() {
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">VIVA+ TV</span>
              </div>
              <div className="flex-1 flex space-x-3 overflow-x-auto scrollbar-hide py-1">
-                {groupVideos.map(video => (
+                {loadingVideos ? (
+                  [1, 2, 3, 4, 5].map(i => <VideoThumbnailSkeleton key={i} />)
+                ) : groupVideos.map(video => (
                   <button 
                     key={video.id}
                     onClick={() => setSelectedVideoForModal(video)}
@@ -579,8 +608,8 @@ export default function CommunityDetail() {
                 </div>
 
                 {loadingTopics ? (
-                   <div className="flex justify-center py-20">
-                      <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
+                   <div className="space-y-4">
+                      {[1, 2, 3].map(i => <TopicSkeleton key={i} />)}
                    </div>
                 ) : topics.length === 0 ? (
                    <div className="bg-white p-20 rounded-md border border-gray-300 text-center shadow-sm">

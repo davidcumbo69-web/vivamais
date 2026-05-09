@@ -3,6 +3,7 @@ import React from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { StoriesBar } from '../components/feed/StoriesBar';
+import { PostSkeleton, CommunityCardSkeleton, Skeleton } from '../components/ui/Skeleton';
 import { CreateReelModal } from '../components/feed/CreateReelModal';
 import { FeedPost } from '../components/feed/FeedPost';
 import { cn } from '../lib/utils';
@@ -708,9 +709,8 @@ export default function Home() {
                   <StoriesBar />
                   <div className="md:mt-4">
                     {loadingPosts ? (
-                      <div className="flex flex-col items-center py-20">
-                        <Loader2 className="w-8 h-8 animate-spin text-[#006747] mb-2" />
-                        <p className="text-gray-400 text-sm">A carregar publicações...</p>
+                      <div className="space-y-4">
+                        {[1, 2, 3].map(i => <PostSkeleton key={i} />)}
                       </div>
                     ) : posts.length > 0 ? (
                       posts.map(post => (
@@ -728,9 +728,8 @@ export default function Home() {
               {activeTab === 'a_seguir' && (
                 <div className="md:mt-4">
                   {loadingPosts ? (
-                    <div className="flex flex-col items-center py-20">
-                      <Loader2 className="w-8 h-8 animate-spin text-[#006747] mb-2" />
-                      <p className="text-gray-400 text-sm">A carregar publicações...</p>
+                    <div className="space-y-4">
+                      {[1, 2, 3].map(i => <PostSkeleton key={i} />)}
                     </div>
                   ) : posts.length > 0 ? (
                     posts.map(post => (
@@ -765,10 +764,9 @@ export default function Home() {
                   
                   <div className="grid grid-cols-1 gap-4">
                     {loadingGroups ? (
-                      <div className="flex flex-col items-center justify-center py-20">
-                         <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-30" />
-                         <p className="text-xs text-gray-400 mt-4 font-medium">A procurar grupos...</p>
-                      </div>
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <CommunityCardSkeleton key={i} />
+                      ))
                     ) : groups.length > 0 ? (
                       groups.map(group => (
                         <div 
@@ -1056,8 +1054,19 @@ export default function Home() {
                     /* Patient: Show doses from ALL active prescriptions */
                     (() => {
                       if (loadingPrescriptions) return (
-                        <div className="flex justify-center py-6">
-                           <Loader2 className="w-5 h-5 animate-spin text-[#006747] opacity-20" />
+                        <div className="space-y-4">
+                           {[...Array(3)].map((_, i) => (
+                             <div key={i} className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                   <Skeleton className="w-1.5 h-1.5 rounded-full" />
+                                   <div className="space-y-1">
+                                      <Skeleton className="h-3 w-24" />
+                                      <Skeleton className="h-2 w-16" />
+                                   </div>
+                                </div>
+                                <Skeleton className="h-6 w-12 rounded-lg" />
+                             </div>
+                           ))}
                         </div>
                       );
                       
@@ -1188,9 +1197,29 @@ export default function Home() {
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {loadingPatientTracking ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#006747] opacity-20" />
-                    <p className="mt-2 text-[10px] text-gray-400 font-black uppercase tracking-widest">Sincronizando...</p>
+                  <div className="space-y-4">
+                    {[...Array(2)].map((_, i) => (
+                      <div key={i} className="bg-gray-50 rounded-3xl p-5 border border-gray-100 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                        <div className="space-y-3">
+                          {[...Array(2)].map((_, j) => (
+                            <div key={j} className="bg-white p-4 rounded-3xl border border-gray-100 flex justify-between items-center">
+                              <div className="flex items-center space-x-3">
+                                <Skeleton className="w-2 h-2 rounded-full" />
+                                <div className="space-y-1">
+                                  <Skeleton className="h-4 w-24" />
+                                  <Skeleton className="h-3 w-16" />
+                                </div>
+                              </div>
+                              <Skeleton className="w-10 h-10 rounded-full" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : selectedPatientPrescriptions.length > 0 ? (
                   selectedPatientPrescriptions.map((presc, pIdx) => (

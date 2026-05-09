@@ -24,6 +24,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Header } from '../components/layout/Header';
 import { cn } from '../lib/utils';
+import { Skeleton } from '../components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
 import { geminiService, AIEvolutionResult } from '../services/geminiService';
 
@@ -259,9 +260,24 @@ export default function MyPatients() {
         {/* List Content */}
         <div className="space-y-4">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="w-10 h-10 border-4 border-[#006747] border-t-transparent rounded-full animate-spin mb-4" />
-              <p className="text-gray-400 text-sm font-medium">Carregando dados...</p>
+            <div className="grid grid-cols-1 gap-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-gray-100 flex items-center space-x-6">
+                    <Skeleton className="w-16 h-16 rounded-3xl shrink-0" />
+                    <div className="flex-1 space-y-3">
+                         <Skeleton className="h-6 w-1/3" />
+                         <Skeleton className="h-3 w-20" />
+                         <div className="flex space-x-2">
+                            <Skeleton className="h-4 w-16" />
+                            <Skeleton className="h-4 w-20" />
+                         </div>
+                    </div>
+                    <div className="flex space-x-2 hidden sm:flex">
+                        <Skeleton className="w-24 h-10 rounded-2xl" />
+                        <Skeleton className="w-24 h-10 rounded-2xl" />
+                    </div>
+                  </div>
+                ))}
             </div>
           ) : activeTab === 'approved' ? (
             filteredPatients.length > 0 ? (

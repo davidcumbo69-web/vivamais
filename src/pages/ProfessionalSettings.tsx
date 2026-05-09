@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { BadgeCheck, Stethoscope, FileText, CheckCircle2, AlertCircle, Loader2, Camera, Building2, GraduationCap, MapPin, Phone, XCircle } from 'lucide-react';
+import { BadgeCheck, Stethoscope, FileText, CheckCircle2, AlertCircle, Camera, Building2, GraduationCap, MapPin, Phone, XCircle, Clock, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Header } from '../components/layout/Header';
+import { Skeleton } from '../components/ui/Skeleton';
 
 export default function ProfessionalSettings() {
   const { user, profile, refreshProfile } = useAuth();
@@ -203,9 +204,10 @@ export default function ProfessionalSettings() {
             )}
 
             {pendingRequest && (
-              <div className="mb-8 bg-yellow-50 border border-yellow-100 rounded-xl p-4 flex items-center space-x-3 text-yellow-800">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <div>
+              <div className="mb-8 bg-yellow-50 border border-yellow-100 rounded-xl p-4 flex items-center space-x-3 text-yellow-800 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+                <Clock className="w-5 h-5 animate-pulse" />
+                <div className="relative z-10">
                   <p className="text-sm font-bold">Candidatura em Processamento</p>
                   <p className="text-xs">Os seus dados estão a ser validados pelo SNS Digital. Receberá uma notificação em breve.</p>
                 </div>

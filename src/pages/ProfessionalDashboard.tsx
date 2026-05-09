@@ -30,6 +30,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { Skeleton } from '../components/ui/Skeleton';
 import { Header } from '../components/layout/Header';
 import { 
   BarChart, 
@@ -581,9 +582,31 @@ export default function ProfessionalDashboard() {
         </div>
 
         {loading ? (
-            <div className="flex flex-col items-center justify-center py-24">
-                <div className="w-12 h-12 border-4 border-[#006747] border-t-transparent rounded-full animate-spin" />
-                <p className="mt-4 text-gray-400 font-bold uppercase tracking-widest text-[10px]">Sincronizando dados...</p>
+            <div className="space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {[1, 2].map(i => (
+                        <div key={i} className="space-y-4">
+                            <Skeleton className="h-8 w-48" />
+                            <div className="space-y-4">
+                                {[1, 2, 3].map(j => (
+                                    <div key={j} className="bg-white p-6 rounded-3xl border border-gray-100 flex items-center justify-between">
+                                        <div className="flex items-center space-x-4">
+                                            <Skeleton className="w-12 h-12 rounded-2xl" />
+                                            <div className="space-y-2">
+                                                <Skeleton className="h-5 w-32" />
+                                                <Skeleton className="h-3 w-24" />
+                                            </div>
+                                        </div>
+                                        <div className="flex space-x-2">
+                                            <Skeleton className="w-10 h-10 rounded-2xl" />
+                                            <Skeleton className="w-10 h-10 rounded-2xl" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         ) : (
             <div className="space-y-8">

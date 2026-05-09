@@ -14,6 +14,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Skeleton } from '../components/ui/Skeleton';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
@@ -128,9 +129,24 @@ export default function MyOrders() {
         </div>
 
         {loading ? (
-            <div className="flex flex-col items-center justify-center py-24">
-                <Loader2 className="w-12 h-12 animate-spin text-[#006747] opacity-20" />
-                <p className="mt-4 text-xs font-black uppercase text-gray-400 tracking-widest">A carregar pedidos...</p>
+            <div className="space-y-6">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-gray-100 shadow-sm flex items-center space-x-6">
+                    <Skeleton className="w-20 h-20 rounded-[1.5rem] flex-shrink-0" />
+                    <div className="flex-1 space-y-3">
+                      <div className="flex space-x-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                      <Skeleton className="h-6 w-1/2" />
+                      <div className="flex space-x-4">
+                        <Skeleton className="h-4 w-12" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                    </div>
+                    <Skeleton className="w-32 h-10 rounded-2xl hidden md:block" />
+                  </div>
+                ))}
             </div>
         ) : orders.length > 0 ? (
             <div className="space-y-6">

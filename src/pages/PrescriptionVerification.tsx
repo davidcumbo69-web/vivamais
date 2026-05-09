@@ -25,6 +25,7 @@ import {
   Download
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Skeleton } from '../components/ui/Skeleton';
 import jsPDF from 'jspdf';
 import { toPng } from 'html-to-image';
 
@@ -197,10 +198,25 @@ export default function DigitalPrescriptionView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8f9fa] flex items-center justify-center p-6">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-[#006747] mx-auto mb-4" />
-          <p className="text-gray-400 font-black uppercase tracking-[0.2em] text-[10px]">A carregar receituário...</p>
+      <div className="min-h-screen bg-[#030303] pt-20 px-4 md:px-8">
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr,312px] gap-6">
+          <div className="space-y-4">
+            <div className="bg-[#1A1A1B] border border-[#343536] rounded p-8 space-y-8">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-6 w-32" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <Skeleton className="h-32 w-full rounded" />
+                <Skeleton className="h-32 w-full rounded" />
+              </div>
+              <Skeleton className="h-64 w-full rounded" />
+              <Skeleton className="h-48 w-full rounded" />
+            </div>
+          </div>
+          <div className="hidden lg:block">
+            <Skeleton className="h-64 w-full rounded" />
+          </div>
         </div>
       </div>
     );
