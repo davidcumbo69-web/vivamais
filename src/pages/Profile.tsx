@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Stethoscope, Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, 
+  Stethoscope,  Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, 
   Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, 
   ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, 
-  Film, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, 
+  Film, Play, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, 
   MapPin, Calendar, ChevronDown, ChevronUp, Activity, Thermometer, 
   Droplet, Ruler, Sparkles, AlertTriangle, Info, CheckCircle2, Check, AlertCircle,
-  CalendarRange
+  CalendarRange, X
 } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { Skeleton, ProfileHeaderSkeleton, PostSkeleton, CommunityCardSkeleton } from '../components/ui/Skeleton';
@@ -16,6 +16,7 @@ import { useVitus } from '../hooks/useVitus';
 import { useParams, Link } from 'react-router-dom';
 import { supabase, type HealthProfessional, type HealthGroup } from '../lib/supabase';
 import CreateCommunityModal from '../components/modals/CreateCommunityModal';
+import { FeedPost } from '../components/feed/FeedPost';
 import { cn } from '../lib/utils';
 import { geminiService, AIEvolutionResult, AIMedicationSafetyResult } from '../services/geminiService';
 import { motion, AnimatePresence } from 'motion/react';
@@ -130,10 +131,12 @@ export default function Profile() {
   const [proData, setProData] = useState<HealthProfessional | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [reels, setReels] = useState<any[]>([]);
+  const [youtubeVideos, setYoutubeVideos] = useState<any[]>([]);
   const [communities, setCommunities] = useState<HealthGroup[]>([]);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [loadingReels, setLoadingReels] = useState(false);
+  const [loadingYoutubeVideos, setLoadingYoutubeVideos] = useState(false);
   const [loadingCommunities, setLoadingCommunities] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services' | 'prescriptions' | 'patients' | 'clinical_history' | 'tracking'>('posts');
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -147,6 +150,7 @@ export default function Profile() {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
   const [clinicalHistories, setClinicalHistories] = useState<any[]>([]);
+  const [selectedVideoForModal, setSelectedVideoForModal] = useState<any | null>(null);
   const [loadingHistories, setLoadingHistories] = useState(false);
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
   const [expandedPrescriptions, setExpandedPrescriptions] = useState<Set<string>>(new Set());
@@ -248,6 +252,7 @@ export default function Profile() {
         
         fetchUserPosts(targetUserId);
         fetchUserReels(targetUserId);
+        fetchUserYoutubeVideos(targetUserId);
         fetchUserCommunities(targetUserId);
         fetchUserAppointments(targetUserId);
         fetchUserOrders(targetUserId);
@@ -331,6 +336,11 @@ export default function Profile() {
 
     if (fCount !== null) setFollowersCount(fCount);
     if (fingCount !== null) setFollowingCount(fingCount);
+  };
+
+  const getYoutubeId = (url: string) => {
+    const match = (url || '').match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/user\/\S+|\/ytscreeningroom\?v=))([\w\-]{10,12})/);
+    return match ? match[1] : null;
   };
 
   const handleFollow = async () => {
@@ -543,6 +553,18 @@ export default function Profile() {
     setLoadingReels(false);
   };
 
+  const fetchUserYoutubeVideos = async (targetUserId: string) => {
+    setLoadingYoutubeVideos(true);
+    const { data } = await supabase
+      .from('post_videos')
+      .select('*')
+      .eq('user_id', targetUserId)
+      .order('created_at', { ascending: false });
+    
+    if (data) setYoutubeVideos(data);
+    setLoadingYoutubeVideos(false);
+  };
+
   const fetchPatientData = async (targetUserId: string, currentUserId: string) => {
     if (loadingPatient) return;
     setLoadingPatient(true);
@@ -737,7 +759,7 @@ export default function Profile() {
     bio: profile.bio || 'O meu percurso rumo a um estilo de vida saudável com o SNS.',
     followers: followersCount.toLocaleString(),
     following: followingCount.toLocaleString(),
-    posts: profile.is_professional ? posts.length : posts.length || '24',
+    posts: profile.is_professional ? (posts.length + reels.length + youtubeVideos.length) : posts.length || '24',
     streak: 12,
     level: profile.xp_level || 5
   };
@@ -1091,6 +1113,40 @@ export default function Profile() {
         </div>
       )}
 
+      {/* VIVA+ TV Section for Professionals */}
+      {profile.is_professional && youtubeVideos.length > 0 && (
+        <div className="bg-white border-y border-gray-100 py-3 mb-6 shadow-sm overflow-hidden rounded-2xl">
+          <div className="max-w-4xl mx-auto px-4 flex items-center space-x-4">
+             <div className="flex-shrink-0 flex items-center pr-4 border-r border-gray-100 h-10">
+                <div className="w-1.5 h-6 rounded-full mr-2 bg-[#006747]" />
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">VIVA+ TV</span>
+             </div>
+             <div className="flex-1 flex space-x-3 overflow-x-auto scrollbar-hide py-1">
+                {youtubeVideos.map(video => (
+                  <button 
+                    key={video.id}
+                    onClick={() => setSelectedVideoForModal(video)}
+                    className="flex-shrink-0 w-32 h-20 bg-black rounded-xl overflow-hidden relative group border border-gray-100 transition-all hover:scale-105 shadow-sm"
+                  >
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors z-10" />
+                    <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                       <Play className="w-6 h-6 text-white fill-current" />
+                    </div>
+                    <img 
+                      src={`https://img.youtube.com/vi/${getYoutubeId(video.youtube_url)}/mqdefault.jpg`} 
+                      className="w-full h-full object-cover"
+                      alt="" 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop';
+                      }}
+                    />
+                  </button>
+                ))}
+             </div>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="border-t border-gray-200">
         <div className="flex overflow-x-auto scrollbar-hide px-4 md:px-0 space-x-8 md:space-x-12 md:justify-center">
@@ -1157,8 +1213,8 @@ export default function Profile() {
               onClick={() => setActiveTab('reels')}
               className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'reels' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
             >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Reels</span>
+              <Film className="w-4 h-4" />
+              <span>Vídeos</span>
             </button>
           )}
 
@@ -1999,48 +2055,141 @@ export default function Profile() {
 
           {activeTab === 'posts' && (
             <div className="grid grid-cols-3 gap-1 md:gap-4">
-              {loadingPosts ? (
+              {(loadingPosts || loadingReels || loadingYoutubeVideos) ? (
                 [1, 2, 3, 4, 5, 6].map(i => (
                   <Skeleton key={i} className="aspect-square w-full rounded-lg" />
                 ))
-              ) : posts.length > 0 ? (
-                posts.map((post) => (
-                  <div key={post.id} className="aspect-square bg-gray-100 hover:opacity-90 transition-opacity cursor-pointer overflow-hidden rounded-lg border border-gray-100">
-                    <img src={post.image_url || post.content_url} className="w-full h-full object-cover" alt="" />
+              ) : (() => {
+                const combinedContent = [
+                  ...posts, 
+                  ...reels.map(r => ({ ...r, isReel: true })),
+                  ...youtubeVideos.map(v => ({ ...v, isYoutube: true }))
+                ].sort((a, b) => 
+                  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                );
+                
+                return combinedContent.length > 0 ? (
+                  combinedContent.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="aspect-square bg-gray-100 hover:opacity-90 transition-all cursor-pointer overflow-hidden rounded-lg border border-gray-100 relative group"
+                      onClick={() => {
+                        if (item.isYoutube) {
+                          setSelectedVideoForModal(item);
+                        }
+                      }}
+                    >
+                      {item.isYoutube ? (
+                        <>
+                          <img 
+                            src={`https://img.youtube.com/vi/${getYoutubeId(item.youtube_url)}/mqdefault.jpg`} 
+                            className="w-full h-full object-cover" 
+                            alt="" 
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop';
+                            }}
+                          />
+                          <div className="absolute top-2 right-2 z-10">
+                            <Play className="w-4 h-4 text-white drop-shadow-md fill-current" />
+                          </div>
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                             <Play className="w-8 h-8 text-white fill-current" />
+                          </div>
+                        </>
+                      ) : item.isReel ? (
+                        <>
+                          <video src={`${item.video_url}#t=0.1`} className="w-full h-full object-cover" preload="metadata" playsInline />
+                          <div className="absolute top-2 right-2 z-10">
+                            <Film className="w-4 h-4 text-white drop-shadow-md" />
+                          </div>
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                             <Film className="w-8 h-8 text-white" />
+                          </div>
+                        </>
+                      ) : (
+                        <img src={item.image_url || item.content_url} className="w-full h-full object-cover" alt="" />
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-3 py-20 text-center">
+                    <Dna className="w-8 h-8 text-gray-100 mx-auto mb-2" />
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Sem Publicações</p>
                   </div>
-                ))
-              ) : (
-                <div className="col-span-3 py-20 text-center">
-                  <Dna className="w-8 h-8 text-gray-100 mx-auto mb-2" />
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Sem Publicações</p>
-                </div>
-              )}
+                );
+              })()}
             </div>
           )}
 
           {activeTab === 'reels' && (
-            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-1 md:gap-2">
-              {loadingReels ? (
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {(loadingReels || loadingYoutubeVideos) ? (
                 [1, 2, 3, 4, 5, 6].map(i => (
-                  <Skeleton key={i} className="aspect-[9/16] w-full rounded-lg" />
+                  <Skeleton key={i} className="aspect-[9/16] w-full rounded-2xl" />
                 ))
-              ) : reels.length > 0 ? (
-                reels.map((reel) => (
-                  <div key={reel.id} className="aspect-[9/16] bg-black hover:opacity-90 transition-opacity cursor-pointer overflow-hidden rounded-lg relative">
-                    <video src={`${reel.video_url}#t=0.1`} className="w-full h-full object-cover" preload="metadata" playsInline />
-                    {!reel.is_approved && (
-                      <div className="absolute top-2 left-2 bg-black/60 backdrop-blur px-2 py-1 rounded text-[8px] font-black text-white uppercase tracking-widest">
-                        Pendente
+              ) : (() => {
+                const combinedVideos = [
+                  ...reels.map(r => ({ ...r, isReel: true })),
+                  ...youtubeVideos.map(v => ({ ...v, isYoutube: true }))
+                ].sort((a, b) => 
+                  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                );
+
+                return combinedVideos.length > 0 ? (
+                  combinedVideos.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="aspect-[9/16] bg-black hover:opacity-90 transition-all cursor-pointer overflow-hidden rounded-[2rem] relative group border border-gray-100 shadow-sm"
+                      onClick={() => {
+                        if (item.isYoutube) {
+                          setSelectedVideoForModal(item);
+                        }
+                      }}
+                    >
+                      {item.isYoutube ? (
+                        <>
+                          <img 
+                            src={`https://img.youtube.com/vi/${getYoutubeId(item.youtube_url)}/maxresdefault.jpg`} 
+                            className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-500" 
+                            alt="" 
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${getYoutubeId(item.youtube_url)}/mqdefault.jpg`;
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                             <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 group-hover:scale-125 transition-transform duration-300 shadow-xl">
+                               <Play className="w-6 h-6 text-white fill-white" />
+                             </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <video src={`${item.video_url}#t=0.1`} className="w-full h-full object-cover" preload="metadata" playsInline />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        </>
+                      )}
+                      
+                      <div className="absolute bottom-4 left-4 right-4 z-10">
+                        <p className="text-[10px] font-black text-white uppercase tracking-widest line-clamp-2 drop-shadow-md">
+                          {item.caption || item.category || 'VIVA+ Vídeo'}
+                        </p>
                       </div>
-                    )}
+
+                      {!item.is_approved && (
+                        <div className="absolute top-4 left-4 bg-orange-500/90 backdrop-blur px-3 py-1 rounded-full text-[8px] font-black text-white uppercase tracking-widest shadow-lg">
+                          Em Moderação
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-20 text-center">
+                    <Film className="w-12 h-12 text-gray-100 mx-auto mb-4" />
+                    <p className="text-gray-400 text-sm font-bold uppercase tracking-widest">Sem Vídeos diponíveis</p>
                   </div>
-                ))
-              ) : (
-                <div className="col-span-full py-20 text-center">
-                  <ShieldCheck className="w-8 h-8 text-gray-100 mx-auto mb-2" />
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Sem Reels</p>
-                </div>
-              )}
+                );
+              })()}
             </div>
           )}
 
@@ -2300,6 +2449,47 @@ export default function Profile() {
         onClose={() => setIsModalOpen(false)}
         onCreated={() => fetchUserCommunities(profile.id)}
       />
+
+      {/* Video Detail Modal */}
+      <AnimatePresence>
+        {selectedVideoForModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-lg overflow-y-auto overflow-x-hidden">
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.9, y: 30 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.9, y: 30 }}
+               className="w-full max-w-2xl relative my-auto"
+             >
+                <button 
+                  onClick={() => setSelectedVideoForModal(null)}
+                  className="absolute -top-14 right-0 p-3 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
+                >
+                  <X className="w-8 h-8" />
+                </button>
+                <div className="rounded-[2.5rem] overflow-hidden shadow-2xl">
+                  <FeedPost 
+                    post={{
+                      id: selectedVideoForModal.id,
+                      user: {
+                        id: profile.id || '',
+                        username: profile.username || 'Especialista',
+                        avatar: profile.avatar_url || DEFAULT_AVATAR,
+                        isProf: profile.is_professional || false
+                      },
+                      content: selectedVideoForModal.youtube_url || '',
+                      caption: selectedVideoForModal.caption || '',
+                      likes: selectedVideoForModal.likes_count || 0,
+                      category: selectedVideoForModal.category || profile.specialty || 'Saúde',
+                      time: new Date(selectedVideoForModal.created_at).toLocaleDateString(),
+                      post_type: 'video',
+                      youtube_url: selectedVideoForModal.youtube_url
+                    }}
+                  />
+                </div>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

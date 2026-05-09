@@ -10,14 +10,27 @@ interface CreateCommunityModalProps {
   onCreated: () => void;
 }
 
+const generateColors = () => {
+  const colors = [];
+  const steps = 15; // 360 / 15 = 24 hues
+  const lightnessLevels = [30, 40, 50, 60, 70]; // 5 lightness levels
+  const saturationLevels = [60, 70, 80, 90, 100]; // 5 saturation levels
+  
+  // Total = 24 * 5 * 5 = 600 colors
+  
+  for (let h = 0; h < 360; h += steps) {
+    for (let s of saturationLevels) {
+      for (let l of lightnessLevels) {
+        colors.push(`hsl(${h}, ${s}%, ${l}%)`);
+      }
+    }
+  }
+  return colors;
+};
+
 const THEME_COLORS = [
   '#006747', // VIVA Green
-  '#dc2626', // Red
-  '#16a34a', // Green
-  '#ea580c', // Orange
-  '#9333ea', // Purple
-  '#111827', // Black
-  '#0891b2', // Cyan
+  ...generateColors()
 ];
 
 export default function CreateCommunityModal({ isOpen, onClose, onCreated }: CreateCommunityModalProps) {
@@ -135,16 +148,17 @@ export default function CreateCommunityModal({ isOpen, onClose, onCreated }: Cre
               <div className="space-y-3">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center">
                   <Palette className="w-3 h-3 mr-2" />
-                  Cor do Tema
+                   Cor do Tema ({THEME_COLORS.length} opções)
                 </label>
-                <div className="flex flex-wrap gap-3">
-                   {THEME_COLORS.map(color => (
+                <div className="max-h-32 overflow-y-auto p-2 bg-gray-50 rounded-xl border border-gray-100 flex flex-wrap gap-2 custom-scrollbar">
+                   {THEME_COLORS.map((color, idx) => (
                      <button
-                       key={color}
+                       key={idx}
                        type="button"
                        onClick={() => setThemeColor(color)}
-                       className={`w-10 h-10 rounded-full border-4 transition-all ${themeColor === color ? 'border-gray-200 scale-110 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                       className={`w-8 h-8 rounded-full border-2 transition-all ${themeColor === color ? 'border-white scale-110 shadow-md ring-2 ring-emerald-500/50' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-110'}`}
                        style={{ backgroundColor: color }}
+                       title={color}
                      />
                    ))}
                 </div>

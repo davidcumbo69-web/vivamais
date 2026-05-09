@@ -167,6 +167,13 @@ export default function CommunityDetail() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [replyingTo, setReplyingTo] = useState<any | null>(null); // Now stores the message object being replied to
 
+  // Edit Group State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editRules, setEditRules] = useState('');
+  const [updatingGroup, setUpdatingGroup] = useState(false);
+
   useEffect(() => {
     if (name) {
       fetchGroup();
@@ -276,14 +283,46 @@ export default function CommunityDetail() {
              basicData.creator = profileData;
           }
           setGroup(basicData);
+          setEditName(basicData.name);
+          setEditDescription(basicData.description || '');
+          setEditRules(basicData.rules || '');
         }
       } else if (data) {
         setGroup(data);
+        setEditName(data.name);
+        setEditDescription(data.description || '');
+        setEditRules(data.rules || '');
       }
     } catch (err) {
       console.error('Erro ao carregar o grupo:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateGroup = async () => {
+    if (!group || !user || group.creator_id !== user.id) return;
+    setUpdatingGroup(true);
+    try {
+      const { error } = await supabase
+        .from('health_groups')
+        .update({
+          name: editName,
+          description: editDescription,
+          rules: editRules
+        })
+        .eq('id', group.id);
+
+      if (error) throw error;
+      
+      setGroup(prev => prev ? { ...prev, name: editName, description: editDescription, rules: editRules } : null);
+      setIsEditing(false);
+      // If name changed, we might need to redirect, but let's keep it simple for now
+    } catch (err) {
+      console.error('Error updating group:', err);
+      alert('Erro ao atualizar o grupo.');
+    } finally {
+      setUpdatingGroup(false);
     }
   };
 
@@ -565,7 +604,7 @@ export default function CommunityDetail() {
                       <div className="flex items-center space-x-2">
                         <p className="text-sm text-gray-500 font-bold tracking-wide">g/{group.name}</p>
                         <span className="text-gray-200">•</span>
-                        <p className="text-xs text-[#006747] font-black uppercase tracking-widest">{group.category || 'Saúde'}</p>
+                        <p className="text-xs font-black uppercase tracking-widest" style={{ color: group.theme_color || '#006747' }}>{group.category || 'Saúde'}</p>
                       </div>
                    </div>
                    <div className="flex items-center space-x-3 mb-1">
@@ -579,8 +618,9 @@ export default function CommunityDetail() {
                           "px-10 py-3 rounded-full font-black text-sm transition-all shadow-lg active:scale-95",
                           isMember 
                            ? "bg-white text-gray-400 border-2 border-gray-100 hover:bg-gray-50" 
-                           : "bg-[#006747] text-white hover:bg-emerald-800 shadow-emerald-100"
+                           : "text-white shadow-emerald-100"
                         )}
+                        style={!isMember ? { backgroundColor: group.theme_color || '#006747' } : {}}
                       >
                         {joining ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : isMember ? 'Aderido' : 'Entrar na Comunidade'}
                       </button>
@@ -592,8 +632,9 @@ export default function CommunityDetail() {
           <div className="flex items-center space-x-8 mt-4 border-t border-gray-100 pt-1 text-left">
              <button 
                className={cn(
-                 "flex items-center space-x-2 py-3 px-1 border-b-4 transition-all font-black text-xs uppercase tracking-widest border-[#006747] text-gray-900"
+                 "flex items-center space-x-2 py-3 px-1 border-b-4 transition-all font-black text-xs uppercase tracking-widest text-gray-900"
                )}
+               style={{ borderBottomColor: group.theme_color || '#006747' }}
              >
                <Hash className="w-4 h-4" />
                <span>Temas Discussion</span>
@@ -607,7 +648,7 @@ export default function CommunityDetail() {
         <div className="bg-white border-b border-gray-100 py-3 shadow-sm sticky top-[72px] z-20">
           <div className="max-w-4xl mx-auto px-4 flex items-center space-x-4">
              <div className="flex-shrink-0 flex items-center pr-4 border-r border-gray-100 h-10">
-                <div className="w-1.5 h-6 bg-[#006747] rounded-full mr-2" />
+                <div className="w-1.5 h-6 rounded-full mr-2" style={{ backgroundColor: group.theme_color || '#006747' }} />
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">VIVA+ TV</span>
              </div>
              <div className="flex-1 flex space-x-3 overflow-x-auto scrollbar-hide py-1">
@@ -670,13 +711,27 @@ export default function CommunityDetail() {
                       <div 
                          key={topic.id} 
                          onClick={() => openTopic(topic)}
-                         className="bg-white p-5 rounded-xl border border-gray-200 hover:border-[#006747] cursor-pointer transition-all shadow-sm hover:shadow-md group flex items-start space-x-4 text-left"
+                         className="bg-white p-5 rounded-xl border border-gray-200 border-l-4 cursor-pointer transition-all shadow-sm hover:shadow-md group flex items-start space-x-4 text-left"
+                         style={{ borderLeftColor: group.theme_color || '#006747' }}
                       >
-                         <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-[#006747] shrink-0 group-hover:bg-[#006747] group-hover:text-white transition-colors">
+                         <div 
+                           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:text-white transition-colors"
+                           style={{ 
+                             backgroundColor: `${group.theme_color || '#006747'}15`,
+                             color: group.theme_color || '#006747'
+                           }}
+                         >
                             <Hash className="w-6 h-6" />
                          </div>
                          <div className="flex-1">
-                            <h3 className="font-black text-gray-900 text-lg leading-tight group-hover:text-[#006747] transition-colors">{topic.title}</h3>
+                            <h3 
+                              className="font-black text-gray-900 text-lg leading-tight transition-colors"
+                              style={{ 
+                                color: (selectedTopic?.id === topic.id) ? (group.theme_color || '#006747') : 'inherit'
+                              }}
+                            >
+                              {topic.title}
+                            </h3>
                             <p className="text-sm text-gray-500 mt-1 line-clamp-2">{topic.content}</p>
                             <div className="flex items-center space-x-4 mt-4">
                                <div className="flex items-center space-x-1">
@@ -686,7 +741,13 @@ export default function CommunityDetail() {
                                   <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Por {topic.profiles?.username}</span>
                                </div>
                                <span className="text-[10px] text-gray-300 uppercase font-bold tracking-widest">• {new Date(topic.created_at).toLocaleDateString()}</span>
-                               <div className="flex items-center space-x-1 text-[10px] font-black text-[#006747] tracking-widest uppercase bg-emerald-50 px-2 py-0.5 rounded-full">
+                               <div 
+                                 className="flex items-center space-x-1 text-[10px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full"
+                                 style={{ 
+                                   backgroundColor: `${group.theme_color || '#006747'}15`,
+                                   color: group.theme_color || '#006747'
+                                 }}
+                               >
                                   <MessageSquare className="w-3 h-3" />
                                   <span>Discussão Ativa</span>
                                 </div>
@@ -780,10 +841,58 @@ export default function CommunityDetail() {
                    <BadgeCheck className="w-4 h-4 text-orange-500" />
                 </h3>
                 <div className="space-y-2">
-                   <button className="w-full text-left p-2 rounded hover:bg-gray-50 text-xs font-bold text-gray-600">Configurar Grupo</button>
+                   <button 
+                     onClick={() => setIsEditing(!isEditing)}
+                     className="w-full text-left p-2 rounded hover:bg-gray-50 text-xs font-bold text-gray-600 flex items-center justify-between"
+                   >
+                     <span>{isEditing ? 'Cancelar Edição' : 'Configurar Grupo'}</span>
+                   </button>
                    <button className="w-full text-left p-2 rounded hover:bg-gray-50 text-xs font-bold text-gray-600">Ver Denúncias</button>
                    <button className="w-full text-left p-2 rounded hover:bg-gray-50 text-xs font-bold text-gray-600">Enviar Mensagem Geral</button>
                 </div>
+             </div>
+           )}
+
+           {isEditing && group.creator_id === user?.id && (
+             <div className="bg-white rounded-md border border-gray-300 p-5 shadow-lg space-y-4 animate-in slide-in-from-top-2 duration-300">
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Editar Grupo</h3>
+                
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Nome do Grupo</label>
+                   <input
+                     value={editName}
+                     onChange={(e) => setEditName(e.target.value)}
+                     className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                   />
+                </div>
+
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Descrição</label>
+                   <textarea
+                     value={editDescription}
+                     onChange={(e) => setEditDescription(e.target.value)}
+                     rows={2}
+                     className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all resize-none"
+                   />
+                </div>
+
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Regras</label>
+                   <textarea
+                     value={editRules}
+                     onChange={(e) => setEditRules(e.target.value)}
+                     rows={4}
+                     className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all resize-none"
+                   />
+                </div>
+
+                <button
+                  onClick={handleUpdateGroup}
+                  disabled={updatingGroup}
+                  className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold text-xs shadow-lg shadow-orange-100 hover:bg-orange-600 transition-all flex items-center justify-center"
+                >
+                  {updatingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar Alterações'}
+                </button>
              </div>
            )}
 
