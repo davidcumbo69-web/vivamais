@@ -102,6 +102,8 @@ export type HealthGroup = {
   is_private: boolean;
   member_count: number;
   created_at: string;
+  rules?: string;
+  creator?: { username: string; avatar_url: string };
 };
 
 export type HealthGroupMember = {

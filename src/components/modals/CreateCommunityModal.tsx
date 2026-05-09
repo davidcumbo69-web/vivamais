@@ -24,6 +24,7 @@ export default function CreateCommunityModal({ isOpen, onClose, onCreated }: Cre
   const { user } = useAuth();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [rules, setRules] = useState('');
   const [themeColor, setThemeColor] = useState(THEME_COLORS[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +42,7 @@ export default function CreateCommunityModal({ isOpen, onClose, onCreated }: Cre
           creator_id: user.id,
           name,
           description,
+          rules,
           theme_color: themeColor
         })
         .select()
@@ -111,10 +113,21 @@ export default function CreateCommunityModal({ isOpen, onClose, onCreated }: Cre
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Descrição</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   placeholder="Sobre o que é este grupo?"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Regras do Grupo</label>
+                <textarea
+                  rows={3}
+                  placeholder="Ex: Respeito, Sem Spam, Apenas temas de saúde..."
+                  value={rules}
+                  onChange={(e) => setRules(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none"
                 />
               </div>

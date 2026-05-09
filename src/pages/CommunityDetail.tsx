@@ -243,7 +243,7 @@ export default function CommunityDetail() {
   const fetchGroup = async () => {
     const { data, error } = await supabase
       .from('health_groups')
-      .select('*')
+      .select('*, creator:creator_id(username, avatar_url)')
       .eq('name', name)
       .single();
     
@@ -701,6 +701,7 @@ export default function CommunityDetail() {
                     <div className="flex items-center space-x-3 text-xs text-gray-400 font-bold uppercase tracking-widest">
                        <Clock className="w-4 h-4" />
                        <span>Criada em {new Date(group.created_at).toLocaleDateString()}</span>
+                       {group.creator && <span className="ml-2">• Por {group.creator.username}</span>}
                     </div>
                     <button 
                       onClick={() => setShowCreateTopic(true)}
@@ -733,19 +734,30 @@ export default function CommunityDetail() {
 
            <div className="bg-white rounded-md border border-gray-300 p-5 shadow-sm">
               <h3 className="text-xs font-black text-gray-400 uppercase mb-5 tracking-widest">Regras de Conduta</h3>
-              <ul className="space-y-4">
-                 {[
-                   'Respeito mútuo entre membros',
-                   'Partilhar apenas informação fidedigna',
-                   'Não substitui acompanhamento médico',
-                   'Sem publicidade ou spam'
-                 ].map((rule, i) => (
-                   <li key={i} className="text-xs flex items-start group">
-                      <span className="font-black text-gray-300 mr-3 text-sm group-hover:text-[#006747] transition-colors">{i+1}.</span>
-                      <span className="text-gray-600 font-medium leading-relaxed">{rule}</span>
-                   </li>
-                 ))}
-              </ul>
+              {group.rules ? (
+                <div className="space-y-4">
+                  {group.rules.split('\n').filter(r => r.trim()).map((rule, i) => (
+                    <div key={i} className="text-xs flex items-start group">
+                       <span className="font-black text-gray-300 mr-3 text-sm group-hover:text-[#006747] transition-colors">{i+1}.</span>
+                       <span className="text-gray-600 font-medium leading-relaxed">{rule}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <ul className="space-y-4">
+                   {[
+                     'Respeito mútuo entre membros',
+                     'Partilhar apenas informação fidedigna',
+                     'Não substitui acompanhamento médico',
+                     'Sem publicidade ou spam'
+                   ].map((rule, i) => (
+                     <li key={i} className="text-xs flex items-start group">
+                        <span className="font-black text-gray-300 mr-3 text-sm group-hover:text-[#006747] transition-colors">{i+1}.</span>
+                        <span className="text-gray-600 font-medium leading-relaxed">{rule}</span>
+                     </li>
+                   ))}
+                </ul>
+              )}
            </div>
         </div>
       </main>
