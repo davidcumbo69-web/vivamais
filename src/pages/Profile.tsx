@@ -947,29 +947,29 @@ export default function Profile() {
                <span>seguindo</span>
              </div>
           </div>
+
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            {profile.is_professional && (
+              <div className="flex items-center bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100">
+                <Star className="w-3 h-3 mr-1 fill-current" />
+                {avgRating} ({reviewCount})
+              </div>
+            )}
+            {(profile.province || profile.municipality) && (
+              <div className="flex items-center bg-gray-50 text-gray-500 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-100">
+                <MapPin className="w-3 h-3 mr-1" />
+                {profile.municipality && profile.province 
+                  ? `${profile.municipality}, ${profile.province}` 
+                  : profile.province || profile.municipality}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Bio and Location Row */}
+      {/* Bio Row */}
       <div className="px-4 mb-6">
         <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{profile.bio || 'Sem bio disponível.'}</p>
-
-        <div className="flex items-center space-x-2 mt-4">
-          {profile.is_professional && (
-            <div className="flex items-center bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100">
-              <Star className="w-3 h-3 mr-1 fill-current" />
-              {avgRating} ({reviewCount})
-            </div>
-          )}
-          {(profile.province || profile.municipality) && (
-            <div className="flex items-center bg-gray-50 text-gray-500 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-100">
-              <MapPin className="w-3 h-3 mr-1" />
-              {profile.municipality && profile.province 
-                ? `${profile.municipality}, ${profile.province}` 
-                : profile.province || profile.municipality}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Primary Action Buttons (Reddit Style - Horizontal Row) */}
