@@ -4,16 +4,16 @@ import {
   Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, 
   ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, 
   Film, Play, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, 
-  MapPin, Calendar, ChevronDown, ChevronUp, Activity, Thermometer, 
+  MapPin, Calendar, ChevronDown, ChevronUp, Activity, Thermometer, Share2,
   Droplet, Ruler, Sparkles, AlertTriangle, Info, CheckCircle2, Check, AlertCircle,
-  CalendarRange, X, Star
+  CalendarRange, X, Star, Edit3, Trash2
 } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { Skeleton, ProfileHeaderSkeleton, PostSkeleton, CommunityCardSkeleton } from '../components/ui/Skeleton';
 import { useAuth } from '../hooks/useAuth';
 import { useAlert } from '../hooks/useAlert';
 import { useVitus } from '../hooks/useVitus';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase, type HealthProfessional, type HealthGroup } from '../lib/supabase';
 import CreateCommunityModal from '../components/modals/CreateCommunityModal';
 import { FeedPost } from '../components/feed/FeedPost';
@@ -21,8 +21,9 @@ import { cn } from '../lib/utils';
 import { geminiService, AIEvolutionResult, AIMedicationSafetyResult } from '../services/geminiService';
 import { motion, AnimatePresence } from 'motion/react';
 
-function ServiceCard({ svc, user }: { svc: any, user: any, key?: any }) {
+function ServiceCard({ svc, user, isOwner, onEdit, onDelete }: { svc: any, user: any, isOwner?: boolean, onEdit?: (svc: any) => void, onDelete?: (id: string) => void, key?: any }) {
   const [isSaved, setIsSaved] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -72,37 +73,175 @@ function ServiceCard({ svc, user }: { svc: any, user: any, key?: any }) {
   };
 
   return (
-    <Link 
-      key={svc.id} 
-      to={`/marketplace/service/${svc.id}`}
-      className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm hover:border-[#006747]/20 hover:shadow-md transition-all group flex items-center space-x-4 relative"
-    >
-      <div className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
+    <div className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm hover:border-[#006747]/20 hover:shadow-md transition-all group flex items-center space-x-4 relative">
+      <div 
+        className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0 cursor-pointer"
+        onClick={() => navigate(`/marketplace/service/${svc.id}`)}
+      >
         <img src={svc.image_url || 'https://images.unsplash.com/photo-1576091160550-2173599bd14e?auto=format&fit=crop&q=80&w=200'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
       </div>
-      <div className="flex-1 min-w-0">
+      <div 
+        className="flex-1 min-w-0 cursor-pointer"
+        onClick={() => navigate(`/marketplace/service/${svc.id}`)}
+      >
         <h4 className="font-bold text-gray-900 group-hover:text-[#006747] transition-colors truncate">{svc.name}</h4>
         <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">{svc.category}</p>
         <div className="flex items-center justify-between mt-2">
           <span className="font-bold text-[#006747]">{svc.base_price}€</span>
           <div className="flex items-center space-x-1">
             <Award className="w-3 h-3 text-yellow-500 fill-current" />
-            <span className="text-[10px] font-bold text-gray-600">{svc.rating}</span>
+            <span className="text-[10px] font-bold text-gray-600">{svc.rating || 5.0}</span>
           </div>
         </div>
       </div>
       
-      {/* Save Button */}
-      <button 
-        onClick={handleSave}
-        className={cn(
-          "p-2.5 rounded-xl transition-all active:scale-95",
-          isSaved ? "bg-[#006747] text-white" : "bg-gray-50 text-gray-400 hover:text-[#006747]"
+      <div className="flex flex-col space-y-2">
+        {/* Save Button */}
+        {!isOwner && (
+          <button 
+            onClick={handleSave}
+            className={cn(
+              "p-2.5 rounded-xl transition-all active:scale-95",
+              isSaved ? "bg-[#006747] text-white" : "bg-gray-50 text-gray-400 hover:text-[#006747]"
+            )}
+          >
+            <ClipboardList className={cn("w-4 h-4", isSaved && "fill-current")} />
+          </button>
         )}
+
+        {isOwner && (
+          <>
+            <button 
+              onClick={() => onEdit?.(svc)}
+              className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#006747] rounded-xl transition-all active:scale-95"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => onDelete?.(svc.id)}
+              className="p-2.5 bg-red-50 text-red-500/60 hover:text-red-500 rounded-xl transition-all active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProductCard({ product, user, isOwner, onEdit, onDelete }: { product: any, user: any, isOwner?: boolean, onEdit?: (p: any) => void, onDelete?: (id: string) => void, key?: any }) {
+  const [isSaved, setIsSaved] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      checkIfSaved();
+    }
+  }, [user, product.id]);
+
+  const checkIfSaved = async () => {
+    const { data } = await supabase
+      .from('saved_items')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('item_id', product.id)
+      .eq('item_type', 'product')
+      .maybeSingle();
+    
+    if (data) setIsSaved(true);
+  };
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) return;
+
+    const newState = !isSaved;
+    setIsSaved(newState);
+
+    if (newState) {
+      await supabase.from('saved_items').insert({
+        user_id: user.id,
+        item_id: product.id,
+        item_type: 'product',
+        metadata: {
+          title: product.name,
+          image_url: product.image_url,
+          price: product.price,
+          category: product.category
+        }
+      });
+    } else {
+      await supabase.from('saved_items')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('item_id', product.id)
+        .eq('item_type', 'product');
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm hover:border-[#006747]/20 hover:shadow-md transition-all group flex items-center space-x-4 relative">
+      <div 
+        className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0 cursor-pointer"
+        onClick={() => navigate('/marketplace')}
       >
-        <ClipboardList className={cn("w-4 h-4", isSaved && "fill-current")} />
-      </button>
-    </Link>
+        {product.image_url ? (
+          <img src={product.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <ShoppingBag className="w-8 h-8 text-gray-300" />
+          </div>
+        )}
+      </div>
+      <div 
+        className="flex-1 min-w-0 cursor-pointer"
+        onClick={() => navigate('/marketplace')}
+      >
+        <h4 className="font-bold text-gray-900 group-hover:text-[#006747] transition-colors truncate">{product.name}</h4>
+        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">{product.category}</p>
+        <div className="flex items-center justify-between mt-2">
+          <span className="font-bold text-[#006747]">{product.price}€</span>
+          <div className="flex items-center space-x-1">
+            <ClipboardList className="w-3 h-3 text-gray-400" />
+            <span className="text-[10px] font-bold text-gray-600">{product.stock_quantity}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex flex-col space-y-2">
+        {/* Save Button */}
+        {!isOwner && (
+          <button 
+            onClick={handleSave}
+            className={cn(
+              "p-2.5 rounded-xl transition-all active:scale-95",
+              isSaved ? "bg-[#006747] text-white" : "bg-gray-50 text-gray-400 hover:text-[#006747]"
+            )}
+          >
+            <ClipboardList className={cn("w-4 h-4", isSaved && "fill-current")} />
+          </button>
+        )}
+
+        {isOwner && (
+          <>
+            <button 
+              onClick={() => onEdit?.(product)}
+              className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#006747] rounded-xl transition-all active:scale-95"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => onDelete?.(product.id)}
+              className="p-2.5 bg-red-50 text-red-500/60 hover:text-red-500 rounded-xl transition-all active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -136,7 +275,7 @@ export default function Profile() {
   const [loadingReels, setLoadingReels] = useState(false);
   const [loadingYoutubeVideos, setLoadingYoutubeVideos] = useState(false);
   const [loadingCommunities, setLoadingCommunities] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services' | 'prescriptions' | 'patients' | 'clinical_history' | 'tracking'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'communities' | 'appointments' | 'orders' | 'services' | 'products' | 'prescriptions' | 'patients' | 'clinical_history' | 'tracking' | 'reviews'>('posts');
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -145,7 +284,14 @@ export default function Profile() {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [services, setServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
+
+  const [showEditServiceModal, setShowEditServiceModal] = useState(false);
+  const [showEditProductModal, setShowEditProductModal] = useState(false);
+  const [editingService, setEditingService] = useState<any>(null);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
   const [clinicalHistories, setClinicalHistories] = useState<any[]>([]);
   const [selectedVideoForModal, setSelectedVideoForModal] = useState<any | null>(null);
@@ -185,6 +331,8 @@ export default function Profile() {
   const [existingReview, setExistingReview] = useState<any>(null);
   const [avgRating, setAvgRating] = useState('0.0');
   const [reviewCount, setReviewCount] = useState(0);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
 
   // These are now handled in MyPatients page, but kept empty here to avoid breaking compilation if referenced
   const [myPatients] = useState<any[]>([]);
@@ -297,11 +445,35 @@ export default function Profile() {
       }
       
       setShowReviewModal(false);
-      checkCanReview(profile.id); // Refresh
+      checkCanReview(profile.id); // Refresh stats
+      fetchProfessionalReviews(profile.id); // Refresh list
       showAlert('Avaliação enviada com sucesso!', 'A sua experiência foi registada.', 'success');
     } catch (err) {
       console.error('Error submitting review:', err);
       showAlert('Erro ao enviar avaliação.', 'Ocorreu um erro ao processar o seu pedido.', 'error');
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!profile) return;
+    
+    // Safety check with alert
+    if (!window.confirm('Tens a certeza que desejas eliminar esta avaliação?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('professional_reviews')
+        .delete()
+        .eq('id', reviewId);
+      
+      if (error) throw error;
+      
+      checkCanReview(profile.id); // Refresh stats
+      fetchProfessionalReviews(profile.id); // Refresh list
+      showAlert('Avaliação removida', 'A sua avaliação foi eliminada com sucesso.', 'success');
+    } catch (err) {
+      console.error('Error deleting review:', err);
+      showAlert('Erro ao eliminar', 'Não foi possível remover a avaliação.', 'error');
     }
   };
 
@@ -348,6 +520,8 @@ export default function Profile() {
 
         if (pData.is_professional) {
           fetchUserServices(targetUserId);
+          fetchUserProducts(targetUserId);
+          fetchProfessionalReviews(targetUserId);
         }
         
         if (isOwnProfile) {
@@ -378,6 +552,134 @@ export default function Profile() {
     
     if (data) setServices(data);
     setLoadingServices(false);
+  };
+
+  const fetchUserProducts = async (targetUserId: string) => {
+    setLoadingProducts(true);
+    const { data } = await supabase
+      .from('products')
+      .select('*')
+      .eq('seller_id', targetUserId)
+      .order('created_at', { ascending: false });
+    
+    if (data) setProducts(data);
+    setLoadingProducts(false);
+  };
+
+  const handleDeleteService = async (serviceId: string) => {
+    if (!window.confirm('Tens a certeza que desejas eliminar este serviço?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('wellness_services')
+        .delete()
+        .eq('id', serviceId);
+      
+      if (error) throw error;
+      
+      showAlert('Serviço removido', 'O serviço foi eliminado com sucesso.', 'success');
+      if (profile) fetchUserServices(profile.id);
+    } catch (err) {
+      console.error('Error deleting service:', err);
+      showAlert('Erro ao eliminar', 'Não foi possível remover o serviço.', 'error');
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!window.confirm('Tens a certeza que desejas eliminar este produto?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+      
+      if (error) throw error;
+      
+      showAlert('Produto removido', 'O produto foi eliminado com sucesso.', 'success');
+      if (profile) fetchUserProducts(profile.id);
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      showAlert('Erro ao eliminar', 'Não foi possível remover o produto.', 'error');
+    }
+  };
+
+  const handleUpdateService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingService) return;
+    
+    try {
+      const { error } = await supabase
+        .from('wellness_services')
+        .update({
+          name: editingService.name,
+          description: editingService.description,
+          base_price: parseFloat(editingService.base_price),
+          location: editingService.location,
+          category: editingService.category
+        })
+        .eq('id', editingService.id);
+      
+      if (error) throw error;
+      
+      showAlert('Serviço atualizado', 'O seu serviço foi atualizado com sucesso.', 'success');
+      setShowEditServiceModal(false);
+      setEditingService(null);
+      if (profile) fetchUserServices(profile.id);
+    } catch (err) {
+      console.error('Error updating service:', err);
+      showAlert('Erro ao atualizar', 'Não foi possível atualizar o serviço.', 'error');
+    }
+  };
+
+  const handleUpdateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: editingProduct.name,
+          description: editingProduct.description,
+          price: parseFloat(editingProduct.price),
+          category: editingProduct.category,
+          stock_quantity: parseInt(editingProduct.stock_quantity),
+          image_url: editingProduct.image_url
+        })
+        .eq('id', editingProduct.id);
+      
+      if (error) throw error;
+      
+      showAlert('Produto atualizado', 'O seu produto foi atualizado com sucesso.', 'success');
+      setShowEditProductModal(false);
+      setEditingProduct(null);
+      if (profile) fetchUserProducts(profile.id);
+    } catch (err) {
+      console.error('Error updating product:', err);
+      showAlert('Erro ao atualizar', 'Não foi possível atualizar o produto.', 'error');
+    }
+  };
+
+  const fetchProfessionalReviews = async (profId: string) => {
+    setLoadingReviews(true);
+    try {
+      const { data, error } = await supabase
+        .from('professional_reviews')
+        .select(`
+          *,
+          reviewer:reviewer_id(id, full_name, username, avatar_url)
+        `)
+        .eq('professional_id', profId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setReviews(data || []);
+    } catch (err) {
+      console.error('Error fetching reviews:', err);
+    } finally {
+      setLoadingReviews(false);
+    }
   };
 
   const fetchSavedItems = async (targetUserId: string) => {
@@ -853,8 +1155,7 @@ export default function Profile() {
       <AdCarousel location="profiles" category={profile?.specialty || 'Geral'} className="mb-8" />
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="font-bold text-xl">{user.username}</h1>
+      <div className="flex items-center justify-end mb-8">
         <div className="flex items-center space-x-4">
           {isOwnProfile && (
             <Link 
@@ -950,14 +1251,19 @@ export default function Profile() {
 
           <div className="flex flex-wrap items-center gap-2 mt-3">
             {profile.is_professional && (
-              <div className="flex items-center bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100">
-                <Star className="w-3 h-3 mr-1 fill-current" />
-                {avgRating} ({reviewCount})
+              <div 
+                onClick={() => setActiveTab('reviews')}
+                className="cursor-pointer flex items-center bg-[#FF4500]/5 text-[#FF4500] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.05em] border border-[#FF4500]/10 hover:bg-[#FF4500]/10 transition-colors shadow-sm"
+              >
+                <div className="w-4 h-4 bg-[#FF4500] rounded-full flex items-center justify-center mr-1.5">
+                   <Star className="w-2.5 h-2.5 text-white fill-current" />
+                </div>
+                {avgRating} <span className="mx-1 opacity-40">•</span> {reviewCount} Avaliações
               </div>
             )}
             {(profile.province || profile.municipality) && (
-              <div className="flex items-center bg-gray-50 text-gray-500 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-100">
-                <MapPin className="w-3 h-3 mr-1" />
+              <div className="flex items-center bg-gray-100/80 text-gray-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.05em] border border-gray-100 transition-colors">
+                <MapPin className="w-3 h-3 mr-1.5 opacity-60" />
                 {profile.municipality && profile.province 
                   ? `${profile.municipality}, ${profile.province}` 
                   : profile.province || profile.municipality}
@@ -1166,6 +1472,18 @@ export default function Profile() {
           )}
 
           {profile.is_professional && (
+            <button 
+              onClick={() => setActiveTab('products')}
+              className={cn(
+                "py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex-none",
+                activeTab === 'products' ? "border-[#006747] text-[#006747]" : "border-transparent text-gray-400 hover:text-gray-600"
+              )}
+            >
+              Produtos
+            </button>
+          )}
+
+          {profile.is_professional && (
              <button 
                onClick={() => setActiveTab('reels')}
                className={cn(
@@ -1198,6 +1516,18 @@ export default function Profile() {
               )}
             >
               História Clínica
+            </button>
+          )}
+
+          {profile.is_professional && (
+            <button 
+              onClick={() => setActiveTab('reviews')}
+              className={cn(
+                "py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex-none",
+                activeTab === 'reviews' ? "border-[#006747] text-[#006747]" : "border-transparent text-gray-400 hover:text-gray-600"
+              )}
+            >
+              Avaliações
             </button>
           )}
 
@@ -1284,12 +1614,55 @@ export default function Profile() {
                     key={svc.id} 
                     svc={svc} 
                     user={myProfile} 
+                    isOwner={isOwnProfile}
+                    onDelete={handleDeleteService}
+                    onEdit={(s) => {
+                      setEditingService(s);
+                      setShowEditServiceModal(true);
+                    }}
                   />
                 ))
               ) : (
                 <div className="col-span-full text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
                     <HeartPulse className="w-8 h-8 text-gray-200 mx-auto mb-2" />
                     <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Sem serviços listados</p>
+                 </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'products' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
+              {loadingProducts ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm flex items-center space-x-4">
+                    <Skeleton className="w-20 h-20 rounded-2xl flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-3 w-1/4" />
+                      <Skeleton className="h-4 w-1/2 mt-2" />
+                    </div>
+                    <Skeleton className="w-10 h-10 rounded-xl" />
+                  </div>
+                ))
+              ) : products.length > 0 ? (
+                products.map(prod => (
+                  <ProductCard 
+                    key={prod.id} 
+                    product={prod} 
+                    user={myProfile}
+                    isOwner={isOwnProfile}
+                    onDelete={handleDeleteProduct}
+                    onEdit={(p) => {
+                      setEditingProduct(p);
+                      setShowEditProductModal(true);
+                    }}
+                  />
+                ))
+              ) : (
+                <div className="col-span-full text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                    <ShoppingBag className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                    <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Sem produtos listados</p>
                  </div>
               )}
             </div>
@@ -2256,6 +2629,96 @@ export default function Profile() {
             </div>
           )}
 
+          {activeTab === 'reviews' && (
+            <div className="space-y-6 px-4 py-6">
+              {loadingReviews ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm animate-pulse">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="w-10 h-10 bg-gray-100 rounded-full" />
+                      <div className="space-y-2">
+                        <div className="h-4 w-32 bg-gray-100 rounded" />
+                        <div className="h-3 w-48 bg-gray-50 rounded" />
+                      </div>
+                    </div>
+                    <div className="h-20 bg-gray-50 rounded-2xl" />
+                  </div>
+                ))
+              ) : reviews.length > 0 ? (
+                <>
+                  {/* Summary Card */}
+                  <div className="bg-amber-50 rounded-[2.5rem] p-8 border border-amber-100 mb-8 flex flex-col items-center text-center">
+                     <div className="flex items-center space-x-1 mb-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star} 
+                            className={cn(
+                              "w-6 h-6",
+                              star <= parseFloat(avgRating) ? "text-amber-500 fill-current" : "text-amber-200"
+                            )} 
+                          />
+                        ))}
+                     </div>
+                     <h3 className="text-3xl font-black text-amber-900 leading-none">{avgRating}</h3>
+                     <p className="text-xs font-black text-amber-600 uppercase tracking-widest mt-2">{reviewCount} avaliações verificadas</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {reviews.map((review) => (
+                      <div key={review.id} className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:border-[#FF4500]/20 transition-all group relative">
+                        <div className="flex items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <div className="w-6 h-6 rounded-full border border-gray-100 overflow-hidden bg-gray-50">
+                                {review.reviewer?.avatar_url ? (
+                                  <img src={review.reviewer.avatar_url} className="w-full h-full object-cover" alt="" />
+                                ) : (
+                                  <UserIcon className="w-3 h-3 text-gray-200 mt-1 mx-auto" />
+                                )}
+                              </div>
+                              <span className="text-xs font-black text-gray-900 leading-none">u/{review.reviewer?.username || 'utilizador'}</span>
+                              <span className="text-[10px] text-gray-400 font-bold">• {new Date(review.created_at).toLocaleDateString()}</span>
+                            </div>
+                            
+                            <p className="text-sm text-gray-700 leading-relaxed mb-4">{review.comment || 'Sem comentário.'}</p>
+                            
+                            <div className="flex items-center">
+                               {myProfile && review.reviewer_id === myProfile.id && (
+                                 <div className="flex items-center space-x-4 ml-auto">
+                                   <button 
+                                     onClick={() => setShowReviewModal(true)}
+                                     className="flex items-center space-x-1.5 text-[#006747] hover:text-emerald-800 transition-colors"
+                                   >
+                                      <Edit3 className="w-4 h-4" />
+                                      <span className="text-[10px] font-black uppercase tracking-widest">Editar</span>
+                                   </button>
+                                   <button 
+                                     onClick={() => handleDeleteReview(review.id)}
+                                     className="flex items-center space-x-1.5 text-red-400 hover:text-red-600 transition-colors"
+                                   >
+                                      <Trash2 className="w-4 h-4" />
+                                      <span className="text-[10px] font-black uppercase tracking-widest">Apagar</span>
+                                   </button>
+                                 </div>
+                               )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
+                    <Award className="w-8 h-8 text-gray-200" />
+                  </div>
+                  <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Sem avaliações ainda</p>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
 
       {/* Evolution Modal */}
@@ -2426,36 +2889,245 @@ export default function Profile() {
       {/* Review Modal */}
       <AnimatePresence>
         {showReviewModal && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#1A1A1B]/60 backdrop-blur-sm">
             <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="w-full max-w-md bg-white rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden"
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="w-full max-w-md bg-white rounded-2xl shadow-2xl relative overflow-hidden"
             >
-              <button 
-                onClick={() => setShowReviewModal(false)}
-                className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 mx-auto mb-4">
-                  <Award className="w-8 h-8" />
-                </div>
-                <h3 className="text-xl font-black text-gray-900 tracking-tight">Avaliar Profissional</h3>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-2 px-4">
-                  Como foi o seu atendimento com {profile.full_name || profile.username}?
-                </p>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                 <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-[#FF4500] rounded-full flex items-center justify-center">
+                       <Award className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-sm font-black text-gray-900 tracking-tight">Avaliar Profissional</h3>
+                 </div>
+                 <button 
+                  onClick={() => setShowReviewModal(false)}
+                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors text-gray-400"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <ReviewForm 
-                initialRating={existingReview?.rating || 5}
-                initialComment={existingReview?.comment || ''}
-                onSubmit={handleSubmitReview}
-                onCancel={() => setShowReviewModal(false)}
-              />
+              <div className="p-6">
+                <div className="mb-6">
+                  <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+                    Partilha a tua experiência com {profile.full_name || profile.username}
+                  </p>
+                </div>
+
+                <ReviewForm 
+                  initialRating={existingReview?.rating || 5}
+                  initialComment={existingReview?.comment || ''}
+                  onSubmit={handleSubmitReview}
+                  onCancel={() => setShowReviewModal(false)}
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      
+      {/* Edit Service Modal */}
+      <AnimatePresence>
+        {showEditServiceModal && editingService && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden"
+            >
+              <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-black text-[#006747]">Editar Serviço</h3>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Atualiza os detalhes do teu serviço</p>
+                </div>
+                <button onClick={() => setShowEditServiceModal(false)} className="p-2 bg-gray-50 rounded-xl text-gray-400 hover:text-gray-900 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleUpdateService} className="p-8 space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nome do Serviço</label>
+                  <input 
+                    type="text" 
+                    value={editingService.name}
+                    onChange={(e) => setEditingService({...editingService, name: e.target.value})}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#006747]/20 transition-all font-medium text-sm"
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Categoria</label>
+                    <input 
+                      type="text" 
+                      value={editingService.category}
+                      onChange={(e) => setEditingService({...editingService, category: e.target.value})}
+                      className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#006747]/20 transition-all font-medium text-sm"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Preço Base (€)</label>
+                    <input 
+                      type="number" 
+                      value={editingService.base_price}
+                      onChange={(e) => setEditingService({...editingService, base_price: e.target.value})}
+                      className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#006747]/20 transition-all font-medium text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Localização</label>
+                  <input 
+                    type="text" 
+                    value={editingService.location}
+                    onChange={(e) => setEditingService({...editingService, location: e.target.value})}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#006747]/20 transition-all font-medium text-sm"
+                    placeholder="Ex: Luanda, Online, Homecare"
+                  />
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descrição</label>
+                  <textarea 
+                    value={editingService.description}
+                    onChange={(e) => setEditingService({...editingService, description: e.target.value})}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#006747]/20 transition-all font-medium text-sm min-h-[100px] resize-none"
+                  />
+                </div>
+                
+                <div className="pt-4 flex items-center space-x-3">
+                  <button 
+                    type="button"
+                    onClick={() => setShowEditServiceModal(false)}
+                    className="flex-1 py-4 text-xs font-black uppercase text-gray-400 hover:text-gray-900 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-[2] py-4 rounded-2xl bg-[#006747] text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-100 hover:scale-[1.02] active:scale-95 transition-all"
+                  >
+                    Guardar Alterações
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Product Modal */}
+      <AnimatePresence>
+        {showEditProductModal && editingProduct && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden"
+            >
+              <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-black text-[#006747]">Editar Produto</h3>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Atualiza os detalhes do teu produto</p>
+                </div>
+                <button onClick={() => setShowEditProductModal(false)} className="p-2 bg-gray-50 rounded-xl text-gray-400 hover:text-gray-900 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleUpdateProduct} className="p-8 space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nome do Produto</label>
+                  <input 
+                    type="text" 
+                    value={editingProduct.name}
+                    onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#006747]/20 transition-all font-medium text-sm"
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Categoria</label>
+                    <input 
+                      type="text" 
+                      value={editingProduct.category}
+                      onChange={(e) => setEditingProduct({...editingProduct, category: e.target.value})}
+                      className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#006747]/20 transition-all font-medium text-sm"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Preço (€)</label>
+                    <input 
+                      type="number" 
+                      value={editingProduct.price}
+                      onChange={(e) => setEditingProduct({...editingProduct, price: e.target.value})}
+                      className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#006747]/20 transition-all font-medium text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Quantidade em Stock</label>
+                  <input 
+                    type="number" 
+                    value={editingProduct.stock_quantity}
+                    onChange={(e) => setEditingProduct({...editingProduct, stock_quantity: e.target.value})}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#006747]/20 transition-all font-medium text-sm"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">URL da Imagem</label>
+                  <input 
+                    type="text" 
+                    value={editingProduct.image_url}
+                    onChange={(e) => setEditingProduct({...editingProduct, image_url: e.target.value})}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#006747]/20 transition-all font-medium text-sm"
+                    placeholder="https://exemplo.com/imagem.png"
+                  />
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descrição</label>
+                  <textarea 
+                    value={editingProduct.description}
+                    onChange={(e) => setEditingProduct({...editingProduct, description: e.target.value})}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#006747]/20 transition-all font-medium text-sm min-h-[100px] resize-none"
+                  />
+                </div>
+                
+                <div className="pt-4 flex items-center space-x-3">
+                  <button 
+                    type="button"
+                    onClick={() => setShowEditProductModal(false)}
+                    className="flex-1 py-4 text-xs font-black uppercase text-gray-400 hover:text-gray-900 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-[2] py-4 rounded-2xl bg-[#006747] text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-100 hover:scale-[1.02] active:scale-95 transition-all"
+                  >
+                    Guardar Alterações
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
@@ -2464,57 +3136,139 @@ export default function Profile() {
   );
 }
 
-function ReviewForm({ initialRating, initialComment, onSubmit, onCancel }: { initialRating: number, initialComment: string, onSubmit: (rating: number, comment: string) => void, onCancel: () => void }) {
+function ReviewForm({ initialRating, initialComment, onSubmit, onCancel }: { 
+  initialRating: number, 
+  initialComment: string, 
+  onSubmit: (rating: number, comment: string) => void, 
+  onCancel: () => void 
+}) {
   const [rating, setRating] = useState(initialRating);
   const [comment, setComment] = useState(initialComment);
   const [hoveredRating, setHoveredRating] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  const trimmedComment = comment.trim();
+  const charCount = trimmedComment.length;
+  const minChars = 100;
+  const maxChars = 1000;
+
+  // Real-time validation for UI feedback
+  const isTooShort = charCount > 0 && charCount < minChars;
+  const isTooLong = charCount > maxChars;
+
+  const validateAndSubmit = () => {
+    setError(null);
+
+    // 1. Minimum chars
+    if (charCount < minChars) {
+      setError("A tua avaliação é valiosa! Por favor, escreve pelo menos 100 caracteres para ajudar outros utilizadores.");
+      return;
+    }
+
+    // 2. Maximum chars
+    if (charCount > maxChars) {
+      setError("Ups! O teu texto é demasiado longo. Tenta resumir a tua experiência para menos de 1.000 caracteres.");
+      return;
+    }
+
+    // 3. Repeated characters (>5)
+    // regex checks for a character followed by itself 5 times (total 6+)
+    const repeatedCharRegex = /(.)\1{5,}/;
+    if (repeatedCharRegex.test(trimmedComment)) {
+      setError("Por favor, evita utilizar caracteres repetidos excessivamente.");
+      return;
+    }
+
+    // 4. URL blocking
+    const urlRegex = /(http|www|\.com|\.pt|\.net|\.org)/i;
+    if (urlRegex.test(trimmedComment)) {
+      setError("Não são permitidos links ou URLs nas avaliações.");
+      return;
+    }
+
+    onSubmit(rating, trimmedComment);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-center items-center space-x-2">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            className="p-1 transition-all"
-            onMouseEnter={() => setHoveredRating(star)}
-            onMouseLeave={() => setHoveredRating(0)}
-            onClick={() => setRating(star)}
-          >
-            <Star 
-              className={cn(
-                "w-10 h-10 transition-all",
-                (hoveredRating || rating) >= star 
-                  ? "text-amber-400 fill-current scale-110" 
-                  : "text-gray-200"
-              )} 
-            />
-          </button>
-        ))}
+      <div className="flex flex-col items-center">
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Qualidade do Atendimento</label>
+        <div className="flex justify-center items-center space-x-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              className="p-1 transition-all"
+              onMouseEnter={() => setHoveredRating(star)}
+              onMouseLeave={() => setHoveredRating(0)}
+              onClick={() => setRating(star)}
+            >
+              <Star 
+                className={cn(
+                  "w-10 h-10 transition-all",
+                  (hoveredRating || rating) >= star 
+                    ? "text-[#FF4500] fill-current scale-110" 
+                    : "text-gray-200"
+                )} 
+              />
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Comentário (opcional)</label>
+        <div className="flex items-center justify-between px-1">
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">A tua opinião</label>
+          <span className={cn(
+            "text-[10px] font-bold uppercase tracking-widest",
+            isTooLong || isTooShort ? "text-red-500" : "text-gray-400"
+          )}>
+            {charCount} / {maxChars}
+          </span>
+        </div>
         <textarea
           value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Conte-nos como foi a sua experiência..."
-          className="w-full bg-gray-50 border border-gray-100 rounded-[1.5rem] px-5 py-4 text-sm focus:ring-2 focus:ring-[#006747]/10 focus:border-[#006747] outline-none transition-all resize-none h-32"
+          onChange={(e) => {
+            setComment(e.target.value);
+            if (error) setError(null);
+          }}
+          placeholder="Descreve detalhadamente a tua experiência... O que gostaste mais? O que poderia ser melhor?"
+          className={cn(
+            "w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-[#FF4500] focus:border-[#FF4500] outline-none transition-all resize-none h-40",
+            (isTooLong || isTooShort) && "border-red-200"
+          )}
         />
+        
+        {isTooShort && charCount > 0 && (
+          <p className="text-[10px] text-gray-400 font-bold px-1">Faltam {minChars - charCount} caracteres.</p>
+        )}
+        
+        {error && (
+          <div className="bg-red-50 border border-red-100 rounded-xl p-3 flex items-start space-x-2">
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-[10px] text-red-600 font-bold leading-relaxed">{error}</p>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="flex items-center justify-end space-x-3 pt-2">
         <button
           onClick={onCancel}
-          className="py-4 bg-gray-100 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95"
+          className="px-6 py-2.5 text-gray-500 rounded-full text-xs font-black uppercase tracking-widest hover:bg-gray-100 transition-all active:scale-95"
         >
-          Cancelar
+          Agora não
         </button>
         <button
-          onClick={() => onSubmit(rating, comment)}
-          className="py-4 bg-[#006747] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-50 active:scale-95"
+          onClick={validateAndSubmit}
+          disabled={isTooLong || charCount < minChars}
+          className={cn(
+            "px-6 py-2.5 text-white rounded-full text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm",
+            isTooLong || charCount < minChars 
+              ? "bg-gray-200 cursor-not-allowed text-gray-400" 
+              : "bg-[#FF4500] hover:bg-[#FF3000]"
+          )}
         >
-          Enviar Avaliação
+          Publicar
         </button>
       </div>
     </div>
