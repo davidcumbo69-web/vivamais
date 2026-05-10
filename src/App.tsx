@@ -13,6 +13,7 @@ import Marketplace from './pages/Marketplace';
 import MyOrders from './pages/MyOrders';
 import Profile from './pages/Profile';
 import ProfessionalSettings from './pages/ProfessionalSettings';
+import Professionals from './pages/Professionals';
 import Settings from './pages/Settings';
 import AdminDashboard from './pages/AdminDashboard';
 import Gamification from './pages/Gamification';
@@ -80,6 +81,7 @@ function AppContent() {
           <Route path="/verificar" element={<PrescriptionSearch />} />
           <Route path="/verificar-receita/:id" element={<DigitalPrescriptionView />} />
           <Route path="/c/:name" element={<CommunityDetail />} />
+          <Route path="/profissionais" element={<Professionals />} />
           <Route path="/professional/settings" element={<ProfessionalSettings />} />
           <Route path="/explore" element={<Home />} /> {/* Mock redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />

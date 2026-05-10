@@ -6,7 +6,7 @@ import {
   Film, Play, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, 
   MapPin, Calendar, ChevronDown, ChevronUp, Activity, Thermometer, 
   Droplet, Ruler, Sparkles, AlertTriangle, Info, CheckCircle2, Check, AlertCircle,
-  CalendarRange, X
+  CalendarRange, X, Star
 } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { Skeleton, ProfileHeaderSkeleton, PostSkeleton, CommunityCardSkeleton } from '../components/ui/Skeleton';
@@ -20,8 +20,6 @@ import { FeedPost } from '../components/feed/FeedPost';
 import { cn } from '../lib/utils';
 import { geminiService, AIEvolutionResult, AIMedicationSafetyResult } from '../services/geminiService';
 import { motion, AnimatePresence } from 'motion/react';
-
-import { DEFAULT_AVATAR } from '../lib/constants';
 
 function ServiceCard({ svc, user }: { svc: any, user: any, key?: any }) {
   const [isSaved, setIsSaved] = useState(false);
@@ -181,6 +179,13 @@ export default function Profile() {
   const [isPatientOfProf, setIsPatientOfProf] = useState(false);
   const [loadingPatient, setLoadingPatient] = useState(false);
   
+  // Review States
+  const [canReview, setCanReview] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [existingReview, setExistingReview] = useState<any>(null);
+  const [avgRating, setAvgRating] = useState('0.0');
+  const [reviewCount, setReviewCount] = useState(0);
+
   // These are now handled in MyPatients page, but kept empty here to avoid breaking compilation if referenced
   const [myPatients] = useState<any[]>([]);
   const [patientRequests] = useState<any[]>([]);
@@ -226,6 +231,80 @@ export default function Profile() {
     return Math.round((filledFields.length / essentialFields.length) * 100);
   };
 
+  const checkCanReview = async (profId: string) => {
+    if (!myProfile) return;
+    try {
+      // Só quem tem receita pode avaliar
+      const { data: prescData } = await supabase
+        .from('prescriptions')
+        .select('id')
+        .eq('patient_id', myProfile.id)
+        .eq('professional_id', profId)
+        .limit(1);
+      
+      if (prescData && prescData.length > 0) {
+        setCanReview(true);
+        // Check for existing review
+        const { data: reviewData } = await supabase
+          .from('professional_reviews')
+          .select('*')
+          .eq('professional_id', profId)
+          .eq('reviewer_id', myProfile.id)
+          .maybeSingle();
+        
+        if (reviewData) {
+          setExistingReview(reviewData);
+        }
+      }
+
+      // Get reviews stats
+      const { data: ratings } = await supabase
+        .from('professional_reviews')
+        .select('rating')
+        .eq('professional_id', profId);
+      
+      if (ratings && ratings.length > 0) {
+        const avg = (ratings.reduce((acc, curr) => acc + curr.rating, 0) / ratings.length).toFixed(1);
+        setAvgRating(avg);
+        setReviewCount(ratings.length);
+      }
+    } catch (err) {
+      console.error('Error checking review eligibility:', err);
+    }
+  };
+
+  const handleSubmitReview = async (rating: number, comment: string) => {
+    if (!myProfile || !profile) return;
+    try {
+      const reviewData = {
+        professional_id: profile.id,
+        reviewer_id: myProfile.id,
+        rating,
+        comment
+      };
+
+      if (existingReview) {
+        const { error } = await supabase
+          .from('professional_reviews')
+          .update(reviewData)
+          .eq('id', existingReview.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('professional_reviews')
+          .insert(reviewData);
+        if (error) throw error;
+      }
+      
+      setShowReviewModal(false);
+      checkCanReview(profile.id); // Refresh
+      showAlert('Avaliação enviada com sucesso!', 'A sua experiência foi registada.', 'success');
+    } catch (err) {
+      console.error('Error submitting review:', err);
+      showAlert('Erro ao enviar avaliação.', 'Ocorreu um erro ao processar o seu pedido.', 'error');
+    }
+  };
+
   const fetchProfile = async (targetUserId: string) => {
     try {
       const { data: pData, error } = await supabase
@@ -238,6 +317,10 @@ export default function Profile() {
       if (pData) {
         setProfile(pData);
         
+        if (pData.is_professional && !isOwnProfile && myProfile) {
+          checkCanReview(targetUserId);
+        }
+
         if (pData.is_professional) {
           setActiveTab('posts');
           supabase
@@ -818,248 +901,158 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Profile Bio */}
-      <div className="flex flex-row items-center md:items-start space-x-6 md:space-x-12 mb-10">
-        <div className="relative flex-shrink-0">
-             <div className="w-20 h-20 md:w-32 md:h-32 rounded-full border-2 border-[#006747] p-1 shadow-sm overflow-hidden bg-gray-50 flex items-center justify-center">
-                {profile.avatar_url ? (
-                    <img 
-                        src={profile.avatar_url} 
-                        className="w-full h-full rounded-full object-cover" 
-                        alt="" 
-                    />
-                ) : (
-                    <UserIcon className="w-1/2 h-1/2 text-gray-300" />
-                )}
-             </div>
-             {profile.is_professional && (
-                <div className="absolute -bottom-1 -right-1 bg-[#006747] rounded-full p-1.5 border-2 border-white shadow-md">
-                    <ShieldCheck className="w-5 h-5 text-white fill-current" />
-                </div>
-             )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="hidden md:flex items-center space-x-4 mb-4">
-            <div className="flex flex-col">
-              <h2 className="text-xl font-bold text-gray-900">{profile.full_name || profile.username}</h2>
-              <div className="flex items-center space-x-2">
-                <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none">@{profile.username}</span>
-                {profile.birth_date && (
-                  <span className="text-[10px] bg-emerald-50 text-[#006747] px-2 py-0.5 rounded-full font-bold">
-                    {calculateAge(profile.birth_date)} anos
-                  </span>
-                )}
-                {profile.province && (
-                  <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold flex items-center">
-                    <MapPin className="w-2.5 h-2.5 mr-1" />
-                    {profile.province}
-                  </span>
-                )}
+      {/* Profile Info Section (Reddit Style) */}
+      <div className="flex flex-row items-start px-4 mb-6">
+        <div className="relative -mt-12 flex-shrink-0">
+           <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-md overflow-hidden bg-white flex items-center justify-center">
+              {profile.avatar_url ? (
+                  <img 
+                      src={profile.avatar_url} 
+                      className="w-full h-full rounded-full object-cover" 
+                      alt="" 
+                  />
+              ) : (
+                  <UserIcon className="w-1/2 h-1/2 text-gray-200" />
+              )}
+           </div>
+           {profile.is_professional && (
+              <div className="absolute bottom-1 right-1 bg-[#006747] rounded-full p-2 border-4 border-white shadow-sm">
+                  <ShieldCheck className="w-4 h-4 text-white fill-current" />
               </div>
-            </div>
-            {isOwnProfile ? (
-              <>
-                <Link to="/perfil/editar" className="bg-gray-100 hover:bg-gray-200 px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors font-sans">Editar Perfil</Link>
-                {profile.is_professional && (
-                  <Link to="/professional/dashboard" className="bg-[#006747] text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-all hover:bg-emerald-800 shadow-sm shadow-emerald-100">Área Profissional</Link>
-                )}
-              </>
-            ) : (
-              <div className="flex items-center space-x-2">
-                {profile.is_professional && (
-                  <button 
-                    onClick={handleFollow}
-                    className={cn(
-                      "px-8 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm",
-                      isFollowing 
-                        ? "bg-gray-100 text-gray-700 hover:bg-gray-200" 
-                        : "bg-[#006747] text-white hover:bg-emerald-800 shadow-emerald-100"
-                    )}
-                  >
-                    {isFollowing ? 'A seguir' : 'Seguir'}
-                  </button>
-                )}
-                {profile.is_professional && !isOwnProfile && (
-                  <button 
-                    onClick={patientStatus?.status === 'pending' ? cancelPatientRequest : requestToBePatient}
-                    disabled={loadingPatient || patientStatus?.status === 'accepted'}
-                    className={cn(
-                      "px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center space-x-2 border-2",
-                      patientStatus?.status === 'accepted' ? "bg-emerald-50 border-emerald-100 text-[#006747]" : 
-                      patientStatus?.status === 'pending' ? "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100" :
-                      "bg-white border-[#006747]/10 text-[#006747] hover:bg-emerald-50"
-                    )}
-                  >
-                    <HeartPulse className="w-4 h-4" />
-                    <span>
-                      {patientStatus?.status === 'accepted' ? 'Sou Paciente' : 
-                       patientStatus?.status === 'pending' ? 'Cancelar Pedido' : 'Tornar-se Paciente'}
-                    </span>
-                  </button>
-                )}
-                <Link 
-                  to={`/mensagens?userId=${profile.id}`}
-                  className="bg-white border-2 border-emerald-50 text-[#006747] px-4 py-1.5 rounded-lg text-sm font-bold transition-all hover:bg-emerald-50 flex items-center space-x-2"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Mensagem</span>
-                </Link>
-              </div>
-            )}
-          </div>
-
-          <div className="md:hidden space-y-0.5">
-            <h3 className="font-black text-lg text-gray-900 leading-tight">{profile.full_name || profile.username}</h3>
-             <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">@{profile.username}</p>
-             
-             <div className="flex flex-wrap gap-2 mt-2">
-                {profile.birth_date && (
-                  <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-[10px] font-bold">
-                    {calculateAge(profile.birth_date)} anos
-                  </span>
-                )}
-                {profile.province && (
-                  <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-[10px] font-bold flex items-center">
-                    <MapPin className="w-3 h-3 mr-1" />
-                    {profile.province}
-                  </span>
-                )}
-             </div>
-
-            {profile?.is_professional && (
-               <div className="flex flex-col">
-                  <p className="text-xs font-bold text-[#006747]">
-                    {profile.specialty} Verificado
-                  </p>
-                  {proData?.workplace_name && (
-                    <p className="text-[10px] text-gray-500 font-medium">🏥 {proData.workplace_name}</p>
-                  )}
-               </div>
-            )}
-          </div>
+           )}
         </div>
-      </div>
-
-      {/* Bio and Stats for Mobile (Moved below Avatar+Name row) */}
-      <div className="md:hidden mb-8">
-        <p className="text-sm text-gray-800 whitespace-pre-wrap mb-6">{user.bio}</p>
         
-        <div className="flex md:hidden items-center space-x-2 mb-6">
-             {isOwnProfile ? (
-               <>
-                 <Link to="/perfil/editar" className="flex-1 bg-gray-100 py-2 rounded-lg text-sm font-bold text-center">Editar Perfil</Link>
-                 {profile.is_professional && (
-                    <Link to="/professional/dashboard" className="flex-1 bg-[#006747] text-white py-2 rounded-lg text-sm font-bold text-center">Área Pro</Link>
-                 )}
-               </>
-             ) : (
-               <div className="flex w-full space-x-2">
-                 {profile.is_professional && (
-                   <button 
-                     onClick={handleFollow}
-                     className={cn(
-                       "flex-1 py-2 rounded-lg text-sm font-bold text-center transition-all",
-                       isFollowing 
-                         ? "bg-gray-100 text-gray-700" 
-                         : "bg-[#006747] text-white"
-                     )}
-                   >
-                     {isFollowing ? 'A seguir' : 'Seguir'}
-                   </button>
-                 )}
-                 <Link 
-                   to={`/mensagens?userId=${profile.id}`}
-                   className="flex-1 bg-white border-2 border-emerald-50 text-[#006747] py-2 rounded-lg text-sm font-bold text-center flex items-center justify-center space-x-2"
-                 >
-                   <MessageSquare className="w-4 h-4" />
-                   <span>Mensagem</span>
-                 </Link>
-               </div>
-             )}
-        </div>
-
-        {profile.is_professional && (
-          <div className="flex justify-between border-y border-gray-100 py-4">
-             <div className="text-center"><span className="font-bold block">{user.posts}</span> <span className="text-gray-500 text-[10px] uppercase font-black tracking-widest">publicações</span></div>
-          </div>
-        )}
-      </div>
-
-      <div className="hidden md:block">
-          <div className="flex md:justify-start md:space-x-10 mb-4 md:border-none md:py-0">
-             {profile.is_professional && <div className="text-center md:text-left"><span className="font-bold block md:inline">{user.posts}</span> <span className="text-gray-500 text-sm">publicações</span></div>}
-          </div>
-
-          <div className="space-y-1">
-            <h3 className="font-bold text-sm">{user.name}</h3>
-            {profile?.is_professional && (
-               <div className="flex flex-col space-y-0.5">
-                  <p className="text-xs font-bold text-[#006747] flex items-center">
-                    {profile.specialty} Verificado
-                  </p>
-                  {proData?.workplace_name && (
-                    <p className="text-[11px] text-gray-500 font-medium">🏥 {proData.workplace_name}</p>
-                  )}
-               </div>
+        <div className="flex-1 ml-4 pt-2">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center space-x-1.5">
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">{profile.full_name || profile.username}</h2>
+                {profile.is_professional && <ShieldCheck className="w-4 h-4 text-[#006747] fill-current" />}
+              </div>
+              <p className="text-xs text-gray-400 font-bold tracking-tight">u/{profile.username}</p>
+            </div>
+            
+            {isOwnProfile && (
+              <Link to="/perfil/editar" className="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-full text-xs font-bold transition-all">Editar</Link>
             )}
-            <p className="text-sm text-gray-800 whitespace-pre-wrap mt-2">{user.bio}</p>
-          </div>
-      </div>
-
-      {/* Quick Access Grid - Mobile Only */}
-      {isOwnProfile && (
-        <div className="mb-6 md:hidden">
-          <div className="flex items-center space-x-2 mb-3 px-1">
-            <LayoutDashboard className="w-3 h-3 text-[#006747]" />
-            <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Atalhos</h3>
           </div>
           
-          <div className="flex flex-wrap gap-2">
-            <Link to="/" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
-               <Stethoscope className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
-            </Link>
-            
-            <Link to="/" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
-               <Microscope className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
-            </Link>
-
-            <Link to="/reels" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
-               <Film className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
-            </Link>
-
-            <Link to="/mensagens" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
-               <MessageSquare className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
-            </Link>
-
-            {profile.is_professional ? (
-              <Link to="/professional/dashboard" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
-                <Hospital className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
-              </Link>
-            ) : (
-              <Link to="/conquistas" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
-                <Apple className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
-              </Link>
-            )}
-
-            <Link to="/consultas" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
-               <CalendarCheck2 className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
-            </Link>
-
-            <Link to="/loja-viva" className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group active:scale-90">
-               <Pill className="w-5 h-5 text-[#006747] group-hover:scale-110 transition-transform" />
-            </Link>
-
-            <div className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 rounded-xl hover:border-red-100 hover:bg-red-50/30 transition-all group active:scale-90 cursor-pointer" onClick={() => signOut()}>
-               <LogOut className="w-5 h-5 text-red-400 group-hover:scale-110 transition-transform" />
-            </div>
+          <div className="flex items-center space-x-4 mt-3 text-xs font-medium text-gray-500">
+             <div className="flex items-center space-x-1">
+               <span className="font-bold text-gray-900">{followersCount}</span>
+               <span>seguidores</span>
+             </div>
+             <div className="flex items-center space-x-1">
+               <span className="font-bold text-gray-900">{followingCount}</span>
+               <span>seguindo</span>
+             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Bio and Location Row */}
+      <div className="px-4 mb-6">
+        <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{profile.bio || 'Sem bio disponível.'}</p>
+
+        <div className="flex items-center space-x-2 mt-4">
+          {profile.is_professional && (
+            <div className="flex items-center bg-amber-50 text-amber-600 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100">
+              <Star className="w-3 h-3 mr-1 fill-current" />
+              {avgRating} ({reviewCount})
+            </div>
+          )}
+          {(profile.province || profile.municipality) && (
+            <div className="flex items-center bg-gray-50 text-gray-500 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-100">
+              <MapPin className="w-3 h-3 mr-1" />
+              {profile.municipality && profile.province 
+                ? `${profile.municipality}, ${profile.province}` 
+                : profile.province || profile.municipality}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Primary Action Buttons (Reddit Style - Horizontal Row) */}
+      <div className="px-4 mb-8">
+        <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide py-1">
+          {!isOwnProfile && (
+            <>
+              {profile.is_professional && (
+                <button 
+                  onClick={handleFollow}
+                  className={cn(
+                    "flex-none px-8 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-sm",
+                    isFollowing 
+                      ? "bg-gray-100 text-gray-700 hover:bg-gray-200" 
+                      : "bg-[#006747] text-white hover:bg-emerald-800"
+                  )}
+                >
+                  {isFollowing ? 'A seguir' : 'Seguir'}
+                </button>
+              )}
+              
+              <Link 
+                to={`/mensagens?userId=${profile.id}`}
+                className="flex-none bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all hover:bg-gray-50 flex items-center space-x-2 shadow-sm"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Chat</span>
+              </Link>
+
+              {profile.is_professional && (
+                <button 
+                  onClick={patientStatus?.status === 'pending' ? cancelPatientRequest : requestToBePatient}
+                  disabled={loadingPatient || patientStatus?.status === 'accepted'}
+                  className={cn(
+                    "flex-none px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all flex items-center space-x-2 border shadow-sm",
+                    patientStatus?.status === 'accepted' ? "bg-emerald-50 border-emerald-100 text-[#006747]" : 
+                    patientStatus?.status === 'pending' ? "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100" :
+                    "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                  )}
+                >
+                  <HeartPulse className="w-3.5 h-3.5" />
+                  <span>
+                    {patientStatus?.status === 'accepted' ? 'Sou Paciente' : 
+                     patientStatus?.status === 'pending' ? 'Pendente' : 'Tornar-se Paciente'}
+                  </span>
+                </button>
+              )}
+
+              {canReview && (
+                <button 
+                  onClick={() => setShowReviewModal(true)}
+                  className="flex-none bg-amber-50 border border-amber-200 text-amber-600 px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all hover:bg-amber-100 flex items-center space-x-2 shadow-sm"
+                >
+                  <Star className={cn("w-3.5 h-3.5", existingReview && "fill-current")} />
+                  <span>{existingReview ? 'Avaliado' : 'Avaliar'}</span>
+                </button>
+              )}
+            </>
+          )}
+
+          {isOwnProfile && profile.is_professional && (
+             <Link 
+               to="/professional/dashboard" 
+               className="flex-none bg-[#006747] text-white px-8 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all hover:bg-emerald-800 shadow-sm shadow-emerald-100"
+             >
+               Área Profissional
+             </Link>
+          )}
+
+          {isOwnProfile && profile.is_professional && (
+            <Link 
+              to="/loja-viva" 
+              className="flex-none bg-white border border-gray-200 text-gray-700 px-8 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all hover:bg-gray-50 shadow-sm"
+            >
+              Publicar Post
+            </Link>
+          )}
+        </div>
+      </div>
 
       {/* Profile Completion Score Card */}
       {isOwnProfile && calculateCompletionScore() < 100 && (
-        <div className="mb-6 bg-white rounded-[2rem] p-6 shadow-sm border border-emerald-100">
+        <div className="mb-6 bg-white rounded-[2rem] p-6 shadow-sm border border-emerald-100 mx-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
               <div className="w-6 h-6 bg-emerald-100 rounded-lg flex items-center justify-center">
@@ -1094,7 +1087,7 @@ export default function Profile() {
 
       {/* Gamification Stats (Hide if Professional) */}
       {!profile.is_professional && (
-        <div className="grid grid-cols-3 gap-2 mb-10">
+        <div className="grid grid-cols-3 gap-2 mb-10 mx-4">
           <div className="bg-emerald-50 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
               <Apple className="w-6 h-6 text-[#006747] mb-2" />
               <span className="text-[10px] uppercase font-bold text-[#006747] opacity-60">Nível XP</span>
@@ -1115,7 +1108,7 @@ export default function Profile() {
 
       {/* VIVA+ TV Section for Professionals */}
       {profile.is_professional && youtubeVideos.length > 0 && (
-        <div className="bg-white border-y border-gray-100 py-3 mb-6 shadow-sm overflow-hidden rounded-2xl">
+        <div className="bg-white border-y border-gray-100 py-3 mb-6 shadow-sm overflow-hidden rounded-2xl mx-4">
           <div className="max-w-4xl mx-auto px-4 flex items-center space-x-4">
              <div className="flex-shrink-0 flex items-center pr-4 border-r border-gray-100 h-10">
                 <div className="w-1.5 h-6 rounded-full mr-2 bg-[#006747]" />
@@ -1147,120 +1140,130 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="border-t border-gray-200">
-        <div className="flex overflow-x-auto scrollbar-hide px-4 md:px-0 space-x-8 md:space-x-12 md:justify-center">
+      {/* Tabs Section - Reddit Style (Horizontal, Simple) */}
+      <div className="border-b border-gray-100 px-4 mb-4">
+        <div className="flex items-center space-x-6 overflow-x-auto scrollbar-hide">
           <button 
             onClick={() => setActiveTab('posts')}
-            className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'posts' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+            className={cn(
+              "py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex-none",
+              activeTab === 'posts' ? "border-[#006747] text-[#006747]" : "border-transparent text-gray-400 hover:text-gray-600"
+            )}
           >
-            <LayoutDashboard className="w-4 h-4" />
-            <span>Publicações</span>
+            Publicações
           </button>
-
-          {(isOwnProfile || (myProfile?.is_professional && isPatientOfProf)) && (
-            <button 
-              onClick={() => setActiveTab('clinical_history')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'clinical_history' ? 'border-[#006747] text-[#006747] -mt-[1px]' : 'border-transparent text-gray-400'}`}
-            >
-              <HeartPulse className="w-4 h-4 text-[#006747]" />
-              <span className={activeTab === 'clinical_history' ? "text-[#006747]" : ""}>História Clínica</span>
-            </button>
-          )}
-
-          {(myProfile?.is_professional && isPatientOfProf) && (
-            <button 
-              onClick={() => setActiveTab('tracking')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'tracking' ? 'border-[#006747] text-[#006747] -mt-[1px]' : 'border-transparent text-gray-400'}`}
-            >
-              <Activity className="w-4 h-4 text-[#006747]" />
-              <span className={activeTab === 'tracking' ? "text-[#006747]" : ""}>Acompanhamento</span>
-            </button>
-          )}
-
-          {isOwnProfile && profile.is_professional && (
-            <Link 
-              to="/professional/patients"
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none border-transparent text-gray-400 hover:text-black`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Pacientes</span>
-            </Link>
-          )}
-
+          
           {profile.is_professional && (
             <button 
               onClick={() => setActiveTab('services')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'services' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+              className={cn(
+                "py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex-none",
+                activeTab === 'services' ? "border-[#006747] text-[#006747]" : "border-transparent text-gray-400 hover:text-gray-600"
+              )}
             >
-              <HeartPulse className="w-4 h-4" />
-              <span>Serviços</span>
-            </button>
-          )}
-
-          {isOwnProfile && (
-            <button 
-              onClick={() => setActiveTab('appointments')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'appointments' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-            >
-              <CalendarCheck2 className="w-4 h-4" />
-              <span>Agenda</span>
+              Serviços
             </button>
           )}
 
           {profile.is_professional && (
-            <button 
-              onClick={() => setActiveTab('reels')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'reels' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-            >
-              <Film className="w-4 h-4" />
-              <span>Vídeos</span>
-            </button>
+             <button 
+               onClick={() => setActiveTab('reels')}
+               className={cn(
+                 "py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex-none",
+                 activeTab === 'reels' ? "border-[#006747] text-[#006747]" : "border-transparent text-gray-400 hover:text-gray-600"
+               )}
+             >
+               Vídeos
+             </button>
           )}
 
           {isOwnProfile && (
             <button 
               onClick={() => setActiveTab('prescriptions')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'prescriptions' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+              className={cn(
+                "py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex-none",
+                activeTab === 'prescriptions' ? "border-[#006747] text-[#006747]" : "border-transparent text-gray-400 hover:text-gray-600"
+              )}
             >
-              <Pill className="w-4 h-4" />
-              <span>Receitas</span>
+              Receitas
             </button>
           )}
 
-          {isOwnProfile && (
+          {(isOwnProfile || (myProfile?.is_professional && isPatientOfProf)) && (
             <button 
-              onClick={() => setActiveTab('orders')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'orders' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+              onClick={() => setActiveTab('clinical_history')}
+              className={cn(
+                "py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex-none",
+                activeTab === 'clinical_history' ? "border-[#006747] text-[#006747]" : "border-transparent text-gray-400 hover:text-gray-600"
+              )}
             >
-              <ShoppingBag className="w-4 h-4" />
-              <span>Encomendas</span>
-            </button>
-          )}
-          
-          {isOwnProfile && (
-            <button 
-              onClick={() => setActiveTab('communities')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'communities' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Meus Grupos</span>
+              História Clínica
             </button>
           )}
 
           {isOwnProfile && (
             <button 
               onClick={() => setActiveTab('saved')}
-              className={`flex items-center space-x-2 py-4 border-t whitespace-nowrap transition-all text-xs font-bold uppercase tracking-widest leading-none ${activeTab === 'saved' ? 'border-black text-black -mt-[1px]' : 'border-transparent text-gray-400'}`}
+              className={cn(
+                "py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex-none",
+                activeTab === 'saved' ? "border-[#006747] text-[#006747]" : "border-transparent text-gray-400 hover:text-gray-600"
+              )}
             >
-              <ClipboardList className="w-4 h-4" />
-              <span>Guardado</span>
+              Guardado
             </button>
           )}
+          
+          {isOwnProfile && (
+            <button 
+              onClick={() => setActiveTab('orders')}
+              className={cn(
+                "py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex-none",
+                activeTab === 'orders' ? "border-[#006747] text-[#006747]" : "border-transparent text-gray-400 hover:text-gray-600"
+              )}
+            >
+              Encomendas
+            </button>
+          )}
+          
+          {/* More tabs as needed... */}
         </div>
+      </div>
 
-        {/* Post Grid or Other Content */}
-        <div className="mt-4">
+      {/* Main Content Area */}
+      <div className="px-2">
+          {activeTab === 'posts' && (
+            <div className="space-y-4">
+              {loadingPosts ? (
+                Array.from({ length: 3 }).map((_, i) => <PostSkeleton key={i} />)
+              ) : posts.length > 0 ? (
+                posts.map(post => (
+                  <FeedPost 
+                    key={post.id} 
+                    post={{
+                      ...post,
+                      user: {
+                        id: profile.id,
+                        username: profile.username || 'utilizador_viva',
+                        avatar: profile.avatar_url,
+                        isProf: profile.is_professional
+                      },
+                      content: post.image_url || post.content_url || '',
+                      likes: post.likes_count || 0,
+                      time: new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      post_type: 'image'
+                    }} 
+                    onUpdate={() => fetchUserPosts(profile.id)} 
+                  />
+                ))
+              ) : (
+                <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                  <LayoutDashboard className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                  <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Nenhuma publicação ainda</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'services' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
               {loadingServices ? (
@@ -2053,74 +2056,6 @@ export default function Profile() {
             </div>
           )}
 
-          {activeTab === 'posts' && (
-            <div className="grid grid-cols-3 gap-1 md:gap-4">
-              {(loadingPosts || loadingReels || loadingYoutubeVideos) ? (
-                [1, 2, 3, 4, 5, 6].map(i => (
-                  <Skeleton key={i} className="aspect-square w-full rounded-lg" />
-                ))
-              ) : (() => {
-                const combinedContent = [
-                  ...posts, 
-                  ...reels.map(r => ({ ...r, isReel: true })),
-                  ...youtubeVideos.map(v => ({ ...v, isYoutube: true }))
-                ].sort((a, b) => 
-                  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                );
-                
-                return combinedContent.length > 0 ? (
-                  combinedContent.map((item) => (
-                    <div 
-                      key={item.id} 
-                      className="aspect-square bg-gray-100 hover:opacity-90 transition-all cursor-pointer overflow-hidden rounded-lg border border-gray-100 relative group"
-                      onClick={() => {
-                        if (item.isYoutube) {
-                          setSelectedVideoForModal(item);
-                        }
-                      }}
-                    >
-                      {item.isYoutube ? (
-                        <>
-                          <img 
-                            src={`https://img.youtube.com/vi/${getYoutubeId(item.youtube_url)}/mqdefault.jpg`} 
-                            className="w-full h-full object-cover" 
-                            alt="" 
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop';
-                            }}
-                          />
-                          <div className="absolute top-2 right-2 z-10">
-                            <Play className="w-4 h-4 text-white drop-shadow-md fill-current" />
-                          </div>
-                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                             <Play className="w-8 h-8 text-white fill-current" />
-                          </div>
-                        </>
-                      ) : item.isReel ? (
-                        <>
-                          <video src={`${item.video_url}#t=0.1`} className="w-full h-full object-cover" preload="metadata" playsInline />
-                          <div className="absolute top-2 right-2 z-10">
-                            <Film className="w-4 h-4 text-white drop-shadow-md" />
-                          </div>
-                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                             <Film className="w-8 h-8 text-white" />
-                          </div>
-                        </>
-                      ) : (
-                        <img src={item.image_url || item.content_url} className="w-full h-full object-cover" alt="" />
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-3 py-20 text-center">
-                    <Dna className="w-8 h-8 text-gray-100 mx-auto mb-2" />
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Sem Publicações</p>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
           {activeTab === 'reels' && (
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {(loadingReels || loadingYoutubeVideos) ? (
@@ -2321,10 +2256,7 @@ export default function Profile() {
             </div>
           )}
 
-
-
         </div>
-      </div>
 
       {/* Evolution Modal */}
       <AnimatePresence>
@@ -2473,7 +2405,7 @@ export default function Profile() {
                       user: {
                         id: profile.id || '',
                         username: profile.username || 'Especialista',
-                        avatar: profile.avatar_url || DEFAULT_AVATAR,
+                        avatar: profile.avatar_url,
                         isProf: profile.is_professional || false
                       },
                       content: selectedVideoForModal.youtube_url || '',
@@ -2490,6 +2422,101 @@ export default function Profile() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Review Modal */}
+      <AnimatePresence>
+        {showReviewModal && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="w-full max-w-md bg-white rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden"
+            >
+              <button 
+                onClick={() => setShowReviewModal(false)}
+                className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 mx-auto mb-4">
+                  <Award className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-black text-gray-900 tracking-tight">Avaliar Profissional</h3>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-2 px-4">
+                  Como foi o seu atendimento com {profile.full_name || profile.username}?
+                </p>
+              </div>
+
+              <ReviewForm 
+                initialRating={existingReview?.rating || 5}
+                initialComment={existingReview?.comment || ''}
+                onSubmit={handleSubmitReview}
+                onCancel={() => setShowReviewModal(false)}
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ReviewForm({ initialRating, initialComment, onSubmit, onCancel }: { initialRating: number, initialComment: string, onSubmit: (rating: number, comment: string) => void, onCancel: () => void }) {
+  const [rating, setRating] = useState(initialRating);
+  const [comment, setComment] = useState(initialComment);
+  const [hoveredRating, setHoveredRating] = useState(0);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-center items-center space-x-2">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            className="p-1 transition-all"
+            onMouseEnter={() => setHoveredRating(star)}
+            onMouseLeave={() => setHoveredRating(0)}
+            onClick={() => setRating(star)}
+          >
+            <Star 
+              className={cn(
+                "w-10 h-10 transition-all",
+                (hoveredRating || rating) >= star 
+                  ? "text-amber-400 fill-current scale-110" 
+                  : "text-gray-200"
+              )} 
+            />
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Comentário (opcional)</label>
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Conte-nos como foi a sua experiência..."
+          className="w-full bg-gray-50 border border-gray-100 rounded-[1.5rem] px-5 py-4 text-sm focus:ring-2 focus:ring-[#006747]/10 focus:border-[#006747] outline-none transition-all resize-none h-32"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={onCancel}
+          className="py-4 bg-gray-100 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={() => onSubmit(rating, comment)}
+          className="py-4 bg-[#006747] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-50 active:scale-95"
+        >
+          Enviar Avaliação
+        </button>
+      </div>
     </div>
   );
 }

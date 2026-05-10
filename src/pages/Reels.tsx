@@ -12,8 +12,6 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { ReelsCarousel } from '../components/feed/ReelsCarousel';
 import { CreateReelModal } from '../components/feed/CreateReelModal';
 
-import { DEFAULT_AVATAR } from '../lib/constants';
-
 export default function Reels() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -88,7 +86,7 @@ export default function Reels() {
           user: {
             id: p.profiles?.id,
             username: p.profiles?.username || 'viva_user',
-            avatar: p.profiles?.avatar_url || DEFAULT_AVATAR,
+            avatar: p.profiles?.avatar_url,
             isProf: p.profiles?.is_professional || false
           },
           caption: p.caption,
@@ -276,8 +274,12 @@ export default function Reels() {
               <div className="flex-1 mr-6">
                 <div className="flex items-center mb-4">
                   <Link to={`/perfil/${reel.user.id}`} className="flex items-center group pointer-events-auto">
-                    <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden mr-3 shadow-lg group-hover:scale-105 transition-transform">
-                      <img src={reel.user.avatar} className="w-full h-full object-cover" alt="" />
+                    <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden mr-3 shadow-lg group-hover:scale-105 transition-transform bg-zinc-800 flex items-center justify-center">
+                      {reel.user.avatar ? (
+                        <img src={reel.user.avatar} className="w-full h-full object-cover" alt="" />
+                      ) : (
+                        <User className="w-5 h-5 text-zinc-500" />
+                      )}
                     </div>
                     <div className="flex flex-col">
                       <span className="text-white font-bold text-sm flex items-center drop-shadow-md group-hover:text-emerald-400 transition-colors">
@@ -330,8 +332,12 @@ export default function Reels() {
                   <Syringe className="w-6 h-6" />
                 </button>
 
-                <button className="w-10 h-10 rounded-xl border-2 border-white/50 overflow-hidden bg-white/20 shadow-lg animate-pulse">
-                  <img src={reel.user.avatar} className="w-full h-full object-cover" alt="" />
+                <button className="w-10 h-10 rounded-xl border-2 border-white/50 overflow-hidden bg-white/20 shadow-lg animate-pulse flex items-center justify-center">
+                  {reel.user.avatar ? (
+                    <img src={reel.user.avatar} className="w-full h-full object-cover" alt="" />
+                  ) : (
+                    <User className="w-5 h-5 text-white/50" />
+                  )}
                 </button>
               </div>
             </div>

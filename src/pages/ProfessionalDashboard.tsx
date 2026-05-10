@@ -25,7 +25,8 @@ import {
   PieChart as PieChartIcon,
   BarChart3,
   LineChart as LineChartIcon,
-  HeartPulse as HeartPulseIcon
+  HeartPulse as HeartPulseIcon,
+  User,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
@@ -762,8 +763,12 @@ export default function ProfessionalDashboard() {
                                         <tr key={bk.id} className="hover:bg-gray-50/30 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center space-x-3">
-                                                    <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden">
-                                                        <img src={bk.patient?.avatar_url || `https://ui-avatars.com/api/?name=${bk.patient?.username}`} alt="" />
+                                                    <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
+                                                        {bk.patient?.avatar_url ? (
+                                                          <img src={bk.patient.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                          <User className="w-4 h-4 text-gray-300" />
+                                                        )}
                                                     </div>
                                                     <span className="font-bold text-sm text-gray-900">{bk.patient?.full_name || bk.patient?.username}</span>
                                                 </div>

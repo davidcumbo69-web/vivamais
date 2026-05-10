@@ -21,7 +21,6 @@ import { cn } from '../lib/utils';
 import { Skeleton, MessageItemSkeleton } from '../components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
 // PrescriptionModal removed in favor of full page navigation
-import { DEFAULT_AVATAR } from '../lib/constants';
 
 function ChatMessage({ msg, isMine, user }: { msg: Message, isMine: boolean, user: any }) {
   const [isSaved, setIsSaved] = useState(false);

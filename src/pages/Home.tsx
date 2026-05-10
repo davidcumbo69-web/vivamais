@@ -31,8 +31,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { supabase, type Post } from '../lib/supabase';
 import CreateCommunityModal from '../components/modals/CreateCommunityModal';
 
-import { DEFAULT_AVATAR } from '../lib/constants';
-
 export default function Home() {
   const [activeTab, setActiveTab] = useState<any>('para_ti');
   const navigate = useNavigate();
@@ -78,6 +76,7 @@ export default function Home() {
   const [recentPatients, setRecentPatients] = useState<any[]>([]);
   const [loadingPatients, setLoadingPatients] = useState(false);
   const [suggestedProfessionals, setSuggestedProfessionals] = useState<any[]>([]);
+  const [suggestedGroups, setSuggestedGroups] = useState<any[]>([]);
 
   // Helper to check if a medication is active at a certain hour
   const isPeriodActiveAt = (freqStr: string, hour: number) => {
@@ -205,9 +204,15 @@ export default function Home() {
   // Post Form State
   const [newPostCaption, setNewPostCaption] = useState('');
   const [newPostFile, setNewPostFile] = useState<File | null>(null);
-  const [newPostCategory, setNewPostCategory] = useState('Saúde Pública');
+  const [newPostCategory, setNewPostCategory] = useState(profile?.specialty || 'Saúde Pública');
   const [newPostType, setNewPostType] = useState<'image' | 'video'>('image');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (profile?.specialty) {
+      setNewPostCategory(profile.specialty);
+    }
+  }, [profile?.specialty]);
 
   useEffect(() => {
     fetchPosts();
@@ -216,26 +221,172 @@ export default function Home() {
       fetchUserMemberships();
       fetchUserPrescriptions();
       fetchSuggestedProfessionals();
+      fetchSuggestedGroups();
       if (profile?.is_professional) {
         fetchRecentPatients();
       }
     } else {
       fetchSuggestedProfessionals();
+      fetchSuggestedGroups();
     }
   }, [user, activeTab, profile?.is_professional]);
 
+  const fetchSuggestedGroups = async () => {
+    try {
+      if (!user) return;
+
+      // 1. Get user's liked posts to find preferred categories
+      const { data: likedPosts } = await supabase
+        .from('likes')
+        .select('posts:post_id (category)')
+        .eq('user_id', user.id)
+        .limit(20);
+
+      const likedCategories = Array.from(new Set((likedPosts || [])
+        .map((l: any) => l.posts?.category)
+        .filter(Boolean)));
+
+      // 2. Get user's joined groups to exclude them
+      const joinedGroupIds = Array.from(userGroups);
+
+      // 3. Build query
+      let query = supabase
+        .from('health_groups')
+        .select('*');
+
+      if (joinedGroupIds.length > 0) {
+        query = query.not('id', 'in', `(${joinedGroupIds.join(',')})`);
+      }
+
+      if (likedCategories.length > 0) {
+        query = query.in('category', likedCategories);
+      }
+
+      const { data, error } = await query.limit(5);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        // Fallback: any groups not joined
+        let fallbackQuery = supabase.from('health_groups').select('*');
+        if (joinedGroupIds.length > 0) {
+          fallbackQuery = fallbackQuery.not('id', 'in', `(${joinedGroupIds.join(',')})`);
+        }
+        const { data: fallbackData } = await fallbackQuery.limit(5);
+        if (fallbackData) setSuggestedGroups(fallbackData);
+      } else {
+        setSuggestedGroups(data);
+      }
+    } catch (err) {
+      console.error('Error fetching suggested groups:', err);
+    }
+  };
+
   const fetchSuggestedProfessionals = async () => {
     try {
-      const { data, error } = await supabase
+      // 0. Get followed professionals to exclude them
+      let followedIds: string[] = [];
+      if (user) {
+        const { data: followData } = await supabase
+          .from('professional_followers')
+          .select('professional_id')
+          .eq('follower_id', user.id);
+        followedIds = (followData || []).map(f => f.professional_id);
+      }
+
+      // 1. Get user's joined groups to find interesting categories
+      const { data: memberGroups } = await supabase
+        .from('health_group_members')
+        .select('groups:group_id (category)')
+        .eq('user_id', user?.id || '');
+
+      const groupCategories = Array.from(new Set((memberGroups || [])
+        .map((m: any) => m.groups?.category)
+        .filter(Boolean)));
+
+      // 2. Get user's liked posts to find preferred categories
+      const { data: likedPosts } = await supabase
+        .from('likes')
+        .select('posts:post_id (category)')
+        .eq('user_id', user?.id || '')
+        .limit(20);
+
+      const likedCategories = Array.from(new Set((likedPosts || [])
+        .map((l: any) => l.posts?.category)
+        .filter(Boolean)));
+
+      const targetCategories = Array.from(new Set([...groupCategories, ...likedCategories]));
+
+      // 3. Build query for suggestions
+      let query = supabase
         .from('profiles')
         .select('*')
         .eq('is_professional', true)
-        .limit(5);
+        .neq('id', user?.id || ''); // Don't suggest self
+
+      if (followedIds.length > 0) {
+        query = query.not('id', 'in', `(${followedIds.join(',')})`);
+      }
+
+      if (targetCategories.length > 0) {
+        query = query.in('specialty', targetCategories);
+      }
+
+      const { data, error } = await query.limit(5);
       
       if (error) throw error;
-      if (data) setSuggestedProfessionals(data);
+
+      // 4. Fallback to any professionals if no targeted ones found
+      if (!data || data.length === 0) {
+        let fallbackQuery = supabase
+          .from('profiles')
+          .select('*')
+          .eq('is_professional', true)
+          .neq('id', user?.id || '');
+        
+        if (followedIds.length > 0) {
+          fallbackQuery = fallbackQuery.not('id', 'in', `(${followedIds.join(',')})`);
+        }
+
+        const { data: fallbackData } = await fallbackQuery.limit(5);
+        if (fallbackData) setSuggestedProfessionals(fallbackData);
+      } else {
+        setSuggestedProfessionals(data);
+      }
     } catch (err) {
       console.error('Error fetching suggestions:', err);
+    }
+  };
+
+  const handleFollowProfessional = async (profId: string) => {
+    if (!user) {
+      showAlert('Ação Necessária', 'Faça login para seguir profissionais.', 'warning');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('professional_followers')
+        .insert({
+          professional_id: profId,
+          follower_id: user.id
+        });
+
+      if (error) {
+        if (error.code === '23505') {
+          // Already following, maybe unfollow? Or just ignore.
+          showAlert('Info', 'Já segue este profissional.', 'info');
+        } else {
+          throw error;
+        }
+      } else {
+        showAlert('Sucesso', 'Agora está a seguir este profissional!', 'success');
+        // Filter out from suggestions after following
+        setSuggestedProfessionals(prev => prev.filter(p => p.id !== profId));
+      }
+    } catch (err) {
+      console.error('Error following:', err);
+      showAlert('Erro', 'Não foi possível seguir o profissional.', 'error');
     }
   };
 
@@ -493,7 +644,7 @@ export default function Home() {
           user: {
             id: p.profiles?.id,
             username: p.profiles?.username || 'viva_user',
-            avatar: p.profiles?.avatar_url || DEFAULT_AVATAR,
+            avatar: p.profiles?.avatar_url,
             isProf: p.profiles?.is_professional || false
           },
           content: p.image_url || p.content_url,
@@ -517,7 +668,7 @@ export default function Home() {
           user: {
             id: v.profiles?.id,
             username: v.profiles?.username || 'viva_user',
-            avatar: v.profiles?.avatar_url || DEFAULT_AVATAR,
+            avatar: v.profiles?.avatar_url,
             isProf: v.profiles?.is_professional || false
           },
           content: v.youtube_url || '',
@@ -574,7 +725,7 @@ export default function Home() {
           .insert({
             user_id: user.id,
             caption: newPostCaption,
-            category: newPostCategory,
+            category: profile?.specialty || newPostCategory,
             likes_count: 0,
             is_approved: false
           });
@@ -587,7 +738,7 @@ export default function Home() {
             content_url: publicUrl,
             image_url: publicUrl,
             caption: newPostCaption,
-            category: newPostCategory,
+            category: profile?.specialty || newPostCategory,
             likes_count: 0,
             is_approved: true
           });
@@ -981,34 +1132,73 @@ export default function Home() {
            </Link>
            {/* Suggestions Header */}
            <div className="flex justify-between items-center mb-4">
-              <h4 className="text-sm font-bold text-gray-400">Profissionais Sugeridos</h4>
-              <button className="text-xs font-bold hover:text-gray-500">Ver tudo</button>
+              <h4 className="text-sm font-bold text-gray-400">
+                {activeTab === 'grupos' ? 'Grupos Sugeridos' : 'Profissionais Sugeridos'}
+              </h4>
+              <button 
+                onClick={() => navigate(activeTab === 'grupos' ? '/grupos' : '/profissionais')}
+                className="text-xs font-bold hover:text-gray-500"
+              >
+                Ver tudo
+              </button>
            </div>
 
            {/* Suggestions List */}
            <div className="space-y-4">
-              {suggestedProfessionals.length > 0 ? suggestedProfessionals.map((sug) => (
-                <div key={sug.id} className="flex justify-between items-center">
-                    <Link to={`/search?q=${sug.username}`} className="flex items-center space-x-3 group">
-                        <div className="w-8 h-8 rounded-full overflow-hidden group-hover:scale-105 transition-transform border border-gray-100 bg-gray-50 flex items-center justify-center">
-                            {sug.avatar_url ? (
-                                <img src={sug.avatar_url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                                <User className="w-4 h-4 text-gray-300" />
-                            )}
-                        </div>
-                        <div>
-                            <div className="flex items-center">
-                              <p className="text-sm font-bold leading-none group-hover:text-[#006747] transition-colors">{sug.username}</p>
-                              {sug.is_professional && <ShieldCheck className="w-3 h-3 text-[#006747] ml-1 fill-current" />}
-                            </div>
-                            <p className="text-[10px] text-gray-400 mt-1">{sug.specialty || 'Profissional SNS'}</p>
-                        </div>
-                    </Link>
-                    <button className="text-xs font-bold text-[#006747] hover:text-emerald-800">Seguir</button>
-                </div>
-              )) : (
-                <p className="text-[10px] text-gray-400 italic">A procurar especialistas...</p>
+              {activeTab === 'grupos' ? (
+                suggestedGroups.length > 0 ? suggestedGroups.map((sug) => (
+                  <div key={sug.id} className="flex justify-between items-center px-1">
+                      <Link to={`/c/${encodeURIComponent(sug.name)}`} className="flex items-center space-x-3 group min-w-0 flex-1">
+                          <div 
+                            className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0"
+                            style={{ backgroundColor: sug.theme_color || '#006747' }}
+                          >
+                             {sug.name[0]}
+                          </div>
+                          <div className="min-w-0">
+                              <p className="text-sm font-bold leading-none group-hover:text-[#006747] transition-colors truncate">g/{sug.name}</p>
+                              <p className="text-[10px] text-gray-400 mt-1 truncate">{sug.category || 'Saúde'}</p>
+                          </div>
+                      </Link>
+                      <button 
+                        onClick={(e) => handleJoinGroup(e, sug.id)}
+                        className="text-xs font-bold text-[#006747] hover:text-emerald-800 ml-2 py-1 px-3 bg-emerald-50 rounded-lg transition-colors shrink-0"
+                      >
+                        Aderir
+                      </button>
+                  </div>
+                )) : (
+                  <p className="text-[10px] text-gray-400 italic">A procurar grupos...</p>
+                )
+              ) : (
+                suggestedProfessionals.length > 0 ? suggestedProfessionals.map((sug) => (
+                  <div key={sug.id} className="flex justify-between items-center px-1">
+                      <Link to={`/perfil/${sug.id}`} className="flex items-center space-x-3 group min-w-0 flex-1">
+                          <div className="w-9 h-9 rounded-full overflow-hidden group-hover:scale-105 transition-transform border border-gray-100 bg-gray-50 flex items-center justify-center shrink-0">
+                              {sug.avatar_url ? (
+                                  <img src={sug.avatar_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                  <User className="w-4 h-4 text-gray-300" />
+                              )}
+                          </div>
+                          <div className="min-w-0">
+                              <div className="flex items-center">
+                                <p className="text-sm font-bold leading-none group-hover:text-[#006747] transition-colors truncate">{sug.username}</p>
+                                {sug.is_professional && <ShieldCheck className="w-3 h-3 text-[#006747] ml-1 fill-current shrink-0" />}
+                              </div>
+                              <p className="text-[10px] text-gray-400 mt-1 truncate">{sug.specialty || 'Profissional SNS'}</p>
+                          </div>
+                      </Link>
+                      <button 
+                        onClick={() => handleFollowProfessional(sug.id)}
+                        className="text-xs font-bold text-[#006747] hover:text-emerald-800 ml-2 py-1 px-3 bg-emerald-50 rounded-lg transition-colors shrink-0"
+                      >
+                        Seguir
+                      </button>
+                  </div>
+                )) : (
+                  <p className="text-[10px] text-gray-400 italic">A procurar especialistas...</p>
+                )
               )}
            </div>
 
@@ -1140,8 +1330,8 @@ export default function Home() {
                  <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Meta Comunitária</h4>
                  <div className="flex -space-x-1.5">
                     {[1,2,3].map(i => (
-                       <div key={i} className="w-5 h-5 rounded-full border-2 border-white bg-gray-100 overflow-hidden">
-                          <img src={`${DEFAULT_AVATAR}&seed=${i}`} className="w-full h-full object-cover" />
+                       <div key={i} className="w-5 h-5 rounded-full border-2 border-white bg-gray-100 overflow-hidden flex items-center justify-center">
+                          <User className="w-3 h-3 text-gray-300" />
                        </div>
                     ))}
                  </div>

@@ -24,14 +24,14 @@ import {
   Plus,
   MoreHorizontal,
   ClipboardList,
-  Play
+  Play,
+  User,
 } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { FeedPost } from '../components/feed/FeedPost';
 import { TopicSkeleton, VideoThumbnailSkeleton, Skeleton } from '../components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { DEFAULT_AVATAR } from '../lib/constants';
 
 function GroupMessage({ msg, user, group, onDelete, onReply }: { msg: any, user: any, group: any, onDelete: (id: string) => void, onReply: (msg: any) => void, key?: any }) {
   const [isSaved, setIsSaved] = useState(false);
@@ -83,8 +83,12 @@ function GroupMessage({ msg, user, group, onDelete, onReply }: { msg: any, user:
 
   return (
     <div className="flex space-x-4 group/msg">
-      <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm border border-white shrink-0">
-        <img src={msg.profiles?.avatar_url || DEFAULT_AVATAR} alt="" />
+      <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm border border-white shrink-0 bg-gray-50 flex items-center justify-center">
+        {msg.profiles?.avatar_url ? (
+          <img src={msg.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <User className="w-4 h-4 text-gray-300" />
+        )}
       </div>
       <div className="bg-white px-5 py-4 rounded-3xl shadow-sm border border-gray-100 flex-1 relative">
         {/* Save button */}
@@ -735,8 +739,12 @@ export default function CommunityDetail() {
                             <p className="text-sm text-gray-500 mt-1 line-clamp-2">{topic.content}</p>
                             <div className="flex items-center space-x-4 mt-4">
                                <div className="flex items-center space-x-1">
-                                  <div className="w-5 h-5 rounded-full overflow-hidden">
-                                     <img src={topic.profiles?.avatar_url || DEFAULT_AVATAR} alt="" />
+                                  <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-50 flex items-center justify-center">
+                                     {topic.profiles?.avatar_url ? (
+                                       <img src={topic.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                                     ) : (
+                                       <User className="w-3 h-3 text-gray-300" />
+                                     )}
                                   </div>
                                   <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Por {topic.profiles?.username}</span>
                                </div>
@@ -812,8 +820,12 @@ export default function CommunityDetail() {
                        <span>Criada em {new Date(group.created_at).toLocaleDateString()}</span>
                        {group.creator && (
                         <div className="flex items-center space-x-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
-                           <div className="w-5 h-5 rounded-full overflow-hidden shrink-0">
-                              <img src={group.creator.avatar_url} className="w-full h-full object-cover" alt="" />
+                           <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-gray-50 flex items-center justify-center">
+                              {group.creator.avatar_url ? (
+                                <img src={group.creator.avatar_url} className="w-full h-full object-cover" alt="" />
+                              ) : (
+                                <User className="w-3 h-3 text-gray-300" />
+                              )}
                            </div>
                            <span className="text-[10px] text-[#006747] font-bold">Criado por {group.creator.username}</span>
                         </div>
@@ -1026,8 +1038,12 @@ export default function CommunityDetail() {
                         style={{ backgroundColor: group.color }}
                       />
                       <div className="flex items-center space-x-3 mb-4">
-                         <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm">
-                            <img src={selectedTopic.profiles?.avatar_url || DEFAULT_AVATAR} alt="" />
+                         <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center">
+                            {selectedTopic.profiles?.avatar_url ? (
+                              <img src={selectedTopic.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <User className="w-5 h-5 text-gray-300" />
+                            )}
                          </div>
                          <div>
                             <p className="font-black text-gray-900 text-sm">u/{selectedTopic.profiles?.username}</p>
@@ -1135,7 +1151,7 @@ export default function CommunityDetail() {
                       user: {
                         id: selectedVideoForModal.profiles?.id || '',
                         username: selectedVideoForModal.profiles?.username || 'Especialista',
-                        avatar: selectedVideoForModal.profiles?.avatar_url || DEFAULT_AVATAR,
+                        avatar: selectedVideoForModal.profiles?.avatar_url,
                         isProf: selectedVideoForModal.profiles?.is_professional || false
                       },
                       content: selectedVideoForModal.youtube_url || '',

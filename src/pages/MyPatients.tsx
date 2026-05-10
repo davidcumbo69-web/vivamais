@@ -28,8 +28,6 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
 import { geminiService, AIEvolutionResult } from '../services/geminiService';
 
-import { DEFAULT_AVATAR } from '../lib/constants';
-
 export default function MyPatients() {
   const { profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();

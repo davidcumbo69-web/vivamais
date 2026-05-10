@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Skeleton } from '../components/ui/Skeleton';
-import { DEFAULT_AVATAR } from '../lib/constants';
 
 export default function AdminDashboard() {
   const { profile } = useAuth();

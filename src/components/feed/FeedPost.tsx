@@ -1,4 +1,4 @@
-import { ShieldCheck, Brain, Syringe, ClipboardList, Dna, HeartPulse, Share2, MessageCircle, Facebook, Instagram, Link2, Check, X } from 'lucide-react';
+import { ShieldCheck, Brain, Syringe, ClipboardList, Dna, HeartPulse, Share2, MessageCircle, Facebook, Instagram, Link2, Check, X, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -26,9 +26,10 @@ type FeedPostProps = {
     youtube_url?: string;
     isLiked?: boolean;
   };
+  onUpdate?: () => void;
 };
 
-export function FeedPost({ post }: FeedPostProps) {
+export function FeedPost({ post, onUpdate }: FeedPostProps) {
   const { user } = useAuth();
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [isSaved, setIsSaved] = useState(false);
@@ -97,7 +98,7 @@ export function FeedPost({ post }: FeedPostProps) {
         });
 
         // Award vitus for supporting health professional
-        if (post.user.isProf) {
+        if (post.user?.isProf) {
           await addVitus(5, 'Apoio à Saúde Profissional');
         }
       } else {
@@ -107,6 +108,7 @@ export function FeedPost({ post }: FeedPostProps) {
           .eq(idField, post.id)
           .eq('user_id', user.id);
       }
+      onUpdate?.();
     } catch (err) {
       console.error('Error toggling like:', err);
       // Revert local state on error
@@ -156,7 +158,7 @@ export function FeedPost({ post }: FeedPostProps) {
           metadata: {
             title: post.caption,
             image_url: post.content,
-            username: post.user.username
+            username: post.user?.username || 'utilizador'
           }
         });
       } else {
@@ -175,7 +177,7 @@ export function FeedPost({ post }: FeedPostProps) {
   };
 
   const shareUrl = `${window.location.origin}/?post=${post.id}`;
-  const shareText = encodeURIComponent(`Confira este post de ${post.user.username} no VIVA+: ${post.caption}`);
+  const shareText = encodeURIComponent(`Confira este post de ${post.user?.username || 'utilizador'} no VIVA+: ${post.caption}`);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -205,15 +207,19 @@ export function FeedPost({ post }: FeedPostProps) {
         
         {/* User Info Overlay - Bottom Right */}
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 md:px-6 md:pb-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-end space-x-3 pointer-events-none">
-           <Link to={`/perfil/${post.user.id}`} className="flex flex-col items-end group pointer-events-auto text-right drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+           <Link to={`/perfil/${post.user?.id}`} className="flex flex-col items-end group pointer-events-auto text-right drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
               <div className="flex items-center space-x-1 mb-0.5">
-                 <span className="text-white font-bold text-sm md:text-base leading-none group-hover:text-emerald-400 transition-colors">{post.user.username}</span>
-                 {post.user.isProf && <ShieldCheck className="w-4 h-4 text-emerald-500 fill-white" />}
+                 <span className="text-white font-bold text-sm md:text-base leading-none group-hover:text-emerald-400 transition-colors">{post.user?.username || 'utilizador'}</span>
+                 {post.user?.isProf && <ShieldCheck className="w-4 h-4 text-emerald-500 fill-white" />}
               </div>
               <span className="text-white/90 text-[10px] font-black uppercase tracking-widest">{post.category}</span>
            </Link>
-           <Link to={`/perfil/${post.user.id}`} className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 border-white overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.6)] pointer-events-auto cursor-pointer active:scale-95 transition-transform group shrink-0">
-              <img src={post.user.avatar} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="" />
+           <Link to={`/perfil/${post.user?.id}`} className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 border-white overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.6)] pointer-events-auto cursor-pointer active:scale-95 transition-transform group shrink-0 bg-gray-50 flex items-center justify-center">
+              {post.user?.avatar ? (
+                <img src={post.user.avatar} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="" />
+              ) : (
+                <User className="w-5 h-5 md:w-7 md:h-7 text-gray-300" />
+              )}
            </Link>
         </div>
         
@@ -367,11 +373,11 @@ export function FeedPost({ post }: FeedPostProps) {
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <Link 
-            to={`/perfil/${post.user.id}`} 
+            to={`/perfil/${post.user?.id}`} 
             className="font-semibold mr-2 hover:text-[#006747] transition-colors inline-block"
             onClick={(e) => e.stopPropagation()}
           >
-            {post.user.username}
+            {post.user?.username || 'utilizador'}
           </Link>
           <span className={cn(isExpanded ? "inline" : "")}>
             {post.caption}
