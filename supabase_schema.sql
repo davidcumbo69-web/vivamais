@@ -19,7 +19,8 @@ create table if not exists profiles (
   is_verified boolean default false,
   is_admin boolean default false,
   xp_level integer default 1,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- 2. Health Groups (Reddit-style interaction)
@@ -115,9 +116,12 @@ create table if not exists health_professionals (
   academic_degree text,
   phone_business text,
   image_url text,
+  professional_image_url text,
+  verification_doc_url text,
   is_verified boolean default false,
   verified_at timestamp with time zone,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- 10. Professional Verification Requests
@@ -132,6 +136,8 @@ create table if not exists professional_verifications (
   workplace_name text,
   workplace_address text,
   image_url text,
+  professional_image_url text,
+  verification_doc_url text,
   status text default 'pending' check (status in ('pending', 'approved', 'rejected')),
   admin_notes text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -493,6 +499,157 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_post_like_change
 AFTER INSERT OR DELETE ON public.likes
 FOR EACH ROW EXECUTE FUNCTION update_post_likes_count();
+
+-- 15. Patients (Professional-Patient Relationship)
+CREATE TABLE IF NOT EXISTS patients (
+  id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  professional_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  status text DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(user_id, professional_id)
+);
+
+ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own patient relationships" ON patients FOR SELECT USING (auth.uid() = user_id OR auth.uid() = professional_id);
+CREATE POLICY "Users can request professional" ON patients FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Professionals can update patient status" ON patients FOR UPDATE USING (auth.uid() = professional_id);
+CREATE POLICY "Users can remove patient relationship" ON patients FOR DELETE USING (auth.uid() = user_id OR auth.uid() = professional_id);
+
+-- 16. Clinical Histories
+CREATE TABLE IF NOT EXISTS clinical_histories (
+  id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  patient_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  professional_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  professional_name text,
+  
+  -- Step 1 fields
+  full_name text,
+  year text,
+  gender text,
+  id_number text,
+  contact text,
+  profession text,
+  marital_status text,
+  address text,
+  
+  -- Step 2 fields
+  main_complaint text,
+  symptoms_start_date date,
+  duration text,
+  pain_intensity integer,
+  detailed_description text,
+  
+  -- Step 3 fields
+  previous_diseases text,
+  surgeries_history text,
+  allergies text,
+  vaccination_status text,
+  smoking_habits text,
+  alcohol_consumption text,
+  habitual_medication text,
+  
+  -- Step 4 fields
+  hereditary_diseases text,
+  
+  -- Step 5 fields
+  weight numeric,
+  height numeric,
+  calculated_imc numeric,
+  temperature numeric,
+  blood_pressure text,
+  heart_rate integer,
+  respiratory_rate integer,
+  spo2 integer,
+  physical_exam_observations text,
+  
+  -- Step 6 fields
+  primary_diagnosis text,
+  secondary_diagnosis text,
+  requested_exams text,
+  clinical_notes text,
+  next_appointment_date date,
+  referral text,
+  
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE clinical_histories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Patients can view own history" ON clinical_histories FOR SELECT USING (auth.uid() = patient_id);
+CREATE POLICY "Professionals can manage history for their patients" ON clinical_histories FOR ALL USING (
+  auth.uid() = professional_id OR 
+  EXISTS (SELECT 1 FROM patients WHERE professional_id = auth.uid() AND user_id = clinical_histories.patient_id AND status = 'accepted')
+);
+
+-- 17. Direct Messages
+CREATE TABLE IF NOT EXISTS direct_messages (
+  id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  sender_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  receiver_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  content text NOT NULL,
+  is_read boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE direct_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view their own messages" ON direct_messages FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+CREATE POLICY "Users can send messages" ON direct_messages FOR INSERT WITH CHECK (auth.uid() = sender_id);
+CREATE POLICY "Users can update is_read status" ON direct_messages FOR UPDATE USING (auth.uid() = receiver_id);
+
+-- 18. Saved Items (Bookmarks)
+CREATE TABLE IF NOT EXISTS saved_items (
+  id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  item_id uuid NOT NULL,
+  item_type text NOT NULL CHECK (item_type IN ('post', 'product', 'service', 'reel', 'message', 'direct_message', 'group_message')),
+  metadata jsonb,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(user_id, item_id, item_type)
+);
+
+ALTER TABLE saved_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own saved items" ON saved_items FOR ALL USING (auth.uid() = user_id);
+
+-- 19. Vitus Transactions
+CREATE TABLE IF NOT EXISTS vitus_transactions (
+  id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  amount integer NOT NULL,
+  reason text NOT NULL,
+  description text,
+  reference_id uuid,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE vitus_transactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view their own transactions" ON vitus_transactions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "System/Admins can manage transactions" ON vitus_transactions FOR ALL USING (
+  auth.uid() = user_id OR 
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
+
+-- 20. Post Videos (Approval System)
+CREATE TABLE IF NOT EXISTS post_videos (
+  id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  youtube_url text,
+  video_url text,
+  thumbnail_url text,
+  caption text,
+  category text,
+  is_approved boolean DEFAULT false,
+  views_count bigint DEFAULT 0,
+  likes_count integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE post_videos ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Approved videos are viewable by everyone" ON post_videos FOR SELECT USING (is_approved = true OR auth.uid() = user_id);
+CREATE POLICY "Users can create videos" ON post_videos FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins can manage all videos" ON post_videos FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
 
 -- Ad Sync and Management
 CREATE TABLE IF NOT EXISTS public.ads (

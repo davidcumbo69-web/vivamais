@@ -818,36 +818,36 @@ export default function Home() {
           )}
 
           {/* Feed Switcher - Instagram Style */}
-          <div className="flex bg-white border border-gray-200 rounded-xl mb-4 mx-4 md:mx-0 overflow-hidden shadow-sm">
+          <div className="flex items-center justify-center space-x-8 mb-6 mx-4 md:mx-0">
              <button 
                 onClick={() => setActiveTab('para_ti')}
                 className={cn(
-                    "flex-1 md:flex-none md:mr-8 py-3 md:py-0 text-sm font-semibold transition-colors relative",
-                    activeTab === 'para_ti' ? "text-black" : "text-gray-400"
+                    "py-2 text-sm font-bold transition-colors relative px-1",
+                    activeTab === 'para_ti' ? "text-[#006747]" : "text-gray-400 hover:text-gray-600"
                 )}
              >
                 Para ti
-                {activeTab === 'para_ti' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-black md:hidden" />}
+                {activeTab === 'para_ti' && <motion.div layoutId="feedTab" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#006747]" />}
              </button>
              <button 
                 onClick={() => setActiveTab('a_seguir')}
                 className={cn(
-                    "flex-1 md:flex-none md:mr-8 py-3 md:py-0 text-sm font-semibold transition-colors relative",
-                    activeTab === 'a_seguir' ? "text-black" : "text-gray-400"
+                    "py-2 text-sm font-bold transition-colors relative px-1",
+                    activeTab === 'a_seguir' ? "text-[#006747]" : "text-gray-400 hover:text-gray-600"
                 )}
              >
                 A seguir
-                {activeTab === 'a_seguir' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-black md:hidden" />}
+                {activeTab === 'a_seguir' && <motion.div layoutId="feedTab" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#006747]" />}
              </button>
              <button 
                 onClick={() => setActiveTab('grupos')}
                 className={cn(
-                    "flex-1 md:flex-none py-3 md:py-0 text-sm font-semibold transition-colors relative",
-                    activeTab === 'grupos' ? "text-black" : "text-gray-400"
+                    "py-2 text-sm font-bold transition-colors relative px-1",
+                    activeTab === 'grupos' ? "text-[#006747]" : "text-gray-400 hover:text-gray-600"
                 )}
              >
                 Grupos
-                {activeTab === 'grupos' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-black md:hidden" />}
+                {activeTab === 'grupos' && <motion.div layoutId="feedTab" className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#006747]" />}
              </button>
           </div>
 
