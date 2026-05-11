@@ -884,27 +884,48 @@ BEGIN
 END;
 $$;
 
--- RPC for public verification
+-- RPC for public verification (Hardened version)
 create or replace function public.get_prescription_by_signature_code(signature_code_in text)
 returns jsonb
 language plpgsql
-security definer -- runs with bypass RLS to allow public validation if code is known
+security definer -- runs with bypass RLS
+set search_path = public
 as $$
 declare
+  p_target_id uuid;
   result jsonb;
 begin
+  -- 1. Encontrar o ID da receita pelo código ou ID (insensível a maiúsculas/minúsculas e espaços)
+  select id into p_target_id
+  from public.prescriptions
+  where (lower(trim(signature_code)) = lower(trim(signature_code_in)) or lower(id::text) = lower(trim(signature_code_in)))
+  limit 1;
+
+  -- 2. Se não encontrou, retorna null
+  if p_target_id is null then
+    return null;
+  end if;
+
+  -- 3. Verificar permissão (apenas garantir que está autenticado)
+  if auth.uid() is null then
+    -- Retornamos um objeto de erro específico para o frontend tratar
+    return jsonb_build_object('error_code', 'UNAUTHORIZED', 'message', 'Você precisa estar logado');
+  end if;
+
+  -- 4. Construir o objeto completo de resposta
+  -- NOTA: Buscamos os itens da tabela vinculada prescription_items via subconsulta aggregada
   select 
     jsonb_build_object(
-      'id', p.id,
-      'signature_code', p.signature_code,
-      'patient_id', p.patient_id,
-      'professional_id', p.professional_id,
-      'professional_name', coalesce(p.professional_name, prof_profile.full_name, 'Profissional Identificado'),
-      'patient_name', coalesce(p.patient_name, pat_profile.full_name, 'Paciente Identificado'),
+      'id', pr.id,
+      'signature_code', pr.signature_code,
+      'patient_id', pr.patient_id,
+      'professional_id', pr.professional_id,
+      'professional_name', coalesce(pr.professional_name, prof_profile.full_name, 'Profissional Identificado'),
+      'patient_name', coalesce(pr.patient_name, pat_profile.full_name, 'Paciente Identificado'),
       'patient_username', pat_profile.username,
       'license_number', hp.license_number,
       'professional_specialty', hp.specialty,
-      'diagnosis', p.diagnosis,
+      'diagnosis', pr.diagnosis,
       'items', (
         select jsonb_agg(
           jsonb_build_object(
@@ -917,18 +938,17 @@ begin
             'color', pi.color,
             'total_units', pi.total_units
           )
-        ) from public.prescription_items pi where pi.prescription_id = p.id
+        ) from public.prescription_items pi where pi.prescription_id = pr.id
       ),
-      'taken_doses', p.taken_doses,
-      'start_date', coalesce(p.start_date, p.created_at::date),
-      'created_at', p.created_at
+      'taken_doses', pr.taken_doses,
+      'start_date', coalesce(pr.start_date, pr.created_at::date),
+      'created_at', pr.created_at
     ) into result
-  from public.prescriptions p
-  left join public.profiles prof_profile on p.professional_id = prof_profile.id
-  left join public.profiles pat_profile on p.patient_id = pat_profile.id
-  left join public.health_professionals hp on p.professional_id = hp.id
-  where (p.signature_code = signature_code_in or p.id::text = signature_code_in)
-  limit 1;
+  from public.prescriptions pr
+  left join public.profiles prof_profile on pr.professional_id = prof_profile.id
+  left join public.profiles pat_profile on pr.patient_id = pat_profile.id
+  left join public.health_professionals hp on pr.professional_id = hp.id
+  where pr.id = p_target_id;
 
   return result;
 end;
@@ -942,6 +962,37 @@ begin
 end;
 $$ language plpgsql security definer;
 
+-- Returns the raw row from prescriptions table
+create or replace function public.get_prescription_by_signature(p_signature_code text)
+returns setof public.prescriptions as $$
+begin
+  return query
+  select * from public.prescriptions p
+  where (lower(trim(p.signature_code)) = lower(trim(p_signature_code)) or lower(p.id::text) = lower(trim(p_signature_code)))
+  and auth.uid() is not null;
+end;
+$$ language plpgsql security definer;
+
+-- Returns a simpler JSON with details
+create or replace function public.get_prescription_details(p_code text)
+returns jsonb as $$
+declare
+  result jsonb;
+begin
+  select 
+    jsonb_build_object(
+      'id', p.id,
+      'patient_name', p.patient_name,
+      'diagnosis', p.diagnosis,
+      'created_at', p.created_at
+    ) into result
+  from public.prescriptions p
+  where (lower(trim(p.signature_code)) = lower(trim(p_code)) or lower(p.id::text) = lower(trim(p_code)))
+  and auth.uid() is not null;
+  return result;
+end;
+$$ language plpgsql security definer;
+
 alter table prescriptions enable row level security;
 
 create policy "Patients can view their own prescriptions"
@@ -952,9 +1003,9 @@ create policy "Professionals can view prescriptions they issued"
 on prescriptions for select
 using (auth.uid() = professional_id);
 
-create policy "Everyone can view a prescription by ID (for verification)"
+create policy "Any authenticated user can view prescriptions"
 on prescriptions for select
-using (true);
+using (auth.uid() is not null);
 
 create policy "Patients can update tracking on their own prescriptions"
 on prescriptions for update

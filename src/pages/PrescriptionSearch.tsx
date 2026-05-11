@@ -27,23 +27,57 @@ export default function PrescriptionSearch() {
     setError(null);
 
     try {
-      // Chamada da RPC no Supabase
+      // 1. Garantir que o usuário está logado antes da chamada
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      console.log('🔍 Debug: Iniciando busca de receita');
+      console.log('👤 Usuário Autenticado:', session?.user?.email || 'Nenhum');
+      console.log('🎫 Código enviado:', cleanCode);
+
+      if (!session) {
+        setError('Você precisa estar autenticado para consultar uma receita.');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Chamada da RPC
       const { data, error: rpcError } = await supabase.rpc('get_prescription_by_signature_code', {
         signature_code_in: cleanCode
       });
 
-      if (rpcError) throw rpcError;
+      console.log('📡 Resposta da RPC (Data):', data);
+      
+      if (rpcError) {
+        console.error('❌ Erro da RPC (Detalhes Completos):', JSON.stringify(rpcError, null, 2));
+        
+        // Tratar erro específico de coluna não encontrada (stale function in DB)
+        if (rpcError.code === '42703') {
+          setError('Erro técnico no servidor (coluna não encontrada). Por favor, contacte o administrador para atualizar as funções SQL.');
+        } else if (rpcError.message.includes('permission')) {
+          setError('Você não tem permissão para visualizar esta receita.');
+        } else {
+          setError(`Erro ao consultar receita: ${rpcError.message}`);
+        }
+        setLoading(false);
+        return;
+      }
 
-      // Se data for null ou um objeto vazio, a receita não existe
-      if (!data || Object.keys(data).length === 0) {
+      // 3. Tratar caso de sucesso mas sem resultado ou com erro de permissão
+      if (!data) {
+        console.warn('⚠️ Receita não encontrada na base de dados.');
         setError('Receita não encontrada. Verifique o código e tente novamente.');
+      } else if ((data as any).error_code === 'UNAUTHORIZED') {
+        console.warn('⛔ Erro de autorização retornado pela RPC');
+        setError('Você precisa estar autenticado para visualizar esta receita.');
       } else {
-        // Redireciona para a página de verificação passando o ID encontrado
+        console.log('✅ Receita encontrada com sucesso! ID:', data.id);
+        // 4. Redireciona para visualizar os detalhes
         navigate(`/verificar-receita/${data.id}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('RPC Error:', err);
-      setError('Código inválido ou erro de conexão com o servidor.');
+      // Tratar erros de rede ou genéricos
+      setError(err.message || 'Código inválido ou erro de conexão com o servidor.');
     } finally {
       setLoading(false);
     }
@@ -79,7 +113,7 @@ export default function PrescriptionSearch() {
                 <input 
                   type="text"
                   value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  onChange={(e) => setCode(e.target.value)}
                   placeholder="Ex: CEDAV-XXXX-..."
                   className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-black focus:ring-2 focus:ring-[#006747]/20 outline-none transition-all"
                 />
