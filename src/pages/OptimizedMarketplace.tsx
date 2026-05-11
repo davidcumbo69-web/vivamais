@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useCallback, memo, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Filter, ShoppingBag, Loader2, Star, Plus } from 'lucide-react';
-import { FixedSizeList as List } from 'react-window';
 import debounce from 'lodash/debounce';
 import { useWellnessServices } from '../hooks/queries/useQueries';
 import { useBookServiceMutation } from '../hooks/mutations/useMutations';

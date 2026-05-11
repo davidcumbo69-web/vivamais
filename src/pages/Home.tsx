@@ -7,6 +7,7 @@ import { PostSkeleton, CommunityCardSkeleton, Skeleton } from '../components/ui/
 import { CreateReelModal } from '../components/feed/CreateReelModal';
 import { FeedPost } from '../components/feed/FeedPost';
 import { cn } from '../lib/utils';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import { 
   ShieldCheck, 
   Plus, 
@@ -778,13 +779,12 @@ export default function Home() {
           {profile?.is_professional && (
             <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-4 shadow-sm mx-4 md:mx-0">
                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center">
-                    {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-5 h-5 text-gray-300" />
-                    )}
-                  </div>
+                  <UserAvatar 
+                    src={profile?.avatar_url} 
+                    alt={profile?.username}
+                    size="sm"
+                    className="border border-gray-100"
+                  />
                   <button 
                     onClick={() => setShowCreateModal(true)}
                     className="flex-1 bg-gray-50 hover:bg-gray-100 text-left px-4 py-2.5 rounded-full text-sm text-gray-400 transition-colors font-medium border border-gray-100"
@@ -1110,13 +1110,12 @@ export default function Home() {
            {/* Current User Info */}
             <Link to="/perfil" className="flex items-center justify-between mb-6 group">
               <div className="flex items-center space-x-3">
-                 <div className="w-11 h-11 rounded-full overflow-hidden border border-gray-100 group-hover:scale-105 transition-transform bg-gray-50 flex items-center justify-center">
-                    {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-6 h-6 text-gray-300" />
-                    )}
-                 </div>
+                 <UserAvatar 
+                   src={profile?.avatar_url} 
+                   alt={profile?.username}
+                   size="md"
+                   className="group-hover:scale-105 transition-transform border border-gray-100"
+                 />
                  <div>
                     <p className="text-sm font-bold leading-none group-hover:text-[#006747] transition-colors">{profile?.username || 'viva_user'}</p>
                     <p className="text-[11px] text-gray-400 mt-1">
@@ -1174,13 +1173,12 @@ export default function Home() {
                 suggestedProfessionals.length > 0 ? suggestedProfessionals.map((sug) => (
                   <div key={sug.id} className="flex justify-between items-center px-1">
                       <Link to={`/perfil/${sug.id}`} className="flex items-center space-x-3 group min-w-0 flex-1">
-                          <div className="w-9 h-9 rounded-full overflow-hidden group-hover:scale-105 transition-transform border border-gray-100 bg-gray-50 flex items-center justify-center shrink-0">
-                              {sug.avatar_url ? (
-                                  <img src={sug.avatar_url} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                  <User className="w-4 h-4 text-gray-300" />
-                              )}
-                          </div>
+                          <UserAvatar 
+                            src={sug.avatar_url} 
+                            alt={sug.username}
+                            size="sm"
+                            className="group-hover:scale-105 transition-transform border border-gray-100 shrink-0"
+                          />
                           <div className="min-w-0">
                               <div className="flex items-center">
                                 <p className="text-sm font-bold leading-none group-hover:text-[#006747] transition-colors truncate">{sug.username}</p>

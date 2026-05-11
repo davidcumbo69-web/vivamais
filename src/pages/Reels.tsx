@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import React from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import { HeartPulse, Brain, Syringe, Music, Share2, ShieldCheck, Plus, Play, Pause, Loader2, Camera, X, User } from 'lucide-react';
 import { useVitus } from '../hooks/useVitus';
 import { useAuth } from '../hooks/useAuth';
@@ -274,13 +275,12 @@ export default function Reels() {
               <div className="flex-1 mr-6">
                 <div className="flex items-center mb-4">
                   <Link to={`/perfil/${reel.user.id}`} className="flex items-center group pointer-events-auto">
-                    <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden mr-3 shadow-lg group-hover:scale-105 transition-transform bg-zinc-800 flex items-center justify-center">
-                      {reel.user.avatar ? (
-                        <img src={reel.user.avatar} className="w-full h-full object-cover" alt="" />
-                      ) : (
-                        <User className="w-5 h-5 text-zinc-500" />
-                      )}
-                    </div>
+                    <UserAvatar 
+                      src={reel.user.avatar} 
+                      alt={reel.user.username}
+                      size="sm"
+                      className="border-2 border-white mr-3 shadow-lg group-hover:scale-105 transition-transform"
+                    />
                     <div className="flex flex-col">
                       <span className="text-white font-bold text-sm flex items-center drop-shadow-md group-hover:text-emerald-400 transition-colors">
                         {reel.user.username}
@@ -332,13 +332,14 @@ export default function Reels() {
                   <Syringe className="w-6 h-6" />
                 </button>
 
-                <button className="w-10 h-10 rounded-xl border-2 border-white/50 overflow-hidden bg-white/20 shadow-lg animate-pulse flex items-center justify-center">
-                  {reel.user.avatar ? (
-                    <img src={reel.user.avatar} className="w-full h-full object-cover" alt="" />
-                  ) : (
-                    <User className="w-5 h-5 text-white/50" />
-                  )}
-                </button>
+                <Link to={`/perfil/${reel.user.id}`} className="w-10 h-10 rounded-xl border-2 border-white/50 overflow-hidden bg-white/20 shadow-lg flex items-center justify-center">
+                  <UserAvatar 
+                    src={reel.user.avatar} 
+                    alt={reel.user.username}
+                    size="xs"
+                    className="rounded-lg shadow-inner"
+                  />
+                </Link>
               </div>
             </div>
           </div>

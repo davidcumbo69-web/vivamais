@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import { 
   Send, 
   Search, 
@@ -528,13 +529,12 @@ export default function Messages() {
                 )}
               >
                 <div className="relative flex-shrink-0">
-                  <div className="w-12 h-12 rounded-full overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center border border-gray-100">
-                    {conv.avatar_url ? (
-                      <img src={conv.avatar_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-6 h-6 text-gray-300" />
-                    )}
-                  </div>
+                  <UserAvatar 
+                    src={conv.avatar_url} 
+                    alt={conv.username}
+                    size="md"
+                    className="shadow-sm border border-gray-100"
+                  />
                   {conv.unread_count > 0 && (
                     <div className="absolute -top-1 -right-1 bg-[#006747] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
                       {conv.unread_count}
@@ -586,13 +586,12 @@ export default function Messages() {
                   <ArrowLeft className="w-5 h-5 text-gray-600" />
                 </button>
                 <Link to={`/perfil/${selectedConversation.user_id}`} className="flex items-center space-x-3 group">
-                   <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center border border-gray-100">
-                      {selectedConversation.avatar_url ? (
-                        <img src={selectedConversation.avatar_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-5 h-5 text-gray-300" />
-                      )}
-                   </div>
+                   <UserAvatar 
+                     src={selectedConversation.avatar_url} 
+                     alt={selectedConversation.username}
+                     size="md"
+                     className="shadow-sm border border-gray-100"
+                   />
                    <div>
                       <div className="flex items-center space-x-1">
                         <h2 className="font-bold text-gray-900 group-hover:text-[#006747] transition-colors line-clamp-1">u/{selectedConversation.username}</h2>

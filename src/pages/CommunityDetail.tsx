@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase, type HealthGroup, type Post } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Header } from '../components/layout/Header';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import { 
   Users, 
   PlusSquare, 
@@ -82,14 +83,13 @@ function GroupMessage({ msg, user, group, onDelete, onReply }: { msg: any, user:
   };
 
   return (
-    <div className="flex space-x-4 group/msg">
-      <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm border border-white shrink-0 bg-gray-50 flex items-center justify-center">
-        {msg.profiles?.avatar_url ? (
-          <img src={msg.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <User className="w-4 h-4 text-gray-300" />
-        )}
-      </div>
+    <div className="flex space-x-4 group/msg text-left">
+      <UserAvatar 
+        src={msg.profiles?.avatar_url} 
+        alt={msg.profiles?.username}
+        size="sm"
+        className="shadow-sm border border-white shrink-0"
+      />
       <div className="bg-white px-5 py-4 rounded-3xl shadow-sm border border-gray-100 flex-1 relative">
         {/* Save button */}
         <button 
@@ -122,7 +122,7 @@ function GroupMessage({ msg, user, group, onDelete, onReply }: { msg: any, user:
         {msg.parent && (
           <div 
             className="mt-2 mb-2 p-2 bg-gray-50 rounded-xl border-l-4 text-xs text-gray-500"
-            style={{ borderLeftColor: group.color || group.theme_color }}
+            style={{ borderLeftColor: group.theme_color || '#006747' }}
           >
              <p className="font-bold mb-1">Reposta a u/{msg.parent.profiles?.username}</p>
              <p className="line-clamp-1 italic">"{msg.parent.content}"</p>
@@ -133,7 +133,7 @@ function GroupMessage({ msg, user, group, onDelete, onReply }: { msg: any, user:
           <button 
             onClick={() => onReply(msg)}
             className="flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded transition-colors"
-            style={{ color: group.color || group.theme_color }}
+            style={{ color: group.theme_color || '#006747' }}
           >
             <Reply className="w-3 h-3" />
             <span>Responder</span>
@@ -1029,13 +1029,13 @@ export default function CommunityDetail() {
                    <div 
                      className="p-6 rounded-3xl shadow-sm border-2 text-left mb-10 relative overflow-hidden"
                      style={{ 
-                       backgroundColor: group.color + '08',
-                       borderColor: group.color
+                       backgroundColor: (group.theme_color || '#006747') + '08',
+                       borderColor: group.theme_color || '#006747'
                      }}
                    >
                       <div 
                         className="absolute top-0 left-0 w-1.5 h-full"
-                        style={{ backgroundColor: group.color }}
+                        style={{ backgroundColor: group.theme_color || '#006747' }}
                       />
                       <div className="flex items-center space-x-3 mb-4">
                          <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center">
@@ -1081,7 +1081,7 @@ export default function CommunityDetail() {
                    {replyingTo && (
                       <div 
                         className="flex items-center justify-between px-4 py-2 rounded-xl"
-                        style={{ backgroundColor: group.color + '15', color: group.color }}
+                        style={{ backgroundColor: (group.theme_color || '#006747') + '15', color: group.theme_color || '#006747' }}
                       >
                          <div className="flex items-center space-x-2 text-xs font-bold">
                             <Reply className="w-3.5 h-3.5" />
@@ -1102,8 +1102,8 @@ export default function CommunityDetail() {
                            placeholder={replyingTo ? "Escreve a tua resposta..." : "Adiciona a tua opinião ao debate..."}
                            className="w-full bg-gray-50 border-2 border-gray-100 rounded-full py-4 px-6 focus:outline-none transition-all font-bold pr-12 text-left"
                            style={{ 
-                             '--tw-ring-color': group.color,
-                             borderColor: newMessage.trim() ? group.color + '40' : undefined 
+                             '--tw-ring-color': group.theme_color || '#006747',
+                             borderColor: newMessage.trim() ? (group.theme_color || '#006747') + '40' : undefined 
                            } as any}
                          />
                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -1115,8 +1115,7 @@ export default function CommunityDetail() {
                         disabled={sendingMessage || !newMessage.trim()}
                         className="text-white p-4 rounded-full shadow-lg disabled:opacity-30 transition-all hover:scale-110 active:scale-95"
                         style={{ 
-                          backgroundColor: group.color,
-                          shadowColor: group.color + '33'
+                          backgroundColor: group.theme_color || '#006747'
                         }}
                       >
                         <Send className="w-6 h-6" />

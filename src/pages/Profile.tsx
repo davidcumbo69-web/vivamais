@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import { 
   Stethoscope,  Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, 
   Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, 
@@ -1163,37 +1164,24 @@ export default function Profile() {
               className="group relative w-14 h-14 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300"
               title="Definições"
             >
-              {/* Organic Intestine Illustration */}
-              <svg viewBox="0 20 100 80" className="w-full h-full drop-shadow-md overflow-visible relative z-10">
-                <defs>
-                  <linearGradient id="intestineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#ffb7b2" />
-                    <stop offset="100%" stopColor="#ff9aa2" />
-                  </linearGradient>
-                </defs>
-                
-                {/* Large Intestine (Stylized outer frame) */}
+              {/* Stylized Intestine Illustration (Black Line Art) */}
+              <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible relative z-10 transition-all duration-300 group-hover:scale-110">
                 <path 
-                  d="M20,35 C15,35 15,75 25,75 L75,75 C85,75 85,35 75,35 L65,35 C60,35 60,40 65,40 L75,40 C80,40 80,70 75,70 L25,70 C20,70 20,40 25,40 L35,40 C40,40 40,35 35,35 Z" 
-                  fill="url(#intestineGrad)" 
-                  stroke="#ff8289" 
-                  strokeWidth="1.5"
-                  className="transition-all duration-700 group-hover:scale-105 group-hover:rotate-2"
-                />
-                
-                {/* Small Intestine (Stylized inner coiling) */}
-                <path 
-                  d="M40,45 C42,40 48,40 50,45 C52,50 58,50 60,45 C65,40 65,55 60,55 C55,55 50,60 50,65 C50,60 45,55 40,55 C35,55 35,45 40,45" 
-                  fill="#ffc1bc" 
-                  stroke="#ff8289" 
-                  strokeWidth="2" 
+                  d="M30,40 C20,40 20,70 30,70 L70,70 C80,70 80,40 70,40 L60,40 C55,40 55,45 60,45 L70,45 C75,45 75,65 70,65 L30,65 C25,65 25,45 30,45 L40,45 C45,45 45,40 40,40 Z" 
+                  fill="none" 
+                  stroke="black" 
+                  strokeWidth="3"
                   strokeLinecap="round"
-                  className="animate-[pulse_4s_ease-in-out_infinite]"
+                  strokeLinejoin="round"
                 />
-                
-                {/* Texture and Organic gloss effect */}
-                <path d="M22,50 Q25,45 28,50" fill="none" stroke="white" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
-                <path d="M72,55 Q75,60 78,55" fill="none" stroke="#ff8289" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
+                <path 
+                  d="M45,52 C47,48 53,48 55,52 C57,56 63,56 65,52 C68,48 68,60 65,60 C60,60 55,65 55,70 C55,65 50,60 45,60 C42,60 42,52 45,52" 
+                  fill="none" 
+                  stroke="black" 
+                  strokeWidth="2.5" 
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
               
               {/* Sub-text or tiny icon removed as requested for a pure drawing */}
@@ -1205,17 +1193,12 @@ export default function Profile() {
       {/* Profile Info Section (Reddit Style) */}
       <div className="flex flex-row items-start px-4 mb-6">
         <div className="relative -mt-12 flex-shrink-0">
-           <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-md overflow-hidden bg-white flex items-center justify-center">
-              {profile.avatar_url ? (
-                  <img 
-                      src={profile.avatar_url} 
-                      className="w-full h-full rounded-full object-cover" 
-                      alt="" 
-                  />
-              ) : (
-                  <UserIcon className="w-1/2 h-1/2 text-gray-200" />
-              )}
-           </div>
+            <UserAvatar 
+              src={profile?.avatar_url} 
+              alt={profile?.username}
+              size="xl"
+              className="border-4 border-white shadow-md relative z-10"
+            />
            {profile.is_professional && (
               <div className="absolute bottom-1 right-1 bg-[#006747] rounded-full p-2 border-4 border-white shadow-sm">
                   <ShieldCheck className="w-4 h-4 text-white fill-current" />
@@ -2669,13 +2652,12 @@ export default function Profile() {
                         <div className="flex items-start">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
-                              <div className="w-6 h-6 rounded-full border border-gray-100 overflow-hidden bg-gray-50">
-                                {review.reviewer?.avatar_url ? (
-                                  <img src={review.reviewer.avatar_url} className="w-full h-full object-cover" alt="" />
-                                ) : (
-                                  <UserIcon className="w-3 h-3 text-gray-200 mt-1 mx-auto" />
-                                )}
-                              </div>
+                              <UserAvatar 
+                                src={review.reviewer?.avatar_url} 
+                                alt={review.reviewer?.username}
+                                size="xs"
+                                className="border border-gray-100"
+                              />
                               <span className="text-xs font-black text-gray-900 leading-none">u/{review.reviewer?.username || 'utilizador'}</span>
                               <span className="text-[10px] text-gray-400 font-bold">• {new Date(review.created_at).toLocaleDateString()}</span>
                             </div>

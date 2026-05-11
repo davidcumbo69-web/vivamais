@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import { 
   ArrowLeft, 
   Users, 
@@ -289,17 +290,12 @@ export default function MyPatients() {
                   >
                     <div className="flex items-center space-x-4 mb-4 sm:mb-0">
                       <Link to={`/perfil/${patient.user_id}`} className="relative group/avatar">
-                        <div className="w-16 h-16 rounded-3xl overflow-hidden shadow-sm group-hover:scale-105 transition-transform bg-gray-50 flex items-center justify-center">
-                          {patient.profiles.avatar_url ? (
-                            <img 
-                              src={patient.profiles.avatar_url} 
-                              className="w-full h-full object-cover" 
-                              alt="" 
-                            />
-                          ) : (
-                            <User className="w-8 h-8 text-gray-300" />
-                          )}
-                        </div>
+                        <UserAvatar 
+                          src={patient.profiles.avatar_url} 
+                          alt={patient.profiles.username}
+                          size="md"
+                          className="rounded-3xl shadow-sm border border-gray-100 group-hover:scale-105 transition-transform"
+                        />
                         <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-xl p-1 border-4 border-white">
                           <CheckCircle2 className="w-3 h-3 text-white" />
                         </div>
@@ -384,17 +380,12 @@ export default function MyPatients() {
                   >
                     <div className="flex items-center space-x-4 mb-4 sm:mb-0">
                       <Link to={`/perfil/${req.user_id}`} className="relative group/avatar">
-                        <div className="w-16 h-16 rounded-3xl overflow-hidden shadow-sm group-hover/avatar:scale-105 transition-transform bg-gray-50 flex items-center justify-center">
-                          {req.profiles.avatar_url ? (
-                            <img 
-                              src={req.profiles.avatar_url} 
-                              className="w-full h-full object-cover" 
-                              alt="" 
-                            />
-                          ) : (
-                            <User className="w-8 h-8 text-gray-300" />
-                          )}
-                        </div>
+                        <UserAvatar 
+                          src={req.profiles.avatar_url} 
+                          alt={req.profiles.username}
+                          size="md"
+                          className="rounded-3xl shadow-sm group-hover/avatar:scale-105 transition-transform"
+                        />
                         <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-xl p-1 border-4 border-white animate-pulse">
                           <Clock className="w-3 h-3 text-white" />
                         </div>
@@ -501,17 +492,12 @@ export default function MyPatients() {
                   <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {/* Identification */}
                     <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-2xl">
-                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow-sm">
-                        {analyzingPatient?.profiles?.avatar_url ? (
-                          <img 
-                            src={analyzingPatient.profiles.avatar_url} 
-                            className="w-full h-full object-cover" 
-                            alt="" 
-                          />
-                        ) : (
-                          <User className="w-5 h-5 text-gray-300" />
-                        )}
-                      </div>
+                      <UserAvatar 
+                        src={analyzingPatient?.profiles?.avatar_url} 
+                        alt={analyzingPatient?.profiles?.username}
+                        size="md"
+                        className="rounded-xl shadow-sm bg-white"
+                      />
                       <div>
                         <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Paciente</p>
                         <p className="text-sm font-black text-gray-900">{analyzingPatient?.profiles?.full_name}</p>

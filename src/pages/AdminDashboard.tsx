@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase, type ProfessionalVerification, type Post } from '../lib/supabase';
+import { supabase, type ProfessionalVerification, type Post, type PostVideo, type Reel } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Header } from '../components/layout/Header';
 import { 
@@ -28,8 +28,8 @@ import { Skeleton } from '../components/ui/Skeleton';
 export default function AdminDashboard() {
   const { profile } = useAuth();
   const [requests, setRequests] = useState<ProfessionalVerification[]>([]);
-  const [pendingReels, setPendingReels] = useState<Post[]>([]);
-  const [pendingVideos, setPendingVideos] = useState<Post[]>([]);
+  const [pendingReels, setPendingReels] = useState<Reel[]>([]);
+  const [pendingVideos, setPendingVideos] = useState<PostVideo[]>([]);
   const [ads, setAds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

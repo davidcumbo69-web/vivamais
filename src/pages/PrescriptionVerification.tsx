@@ -45,6 +45,7 @@ interface Prescription {
   diagnosis: string;
   items: PrescriptionItem[];
   created_at: string;
+  start_date?: string;
   signature_code: string;
   patient_id: string;
   professional_id: string;
@@ -53,7 +54,7 @@ interface Prescription {
   license_number: string;
   patient_name: string;
   patient_username: string;
-  taken_doses?: Record<string, boolean>;
+  taken_doses?: Record<string, string | boolean>;
 }
 
 export default function DigitalPrescriptionView() {
@@ -645,7 +646,7 @@ export default function DigitalPrescriptionView() {
                                       w-4 h-4 rounded-full flex items-center justify-center transition-all active:scale-95 group/dot relative
                                       ${isTaken ? 'opacity-30' : 'opacity-100 hover:scale-110'}
                                     `}
-                                    title={isTaken ? `Tomado às ${new Date(isTaken as string).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}` : `Marcar como tomado (${hour}:00)`}
+                                    title={isTaken ? `Tomado às ${new Date(String(isTaken)).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}` : `Marcar como tomado (${hour}:00)`}
                                   >
                                     {isTaken ? (
                                       <Check className="w-2.5 h-2.5 text-white stroke-[4]" />
@@ -656,7 +657,7 @@ export default function DigitalPrescriptionView() {
                                     {/* Tooltip for taken time */}
                                     {isTaken && (
                                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-[8px] rounded opacity-0 group-hover/dot:opacity-100 transition-opacity whitespace-nowrap z-10 font-black uppercase">
-                                        Tomado {new Date(isTaken as string).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                                        Tomado {new Date(String(isTaken)).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                                       </div>
                                     )}
                                   </button>

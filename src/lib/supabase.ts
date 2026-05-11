@@ -54,6 +54,7 @@ export type Profile = {
   specialty?: string;
   license_number?: string;
   is_verified: boolean;
+  is_premium: boolean;
   xp_level: number;
   created_at: string;
 };
@@ -135,6 +136,17 @@ export type PostVideo = {
   category: string;
   is_approved: boolean;
   likes_count: number;
+  created_at: string;
+  profiles?: Profile;
+};
+
+export type Reel = {
+  id: string;
+  user_id: string;
+  video_url: string;
+  caption?: string;
+  likes_count: number;
+  is_approved: boolean;
   created_at: string;
   profiles?: Profile;
 };
