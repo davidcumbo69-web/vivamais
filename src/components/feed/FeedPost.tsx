@@ -1,9 +1,8 @@
-import { ShieldCheck, Brain, Syringe, ClipboardList, Dna, HeartPulse, Share2, MessageCircle, Facebook, Instagram, Link2, Check, X } from 'lucide-react';
-import { UserAvatar } from '../ui/UserAvatar';
+import { ShieldCheck, Brain, Syringe, ClipboardList, Dna, HeartPulse, Share2, MessageCircle, Facebook, Instagram, Link2, Check, X, CircleUser } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { cn } from '../../lib/utils';
+import { cn, sanitizeAvatarUrl } from '../../lib/utils';
 import { useVitus } from '../../hooks/useVitus';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
@@ -39,6 +38,8 @@ export function FeedPost({ post, onUpdate }: FeedPostProps) {
   const [copied, setCopied] = useState(false);
   const [likeCount, setLikeCount] = useState(typeof post.likes === 'number' ? post.likes : 0);
   const { addVitus } = useVitus();
+
+  const sanitizedAvatar = sanitizeAvatarUrl(post.user?.avatar);
 
   useEffect(() => {
     if (user) {
@@ -215,13 +216,12 @@ export function FeedPost({ post, onUpdate }: FeedPostProps) {
               </div>
               <span className="text-white/90 text-[10px] font-black uppercase tracking-widest">{post.category}</span>
            </Link>
-           <Link to={`/perfil/${post.user?.id}`} className="shrink-0 pointer-events-auto cursor-pointer active:scale-95 transition-transform group">
-              <UserAvatar 
-                src={post.user?.avatar} 
-                alt={post.user?.username}
-                size="lg"
-                className="border-2 border-white shadow-[0_4px_20px_rgba(0,0,0,0.6)]"
-              />
+           <Link to={`/perfil/${post.user?.id}`} className="w-10 h-10 md:w-14 md:h-14 rounded-full border-2 border-white overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.6)] pointer-events-auto cursor-pointer active:scale-95 transition-transform group shrink-0 bg-gray-50 flex items-center justify-center">
+              {sanitizedAvatar ? (
+                <img src={sanitizedAvatar} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="" />
+              ) : (
+                <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
+              )}
            </Link>
         </div>
         

@@ -20,8 +20,9 @@ import {
   Image as ImageIcon,
   Trash2,
   Layout,
-  User
+  CircleUser
 } from 'lucide-react';
+import { sanitizeAvatarUrl } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { Skeleton } from '../components/ui/Skeleton';
 
@@ -510,10 +511,10 @@ export default function AdminDashboard() {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center">
-                          {req.image_url || req.profiles?.avatar_url ? (
+                          {sanitizeAvatarUrl(req.image_url || req.profiles?.avatar_url) ? (
                             <img src={req.image_url || req.profiles?.avatar_url} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <User className="w-6 h-6 text-gray-300" />
+                            <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
                           )}
                         </div>
                         <div>
@@ -609,10 +610,10 @@ export default function AdminDashboard() {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center">
-                          {video.profiles?.avatar_url ? (
+                          {sanitizeAvatarUrl(video.profiles?.avatar_url) ? (
                             <img src={video.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <User className="w-6 h-6 text-gray-300" />
+                            <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
                           )}
                         </div>
                         <div>
@@ -710,14 +711,14 @@ export default function AdminDashboard() {
                       <div className="p-4 flex flex-col flex-1">
                          <div className="flex items-center space-x-3 mb-4">
                             <div className="w-10 h-10 rounded-full border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
-                               {reel.profiles?.avatar_url ? (
+                               {sanitizeAvatarUrl(reel.profiles?.avatar_url) ? (
                                    <img 
                                      src={reel.profiles.avatar_url} 
                                      className="w-full h-full object-cover" 
                                      alt="" 
                                    />
                                ) : (
-                                   <User className="w-5 h-5 text-gray-300" />
+                                   <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
                                )}
                             </div>
                         <div>

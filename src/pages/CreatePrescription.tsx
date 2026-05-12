@@ -12,7 +12,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Stethoscope,
-  User,
+  CircleUser,
   ShieldCheck,
   ChevronDown,
   ArrowLeft,
@@ -20,6 +20,7 @@ import {
   Check
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { sanitizeAvatarUrl } from '../lib/utils';
 import { Skeleton } from '../components/ui/Skeleton';
 import { motion } from 'motion/react';
 import jsPDF from 'jspdf';
@@ -868,8 +869,12 @@ export default function CreatePrescription() {
           <div className="bg-[#1A1A1B] border border-[#343536] rounded p-4">
             <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Integridade do Paciente</h4>
             <div className="flex items-center space-x-4 mb-4">
-              <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-500">
-                <User className="w-6 h-6" />
+              <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-white/10">
+                {sanitizeAvatarUrl(patientData?.avatar_url) ? (
+                  <img src={sanitizeAvatarUrl(patientData.avatar_url)!} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <CircleUser className="w-full h-full text-black stroke-[1px] p-2 bg-white" />
+                )}
               </div>
               <div>
                 <p className="text-xs font-bold text-white">{patientData?.full_name}</p>

@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { UserAvatar } from '../components/ui/UserAvatar';
 import { 
   ShieldCheck, 
   Search, 
   Filter, 
-  User, 
+  CircleUser, 
   ChevronRight, 
   MapPin, 
   Star,
@@ -15,6 +14,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { cn, sanitizeAvatarUrl } from '../lib/utils';
 
 export default function Professionals() {
   const { user } = useAuth();
@@ -170,12 +170,13 @@ export default function Professionals() {
                   </div>
 
                   <div className="flex flex-col items-center mb-4">
-                    <UserAvatar 
-                      src={prof.avatar_url} 
-                      alt={prof.username}
-                      size="lg"
-                      className="rounded-2xl shadow-md border-2 border-white mb-3 group-hover:scale-110 transition-transform duration-500 shrink-0"
-                    />
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-md border-2 border-white bg-gray-50 flex items-center justify-center mb-3">
+                      {sanitizeAvatarUrl(prof.avatar_url) ? (
+                        <img src={sanitizeAvatarUrl(prof.avatar_url)!} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      ) : (
+                        <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
+                      )}
+                    </div>
                     <div className="text-center">
                        <div className="flex items-center justify-center space-x-1">
                           <h3 className="font-black text-gray-900 text-sm tracking-tight group-hover:text-[#006747] transition-colors">{prof.username}</h3>

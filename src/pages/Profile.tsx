@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserAvatar } from '../components/ui/UserAvatar';
 import { 
-  Stethoscope,  Dna, ClipboardList, UserCircle as UserIcon, ShieldCheck, 
+  Stethoscope, CircleUser, Dna, ClipboardList, ShieldCheck, 
   Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, 
   ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, 
   Film, Play, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, 
@@ -18,7 +17,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase, type HealthProfessional, type HealthGroup } from '../lib/supabase';
 import CreateCommunityModal from '../components/modals/CreateCommunityModal';
 import { FeedPost } from '../components/feed/FeedPost';
-import { cn } from '../lib/utils';
+import { cn, sanitizeAvatarUrl } from '../lib/utils';
 import { geminiService, AIEvolutionResult, AIMedicationSafetyResult } from '../services/geminiService';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -79,7 +78,13 @@ function ServiceCard({ svc, user, isOwner, onEdit, onDelete }: { svc: any, user:
         className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0 cursor-pointer"
         onClick={() => navigate(`/marketplace/service/${svc.id}`)}
       >
-        <img src={svc.image_url || 'https://images.unsplash.com/photo-1576091160550-2173599bd14e?auto=format&fit=crop&q=80&w=200'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+        {svc.image_url ? (
+          <img src={svc.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-emerald-50">
+            <Stethoscope className="w-8 h-8 text-[#006747]/20" />
+          </div>
+        )}
       </div>
       <div 
         className="flex-1 min-w-0 cursor-pointer"
@@ -1132,7 +1137,7 @@ export default function Profile() {
   if (!profile) {
     return (
       <div className="h-screen flex flex-col items-center justify-center">
-        <UserIcon className="w-16 h-16 text-gray-200 mb-4" />
+        <CircleUser className="w-16 h-16 text-black stroke-[1px] mb-4" />
         <h2 className="text-xl font-bold text-gray-900">Utilizador não encontrado</h2>
         <Link to="/" className="mt-4 text-[#006747] font-bold">Voltar ao Início</Link>
       </div>
@@ -1193,12 +1198,17 @@ export default function Profile() {
       {/* Profile Info Section (Reddit Style) */}
       <div className="flex flex-row items-start px-4 mb-6">
         <div className="relative -mt-12 flex-shrink-0">
-            <UserAvatar 
-              src={profile?.avatar_url} 
-              alt={profile?.username}
-              size="xl"
-              className="border-4 border-white shadow-md relative z-10"
-            />
+           <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-md overflow-hidden bg-white flex items-center justify-center">
+              {sanitizeAvatarUrl(profile.avatar_url) ? (
+                  <img 
+                      src={sanitizeAvatarUrl(profile.avatar_url)!} 
+                      className="w-full h-full rounded-full object-cover" 
+                      alt="" 
+                  />
+              ) : (
+                  <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
+              )}
+           </div>
            {profile.is_professional && (
               <div className="absolute bottom-1 right-1 bg-[#006747] rounded-full p-2 border-4 border-white shadow-sm">
                   <ShieldCheck className="w-4 h-4 text-white fill-current" />
@@ -1345,7 +1355,7 @@ export default function Profile() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
               <div className="w-6 h-6 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <UserIcon className="w-3 h-3 text-[#006747]" />
+                <CircleUser className="w-3 h-3 text-black stroke-[1px]" />
               </div>
               <span className="text-[10px] font-black text-[#006747] uppercase tracking-widest">Completude do Perfil</span>
             </div>
@@ -1419,7 +1429,8 @@ export default function Profile() {
                       className="w-full h-full object-cover"
                       alt="" 
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop';
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).parentElement!.style.backgroundColor = '#111';
                       }}
                     />
                   </button>
@@ -2652,12 +2663,13 @@ export default function Profile() {
                         <div className="flex items-start">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
-                              <UserAvatar 
-                                src={review.reviewer?.avatar_url} 
-                                alt={review.reviewer?.username}
-                                size="xs"
-                                className="border border-gray-100"
-                              />
+                              <div className="w-6 h-6 rounded-full border border-gray-100 overflow-hidden bg-gray-50">
+                                {review.reviewer?.avatar_url ? (
+                                  <img src={review.reviewer.avatar_url} className="w-full h-full object-cover" alt="" />
+                                ) : (
+                                  <CircleUser className="w-3 h-3 text-black stroke-[1px] mt-1 mx-auto" />
+                                )}
+                              </div>
                               <span className="text-xs font-black text-gray-900 leading-none">u/{review.reviewer?.username || 'utilizador'}</span>
                               <span className="text-[10px] text-gray-400 font-bold">• {new Date(review.created_at).toLocaleDateString()}</span>
                             </div>

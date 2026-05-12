@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, type Profile } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
+import { sanitizeAvatarUrl } from '../lib/utils';
 
 type AuthContextType = {
   user: User | null;
@@ -24,8 +25,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single();
 
-    if (!error) {
-      setProfile(data);
+    if (!error && data) {
+      // Sanitizar avatar se for mock
+      const sanitizedData = {
+        ...data,
+        avatar_url: sanitizeAvatarUrl(data.avatar_url)
+      };
+      setProfile(sanitizedData);
     }
   };
 

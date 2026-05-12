@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Film, ShieldCheck, Play, Plus, User } from 'lucide-react';
+import { Film, ShieldCheck, Play, Plus, CircleUser } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { cn } from '../../lib/utils';
+import { cn, sanitizeAvatarUrl } from '../../lib/utils';
 import { Skeleton } from '../ui/Skeleton';
 
 interface ReelsCarouselProps {
@@ -120,10 +120,10 @@ export function ReelsCarousel({ onAddClick }: ReelsCarouselProps) {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-2">
               <div className="flex items-center space-x-1 mb-1">
                 <div className="w-4 h-4 rounded-full border border-white/50 overflow-hidden bg-gray-100 flex items-center justify-center">
-                   {reel.profiles?.avatar_url ? (
-                     <img src={reel.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                   {sanitizeAvatarUrl(reel.profiles?.avatar_url) ? (
+                     <img src={sanitizeAvatarUrl(reel.profiles.avatar_url)!} alt="" className="w-full h-full object-cover" />
                    ) : (
-                     <User className="w-2 h-2 text-gray-400" />
+                     <CircleUser className="w-full h-full text-black stroke-[1px] p-0.5" />
                    )}
                 </div>
                 <span className="text-[8px] text-white font-bold truncate max-w-[60px] drop-shadow-sm">

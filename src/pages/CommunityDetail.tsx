@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase, type HealthGroup, type Post } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Header } from '../components/layout/Header';
-import { UserAvatar } from '../components/ui/UserAvatar';
 import { 
   Users, 
   PlusSquare, 
@@ -26,13 +25,13 @@ import {
   MoreHorizontal,
   ClipboardList,
   Play,
-  User,
+  CircleUser,
 } from 'lucide-react';
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { FeedPost } from '../components/feed/FeedPost';
 import { TopicSkeleton, VideoThumbnailSkeleton, Skeleton } from '../components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, sanitizeAvatarUrl } from '../lib/utils';
 
 function GroupMessage({ msg, user, group, onDelete, onReply }: { msg: any, user: any, group: any, onDelete: (id: string) => void, onReply: (msg: any) => void, key?: any }) {
   const [isSaved, setIsSaved] = useState(false);
@@ -83,13 +82,14 @@ function GroupMessage({ msg, user, group, onDelete, onReply }: { msg: any, user:
   };
 
   return (
-    <div className="flex space-x-4 group/msg text-left">
-      <UserAvatar 
-        src={msg.profiles?.avatar_url} 
-        alt={msg.profiles?.username}
-        size="sm"
-        className="shadow-sm border border-white shrink-0"
-      />
+    <div className="flex space-x-4 group/msg">
+      <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm border border-white shrink-0 bg-gray-50 flex items-center justify-center">
+        {sanitizeAvatarUrl(msg.profiles?.avatar_url) ? (
+          <img src={sanitizeAvatarUrl(msg.profiles.avatar_url)!} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <CircleUser className="w-full h-full text-black stroke-[1px] p-1" />
+        )}
+      </div>
       <div className="bg-white px-5 py-4 rounded-3xl shadow-sm border border-gray-100 flex-1 relative">
         {/* Save button */}
         <button 
@@ -674,7 +674,8 @@ export default function CommunityDetail() {
                       className="w-full h-full object-cover"
                       alt="" 
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop';
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).parentElement!.style.backgroundColor = '#111';
                       }}
                     />
                   </button>
@@ -740,10 +741,10 @@ export default function CommunityDetail() {
                             <div className="flex items-center space-x-4 mt-4">
                                <div className="flex items-center space-x-1">
                                   <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-50 flex items-center justify-center">
-                                     {topic.profiles?.avatar_url ? (
-                                       <img src={topic.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                                     {sanitizeAvatarUrl(topic.profiles?.avatar_url) ? (
+                                       <img src={sanitizeAvatarUrl(topic.profiles.avatar_url)!} alt="" className="w-full h-full object-cover" />
                                      ) : (
-                                       <User className="w-3 h-3 text-gray-300" />
+                                       <CircleUser className="w-full h-full text-black stroke-[1px] p-1" />
                                      )}
                                   </div>
                                   <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Por {topic.profiles?.username}</span>
@@ -821,10 +822,10 @@ export default function CommunityDetail() {
                        {group.creator && (
                         <div className="flex items-center space-x-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
                            <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-gray-50 flex items-center justify-center">
-                              {group.creator.avatar_url ? (
-                                <img src={group.creator.avatar_url} className="w-full h-full object-cover" alt="" />
+                              {sanitizeAvatarUrl(group.creator.avatar_url) ? (
+                                <img src={sanitizeAvatarUrl(group.creator.avatar_url)!} className="w-full h-full object-cover" alt="" />
                               ) : (
-                                <User className="w-3 h-3 text-gray-300" />
+                                <CircleUser className="w-full h-full text-black stroke-[1px] p-1" />
                               )}
                            </div>
                            <span className="text-[10px] text-[#006747] font-bold">Criado por {group.creator.username}</span>
@@ -1039,10 +1040,10 @@ export default function CommunityDetail() {
                       />
                       <div className="flex items-center space-x-3 mb-4">
                          <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center">
-                            {selectedTopic.profiles?.avatar_url ? (
-                              <img src={selectedTopic.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                            {sanitizeAvatarUrl(selectedTopic.profiles?.avatar_url) ? (
+                              <img src={sanitizeAvatarUrl(selectedTopic.profiles.avatar_url)!} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <User className="w-5 h-5 text-gray-300" />
+                              <CircleUser className="w-full h-full text-black stroke-[1px] p-1.5" />
                             )}
                          </div>
                          <div>

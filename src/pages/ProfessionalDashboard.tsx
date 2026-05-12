@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, type WellnessService, type Booking, type Profile } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { UserAvatar } from '../components/ui/UserAvatar';
 import { 
   Stethoscope, 
   Plus, 
@@ -27,11 +26,11 @@ import {
   BarChart3,
   LineChart as LineChartIcon,
   HeartPulse as HeartPulseIcon,
-  User,
+  CircleUser,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { cn } from '../lib/utils';
+import { cn, sanitizeAvatarUrl } from '../lib/utils';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Header } from '../components/layout/Header';
 import { 
@@ -634,12 +633,13 @@ export default function ProfessionalDashboard() {
                                         className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#006747]/20 transition-all"
                                     >
                                         <div className="flex items-center space-x-4">
-                                            <UserAvatar 
-                                              src={bk.patient?.avatar_url} 
-                                              alt={bk.patient?.username}
-                                              size="md"
-                                              className="border border-gray-100"
-                                            />
+                                            <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden">
+                                                {sanitizeAvatarUrl(bk.patient?.avatar_url) ? (
+                                                    <img src={sanitizeAvatarUrl(bk.patient.avatar_url)!} className="w-full h-full object-cover" alt="" />
+                                                ) : (
+                                                    <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
+                                                )}
+                                            </div>
                                             <div>
                                                 <h4 className="font-bold text-gray-900">{bk.patient?.full_name || bk.patient?.username}</h4>
                                                 <p className="text-xs text-[#006747] font-bold uppercase">{bk.service?.name}</p>
@@ -763,12 +763,13 @@ export default function ProfessionalDashboard() {
                                         <tr key={bk.id} className="hover:bg-gray-50/30 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center space-x-3">
-                                                    <UserAvatar 
-                                                      src={bk.patient?.avatar_url} 
-                                                      alt={bk.patient?.username}
-                                                      size="sm"
-                                                      className="border border-gray-50"
-                                                    />
+                                                    <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
+                                                        {sanitizeAvatarUrl(bk.patient?.avatar_url) ? (
+                                                          <img src={sanitizeAvatarUrl(bk.patient.avatar_url)!} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                          <CircleUser className="w-full h-full text-black stroke-[1px] p-1.5" />
+                                                        )}
+                                                    </div>
                                                     <span className="font-bold text-sm text-gray-900">{bk.patient?.full_name || bk.patient?.username}</span>
                                                 </div>
                                             </td>

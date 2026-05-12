@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { UserAvatar } from '../components/ui/UserAvatar';
 import { 
   Send, 
   Search, 
   MoreVertical, 
   MessageSquare, 
-  User, 
+  CircleUser, 
   Loader2, 
   ArrowLeft,
   ChevronRight,
@@ -18,7 +17,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { cn } from '../lib/utils';
+import { cn, sanitizeAvatarUrl } from '../lib/utils';
 import { Skeleton, MessageItemSkeleton } from '../components/ui/Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
 // PrescriptionModal removed in favor of full page navigation
@@ -529,12 +528,13 @@ export default function Messages() {
                 )}
               >
                 <div className="relative flex-shrink-0">
-                  <UserAvatar 
-                    src={conv.avatar_url} 
-                    alt={conv.username}
-                    size="md"
-                    className="shadow-sm border border-gray-100"
-                  />
+                  <div className="w-12 h-12 rounded-full overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center border border-gray-100">
+                    {sanitizeAvatarUrl(conv.avatar_url) ? (
+                      <img src={sanitizeAvatarUrl(conv.avatar_url)!} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
+                    )}
+                  </div>
                   {conv.unread_count > 0 && (
                     <div className="absolute -top-1 -right-1 bg-[#006747] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
                       {conv.unread_count}
@@ -561,7 +561,7 @@ export default function Messages() {
           ) : (
             <div className="p-12 text-center">
               <div className="w-16 h-16 bg-gray-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                <User className="w-8 h-8 text-gray-200" />
+                <CircleUser className="w-8 h-8 text-black stroke-[1px] p-1.5" />
               </div>
               <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Sem Conversas</p>
             </div>
@@ -586,12 +586,13 @@ export default function Messages() {
                   <ArrowLeft className="w-5 h-5 text-gray-600" />
                 </button>
                 <Link to={`/perfil/${selectedConversation.user_id}`} className="flex items-center space-x-3 group">
-                   <UserAvatar 
-                     src={selectedConversation.avatar_url} 
-                     alt={selectedConversation.username}
-                     size="md"
-                     className="shadow-sm border border-gray-100"
-                   />
+                   <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center border border-gray-100">
+                      {sanitizeAvatarUrl(selectedConversation.avatar_url) ? (
+                        <img src={sanitizeAvatarUrl(selectedConversation.avatar_url)!} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <CircleUser className="w-full h-full text-black stroke-[1px] p-1.5" />
+                      )}
+                   </div>
                    <div>
                       <div className="flex items-center space-x-1">
                         <h2 className="font-bold text-gray-900 group-hover:text-[#006747] transition-colors line-clamp-1">u/{selectedConversation.username}</h2>

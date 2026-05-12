@@ -14,6 +14,7 @@ import {
   MapPin,
   Euro,
   User,
+  CircleUser,
   LayoutDashboard,
   CalendarCheck2,
   ClipboardList,
@@ -22,7 +23,7 @@ import {
 import { AdCarousel } from '../components/ads/AdCarousel';
 import { useVitus } from '../hooks/useVitus';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, sanitizeAvatarUrl } from '../lib/utils';
 import { Skeleton } from '../components/ui/Skeleton';
 
 function AppointmentCard({ svc, user, onClick }: { svc: any, user: any, onClick: () => void, key?: any }) {
@@ -86,16 +87,16 @@ function AppointmentCard({ svc, user, onClick }: { svc: any, user: any, onClick:
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-4">
           <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-[#006747]">
-            {svc.provider?.avatar_url ? (
-              <img src={svc.provider.avatar_url} className="w-full h-full rounded-2xl object-cover" alt="" />
+            {sanitizeAvatarUrl(svc.provider?.avatar_url) ? (
+              <img src={sanitizeAvatarUrl(svc.provider.avatar_url)!} className="w-full h-full rounded-2xl object-cover" alt="" />
             ) : (
-              <Stethoscope className="w-7 h-7" />
+              <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
             )}
           </div>
           <div>
             <h3 className="font-black text-lg text-gray-900 group-hover:text-[#006747] transition-colors">{svc.name}</h3>
             <p className="text-xs text-gray-400 font-bold flex items-center uppercase tracking-wider">
-              <User className="w-3 h-3 mr-1" />
+              <CircleUser className="w-3 h-3 mr-1 text-black stroke-[1px]" />
               {svc.provider_name}
             </p>
           </div>

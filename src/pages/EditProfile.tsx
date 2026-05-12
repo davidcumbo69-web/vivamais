@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, User, MapPin, Calendar, CreditCard, Heart } from 'lucide-react';
+import { ArrowLeft, Save, CircleUser, MapPin, Calendar, CreditCard, Heart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useAlert } from '../hooks/useAlert';
@@ -100,7 +100,7 @@ export default function EditProfile() {
           {/* Informação Básica */}
           <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-gray-100">
             <div className="flex items-center space-x-2 text-[#006747] mb-6 font-bold uppercase text-[10px] tracking-widest">
-              <User className="w-4 h-4" />
+              <CircleUser className="w-4 h-4 text-black stroke-[1px]" />
               <span>Dados Pessoais</span>
             </div>
             

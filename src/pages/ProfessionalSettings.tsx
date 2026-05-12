@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { UserAvatar } from '../components/ui/UserAvatar';
 import { BadgeCheck, Stethoscope, FileText, CheckCircle2, AlertCircle, Camera, Building2, GraduationCap, MapPin, Phone, XCircle, Clock, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Header } from '../components/layout/Header';

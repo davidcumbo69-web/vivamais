@@ -158,7 +158,7 @@ create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, username, full_name, avatar_url, email)
-  values (new.id, split_part(new.email, '@', 1), new.raw_user_meta_data->>'full_name', 'https://api.dicebear.com/7.x/avataaars/svg?seed=' || new.id || '&backgroundColor=b6e3f4', new.email);
+  values (new.id, split_part(new.email, '@', 1), new.raw_user_meta_data->>'full_name', null, new.email);
   return new;
 end;
 $$ language plpgsql security definer;
