@@ -1211,12 +1211,12 @@ export default function Profile() {
            </div>
            {profile.is_professional && (
               <div className="absolute -inset-x-12 -top-10 -bottom-20 z-20 pointer-events-none flex items-center justify-center">
-                <svg viewBox="0 0 120 160" className="w-[95%] h-[95%] md:w-[135%] md:h-[135%] drop-shadow-xl overflow-visible">
+                <svg viewBox="0 0 120 160" className="w-[95%] h-[95%] drop-shadow-xl overflow-visible">
                   {/* Framing tubes - forming a heart-like curvature framing the bottom and sides */}
                   <path 
-                    d="M 30 65 
-                       C 30 100, 55 110, 60 110 
-                       S 90 100, 90 65" 
+                    d="M 26 65 
+                       C 26 100, 55 112, 60 112 
+                       S 94 100, 94 65" 
                     fill="none" 
                     stroke="#006747" 
                     strokeWidth="2.2" 
@@ -1224,14 +1224,14 @@ export default function Profile() {
                   />
                   
                   {/* Olivas (Ear tips) - grey pods at the center sides of the avatar */}
-                  <rect x="27" y="59" width="6" height="12" rx="3" fill="#E5E7EB" stroke="#004d35" strokeWidth="0.6" />
-                  <rect x="87" y="59" width="6" height="12" rx="3" fill="#E5E7EB" stroke="#004d35" strokeWidth="0.6" />
+                  <rect x="23" y="59" width="6" height="12" rx="3" fill="#E5E7EB" stroke="#004d35" strokeWidth="0.6" />
+                  <rect x="91" y="59" width="6" height="12" rx="3" fill="#E5E7EB" stroke="#004d35" strokeWidth="0.6" />
                   
                   {/* Bottom wire - mirrored to the left but more compact (junction -> down -> shallow curve left -> end) */}
                   <path 
-                    d="M 60 110 
-                       L 60 122 
-                       C 60 135, 35 135, 35 122" 
+                    d="M 60 112 
+                       L 60 124 
+                       C 60 137, 35 137, 35 124" 
                     fill="none" 
                     stroke="#006747" 
                     strokeWidth="2.4" 
@@ -1239,7 +1239,7 @@ export default function Profile() {
                   />
                   
                   {/* Chest piece (Diaphragm) - positioned at the end of the left-curved wire */}
-                  <g transform="translate(35, 122)">
+                  <g transform="translate(35, 124)">
                     <circle r="7" fill="#374151" stroke="white" strokeWidth="1.2" />
                     <circle r="4" fill="#D1D5DB" stroke="#374151" strokeWidth="0.5" />
                   </g>
