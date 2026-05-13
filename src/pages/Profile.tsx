@@ -1161,7 +1161,7 @@ export default function Profile() {
       <AdCarousel location="profiles" category={profile?.specialty || 'Geral'} className="mb-4" />
       
       {/* Header */}
-      <div className="flex items-center justify-end -mt-8 relative z-20 px-4">
+      <div className="flex items-center justify-end mt-2 relative z-20 px-4">
         <div className="flex items-center space-x-4">
           {isOwnProfile && (
             <Link 
@@ -1197,8 +1197,8 @@ export default function Profile() {
 
       {/* Profile Info Section (Reddit Style) */}
       <div className="flex flex-row items-start px-4 mb-6">
-        <div className="relative -mt-4 md:-mt-12 flex-shrink-0">
-           <div className="w-20 h-20 md:w-32 md:h-32 rounded-full border-4 border-white shadow-md overflow-hidden bg-white flex items-center justify-center">
+        <div className="relative mt-4 flex-shrink-0">
+           <div className="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden bg-white flex items-center justify-center">
               {sanitizeAvatarUrl(profile.avatar_url) ? (
                   <img 
                       src={sanitizeAvatarUrl(profile.avatar_url)!} 

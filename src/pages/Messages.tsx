@@ -484,7 +484,7 @@ export default function Messages() {
 
   return (
     <div className={cn(
-      "h-[calc(100vh-64px)] md:h-screen bg-gray-50 flex flex-col md:flex-row overflow-hidden",
+      "h-[calc(100vh-64px)] md:h-screen bg-[#dae0e6] flex flex-col md:flex-row overflow-hidden",
       selectedConversation ? "h-screen" : ""
     )}>
       {/* Conversations List */}

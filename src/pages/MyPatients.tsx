@@ -171,7 +171,7 @@ export default function MyPatients() {
   if (authLoading) return null;
 
   return (
-    <div className="pb-20 min-h-screen bg-[#f8fafc]">
+    <div className="pb-20 min-h-screen bg-[#dae0e6]">
       <Header />
       
       <div className="max-w-4xl mx-auto pt-6 px-4">

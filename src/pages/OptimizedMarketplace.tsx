@@ -110,7 +110,7 @@ const OptimizedMarketplace: React.FC = () => {
   }, [bookService]);
 
   return (
-    <div className="min-h-screen bg-white pb-24">
+    <div className="min-h-screen bg-[#dae0e6] pb-24">
       {/* Search Header */}
       <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl px-6 pt-6 pb-4 border-b border-gray-50">
         <h1 className="text-2xl font-black text-gray-900 mb-4">Marketplace <span className="text-[#006747] underline decoration-4 underline-offset-4">VIVA+</span></h1>

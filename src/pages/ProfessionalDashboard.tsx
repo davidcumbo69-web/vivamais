@@ -424,7 +424,7 @@ export default function ProfessionalDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#dae0e6]">
       <Header />
       
       <main className="max-w-6xl mx-auto px-4 pt-8 pb-24">

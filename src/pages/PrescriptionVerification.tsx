@@ -327,7 +327,7 @@ export default function DigitalPrescriptionView() {
 
 
   return (
-    <div className="min-h-screen bg-[#030303] text-[#D7DADC] font-sans selection:bg-[#FF4500] selection:text-white print:bg-white print:text-black">
+    <div className="min-h-screen bg-[#dae0e6] text-gray-900 font-sans selection:bg-[#006747] selection:text-white print:bg-white print:text-black">
       {/* Hidden Capture Area for Fallback PDF Generation - EXACT DIGITAL MATCH (DARK) */}
       <div className="fixed top-[-9999px] left-[-9999px] pointer-events-none">
         {/* Page 1: Official Prescription */}

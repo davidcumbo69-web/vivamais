@@ -110,7 +110,7 @@ export default function MyOrders() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#dae0e6]">
       <Header />
       
       <main className="max-w-4xl mx-auto px-4 py-8">

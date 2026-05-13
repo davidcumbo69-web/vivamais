@@ -69,7 +69,7 @@ export default function MyPrescriptions() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] pb-24 md:pb-10 pt-4 px-4">
+    <div className="min-h-screen bg-[#dae0e6] pb-24 md:pb-10 pt-4 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">

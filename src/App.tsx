@@ -8,6 +8,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { AlertProvider } from './hooks/useAlert';
 import { Navbar } from './components/layout/Navbar';
+import { BackButton } from './components/ui/BackButton';
 import { cn } from './lib/utils';
 
 // Optimized Lazy Imports (Code Splitting)
@@ -70,7 +71,8 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-[#dae0e6] flex flex-col md:flex-row">
       {user && <Navbar />}
-      <main className={cn("flex-1 overflow-y-auto", user && "md:ml-20 lg:ml-64")}>
+      <main className={cn("flex-1 overflow-y-auto relative", user && "md:ml-20 lg:ml-64")}>
+        {user && <BackButton />}
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
