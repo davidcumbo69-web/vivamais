@@ -1158,10 +1158,10 @@ export default function Profile() {
   return (
     <div className="pb-20 max-w-4xl mx-auto md:pb-10 pt-4 px-4">
       {/* Dynamic Ad Cover */}
-      <AdCarousel location="profiles" category={profile?.specialty || 'Geral'} className="mb-8" />
+      <AdCarousel location="profiles" category={profile?.specialty || 'Geral'} className="mb-4" />
       
       {/* Header */}
-      <div className="flex items-center justify-end mb-8">
+      <div className="flex items-center justify-end -mt-8 relative z-20 px-4">
         <div className="flex items-center space-x-4">
           {isOwnProfile && (
             <Link 
@@ -1197,8 +1197,8 @@ export default function Profile() {
 
       {/* Profile Info Section (Reddit Style) */}
       <div className="flex flex-row items-start px-4 mb-6">
-        <div className="relative -mt-12 flex-shrink-0">
-           <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-md overflow-hidden bg-white flex items-center justify-center">
+        <div className="relative -mt-4 md:-mt-12 flex-shrink-0">
+           <div className="w-20 h-20 md:w-32 md:h-32 rounded-full border-4 border-white shadow-md overflow-hidden bg-white flex items-center justify-center">
               {sanitizeAvatarUrl(profile.avatar_url) ? (
                   <img 
                       src={sanitizeAvatarUrl(profile.avatar_url)!} 
@@ -1210,8 +1210,40 @@ export default function Profile() {
               )}
            </div>
            {profile.is_professional && (
-              <div className="absolute bottom-1 right-1 bg-[#006747] rounded-full p-2 border-4 border-white shadow-sm">
-                  <ShieldCheck className="w-4 h-4 text-white fill-current" />
+              <div className="absolute -inset-x-8 -top-6 -bottom-16 z-20 pointer-events-none flex items-center justify-center">
+                <svg viewBox="0 0 120 160" className="w-[140%] h-[140%] drop-shadow-xl overflow-visible">
+                  {/* Framing tubes - forming a heart-like curvature framing the bottom and sides */}
+                  <path 
+                    d="M 22 65 
+                       C 22 105, 55 115, 60 115 
+                       S 98 105, 98 65" 
+                    fill="none" 
+                    stroke="#006747" 
+                    strokeWidth="3.5" 
+                    strokeLinecap="round"
+                  />
+                  
+                  {/* Olivas (Ear tips) - grey pods at the center sides of the avatar */}
+                  <rect x="18" y="58" width="8" height="14" rx="4" fill="#E5E7EB" stroke="#004d35" strokeWidth="1" />
+                  <rect x="94" y="58" width="8" height="14" rx="4" fill="#E5E7EB" stroke="#004d35" strokeWidth="1" />
+                  
+                  {/* Bottom wire - exactly mirroring the attached image path (junction -> down -> curve right -> end) */}
+                  <path 
+                    d="M 60 115 
+                       L 60 138 
+                       C 60 160, 105 160, 105 130" 
+                    fill="none" 
+                    stroke="#006747" 
+                    strokeWidth="4" 
+                    strokeLinecap="round"
+                  />
+                  
+                  {/* Chest piece (Diaphragm) - positioned at the end of the curved wire */}
+                  <g transform="translate(105, 125)">
+                    <circle r="10" fill="#374151" stroke="white" strokeWidth="2" />
+                    <circle r="6" fill="#D1D5DB" stroke="#374151" strokeWidth="0.8" />
+                  </g>
+                </svg>
               </div>
            )}
         </div>
@@ -1221,14 +1253,11 @@ export default function Profile() {
             <div>
               <div className="flex items-center space-x-1.5">
                 <h2 className="text-xl font-black text-gray-900 tracking-tight">{profile.full_name || profile.username}</h2>
-                {profile.is_professional && <ShieldCheck className="w-4 h-4 text-[#006747] fill-current" />}
               </div>
               <p className="text-xs text-gray-400 font-bold tracking-tight">u/{profile.username}</p>
             </div>
             
-            {isOwnProfile && (
-              <Link to="/perfil/editar" className="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-full text-xs font-bold transition-all">Editar</Link>
-            )}
+            {/* Edit Profile Link removed per user request */}
           </div>
           
           <div className="flex items-center space-x-4 mt-3 text-xs font-medium text-gray-500">
@@ -1387,20 +1416,20 @@ export default function Profile() {
       {/* Gamification Stats (Hide if Professional) */}
       {!profile.is_professional && (
         <div className="grid grid-cols-3 gap-2 mb-10 mx-4">
-          <div className="bg-emerald-50 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
-              <Apple className="w-6 h-6 text-[#006747] mb-2" />
-              <span className="text-[10px] uppercase font-bold text-[#006747] opacity-60">Nível XP</span>
-              <span className="text-lg font-bold text-[#006747]">{user.level}</span>
+          <div className="bg-emerald-50 rounded-2xl p-2.5 md:p-4 flex flex-col items-center justify-center text-center">
+              <Apple className="w-5 h-5 md:w-6 md:h-6 text-[#006747] mb-1.5 md:mb-2" />
+              <span className="text-[9px] md:text-[10px] uppercase font-bold text-[#006747] opacity-60">Nível XP</span>
+              <span className="text-base md:text-lg font-bold text-[#006747]">{user.level}</span>
           </div>
-          <div className="bg-orange-50 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
-              <HeartPulse className="w-6 h-6 text-orange-500 mb-2" />
-              <span className="text-[10px] uppercase font-bold text-orange-500 opacity-60">Sessão</span>
-              <span className="text-lg font-bold text-orange-500">{user.streak} Dias</span>
+          <div className="bg-orange-50 rounded-2xl p-2.5 md:p-4 flex flex-col items-center justify-center text-center">
+              <HeartPulse className="w-5 h-5 md:w-6 md:h-6 text-orange-500 mb-1.5 md:mb-2" />
+              <span className="text-[9px] md:text-[10px] uppercase font-bold text-orange-500 opacity-60">Sessão</span>
+              <span className="text-base md:text-lg font-bold text-orange-500">{user.streak} Dias</span>
           </div>
-          <div className="bg-indigo-50 rounded-2xl p-4 flex flex-col items-center justify-center text-center">
-              <Award className="w-6 h-6 text-indigo-600 mb-2" />
-              <span className="text-[10px] uppercase font-bold text-indigo-600 opacity-60">Vitus</span>
-              <span className="text-lg font-bold text-indigo-600">{balance}</span>
+          <div className="bg-indigo-50 rounded-2xl p-2.5 md:p-4 flex flex-col items-center justify-center text-center">
+              <Award className="w-5 h-5 md:w-6 md:h-6 text-indigo-600 mb-1.5 md:mb-2" />
+              <span className="text-[9px] md:text-[10px] uppercase font-bold text-indigo-600 opacity-60">Vitus</span>
+              <span className="text-base md:text-lg font-bold text-indigo-600">{balance}</span>
           </div>
         </div>
       )}
