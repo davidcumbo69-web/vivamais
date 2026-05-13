@@ -1210,38 +1210,38 @@ export default function Profile() {
               )}
            </div>
            {profile.is_professional && (
-              <div className="absolute -inset-x-8 -top-6 -bottom-16 z-20 pointer-events-none flex items-center justify-center">
-                <svg viewBox="0 0 120 160" className="w-[140%] h-[140%] drop-shadow-xl overflow-visible">
+              <div className="absolute -inset-x-12 -top-10 -bottom-20 z-20 pointer-events-none flex items-center justify-center">
+                <svg viewBox="0 0 120 160" className="w-[95%] h-[95%] md:w-[135%] md:h-[135%] drop-shadow-xl overflow-visible">
                   {/* Framing tubes - forming a heart-like curvature framing the bottom and sides */}
                   <path 
-                    d="M 22 65 
-                       C 22 105, 55 115, 60 115 
-                       S 98 105, 98 65" 
+                    d="M 30 65 
+                       C 30 100, 55 110, 60 110 
+                       S 90 100, 90 65" 
                     fill="none" 
                     stroke="#006747" 
-                    strokeWidth="3.5" 
+                    strokeWidth="2.2" 
                     strokeLinecap="round"
                   />
                   
                   {/* Olivas (Ear tips) - grey pods at the center sides of the avatar */}
-                  <rect x="18" y="58" width="8" height="14" rx="4" fill="#E5E7EB" stroke="#004d35" strokeWidth="1" />
-                  <rect x="94" y="58" width="8" height="14" rx="4" fill="#E5E7EB" stroke="#004d35" strokeWidth="1" />
+                  <rect x="27" y="59" width="6" height="12" rx="3" fill="#E5E7EB" stroke="#004d35" strokeWidth="0.6" />
+                  <rect x="87" y="59" width="6" height="12" rx="3" fill="#E5E7EB" stroke="#004d35" strokeWidth="0.6" />
                   
-                  {/* Bottom wire - exactly mirroring the attached image path (junction -> down -> curve right -> end) */}
+                  {/* Bottom wire - mirrored to the left but more compact (junction -> down -> shallow curve left -> end) */}
                   <path 
-                    d="M 60 115 
-                       L 60 138 
-                       C 60 160, 105 160, 105 130" 
+                    d="M 60 110 
+                       L 60 122 
+                       C 60 135, 35 135, 35 122" 
                     fill="none" 
                     stroke="#006747" 
-                    strokeWidth="4" 
+                    strokeWidth="2.4" 
                     strokeLinecap="round"
                   />
                   
-                  {/* Chest piece (Diaphragm) - positioned at the end of the curved wire */}
-                  <g transform="translate(105, 125)">
-                    <circle r="10" fill="#374151" stroke="white" strokeWidth="2" />
-                    <circle r="6" fill="#D1D5DB" stroke="#374151" strokeWidth="0.8" />
+                  {/* Chest piece (Diaphragm) - positioned at the end of the left-curved wire */}
+                  <g transform="translate(35, 122)">
+                    <circle r="7" fill="#374151" stroke="white" strokeWidth="1.2" />
+                    <circle r="4" fill="#D1D5DB" stroke="#374151" strokeWidth="0.5" />
                   </g>
                 </svg>
               </div>
