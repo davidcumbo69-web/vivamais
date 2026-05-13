@@ -489,10 +489,10 @@ export default function Messages() {
     )}>
       {/* Conversations List */}
       <div className={cn(
-        "w-full md:w-80 lg:w-96 bg-white border-r border-gray-100 flex flex-col",
+        "w-full md:w-80 lg:w-96 bg-[#dae0e6] border-r border-gray-100 flex flex-col",
         selectedConversation ? "hidden md:flex" : "flex"
       )}>
-        <div className="p-6 border-b border-gray-50 bg-white sticky top-0 z-10">
+        <div className="p-6 border-b border-gray-50 bg-[#dae0e6]/80 backdrop-blur-md sticky top-0 z-10">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-black text-gray-900 tracking-tighter">Mensagens</h1>
             <button className="p-2 bg-emerald-50 text-[#006747] rounded-xl hover:bg-emerald-100 transition-colors">
@@ -571,13 +571,13 @@ export default function Messages() {
 
       {/* Chat Area */}
       <div className={cn(
-        "flex-1 flex flex-col bg-white",
+        "flex-1 flex flex-col bg-[#dae0e6]",
         !selectedConversation ? "hidden md:flex" : "flex"
       )}>
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 md:p-6 border-b border-gray-50 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
+            <div className="p-4 md:p-6 border-b border-gray-50 flex items-center justify-between bg-[#dae0e6]/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
               <div className="flex items-center space-x-4">
                 <button 
                   onClick={() => setSearchParams({})}
@@ -625,7 +625,7 @@ export default function Messages() {
             {/* Prescription logic handled on new page */}
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 bg-[#f8f9fa]">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 bg-[#dae0e6]">
               {loadingMessages ? (
                 <div className="space-y-6">
                   {[1, 2, 3, 4].map(i => (
@@ -678,7 +678,7 @@ export default function Messages() {
             </div>
 
             {/* Chat Input */}
-            <div className="p-4 md:p-6 border-t border-gray-50 bg-white">
+            <div className="p-4 md:p-6 border-t border-gray-50 bg-[#dae0e6]">
               <form onSubmit={handleSendMessage} className="relative flex items-center space-x-3 max-w-5xl mx-auto">
                 <input 
                   type="text" 
@@ -703,7 +703,7 @@ export default function Messages() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-[#f8f9fa]">
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-[#dae0e6]">
             <div className="w-24 h-24 bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 flex items-center justify-center mb-10 transform -rotate-6">
                <MessageSquare className="w-10 h-10 text-[#006747]" />
             </div>

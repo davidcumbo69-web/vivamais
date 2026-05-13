@@ -112,7 +112,7 @@ const OptimizedMarketplace: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#dae0e6] pb-24">
       {/* Search Header */}
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl px-6 pt-6 pb-4 border-b border-gray-50">
+      <div className="sticky top-0 z-20 bg-[#dae0e6]/80 backdrop-blur-xl px-6 pt-6 pb-4 border-b border-gray-50">
         <h1 className="text-2xl font-black text-gray-900 mb-4">Marketplace <span className="text-[#006747] underline decoration-4 underline-offset-4">VIVA+</span></h1>
         
         <div className="relative group">
@@ -121,7 +121,7 @@ const OptimizedMarketplace: React.FC = () => {
             type="text"
             onChange={handleSearchChange}
             placeholder="Procurar serviços, clínicas..."
-            className="w-full bg-gray-100 border-none rounded-2xl py-4 pl-12 pr-4 text-sm focus:ring-2 focus:ring-[#006747]/20 outline-none transition-all"
+            className="w-full bg-white/50 border-none rounded-2xl py-4 pl-12 pr-4 text-sm focus:ring-2 focus:ring-[#006747]/20 outline-none transition-all shadow-sm"
           />
           {isFetching && (
              <div className="absolute right-4 top-1/2 -translate-y-1/2">

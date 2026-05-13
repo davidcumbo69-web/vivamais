@@ -20,21 +20,26 @@ import {
   Image as ImageIcon,
   Trash2,
   Layout,
-  CircleUser
+  CircleUser,
+  Store,
+  MapPin,
+  Phone
 } from 'lucide-react';
 import { sanitizeAvatarUrl } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { Skeleton } from '../components/ui/Skeleton';
 
 export default function AdminDashboard() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [requests, setRequests] = useState<ProfessionalVerification[]>([]);
   const [pendingReels, setPendingReels] = useState<Reel[]>([]);
   const [pendingVideos, setPendingVideos] = useState<PostVideo[]>([]);
+  const [pharmaciesReq, setPharmaciesReq] = useState<any[]>([]);
+  const [establishmentsReq, setEstablishmentsReq] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'reels' | 'ads' | 'videos'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'reels' | 'ads' | 'videos' | 'pharmacies' | 'establishments'>('users');
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -60,22 +65,29 @@ export default function AdminDashboard() {
     setNotification({ message, type });
   };
 
-  // Check if admin
-  const isAdmin = profile?.email === 'davidcumbo69@gmail.com';
+  // Check if admin - Use both user.email and profile.email for reliability
+  const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
 
   useEffect(() => {
     if (isAdmin) {
+      console.log('[AdminDashboard] Admin detected. Tab:', activeTab, 'Filter:', filter);
       if (activeTab === 'users') {
         fetchRequests();
       } else if (activeTab === 'reels') {
         fetchReels();
       } else if (activeTab === 'videos') {
         fetchVideos();
+      } else if (activeTab === 'pharmacies') {
+        fetchPharmacies();
+      } else if (activeTab === 'establishments') {
+        fetchEstablishments();
       } else {
         fetchAds();
       }
+    } else if (user) {
+      console.warn('[AdminDashboard] User is not an admin:', user.email);
     }
-  }, [isAdmin, filter, activeTab]);
+  }, [isAdmin, filter, activeTab, user]);
 
   const fetchAds = async () => {
     setLoading(true);
@@ -219,6 +231,112 @@ export default function AdminDashboard() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPharmacies = async () => {
+    setLoading(true);
+    console.log('[AdminDashboard] Fetching pharmacies with filter:', filter);
+    
+    try {
+      // First, try to fetch just the pharmacies to confirm they exist
+      const { data: rawData, error: rawError } = await supabase
+        .from('pharmacies')
+        .select('*')
+        .eq('status', filter);
+      
+      console.log('[AdminDashboard] RAW Pharmacies data (no join):', rawData, 'Error:', rawError);
+
+      // Now fetch with join
+      const { data, error: pharmacyError } = await supabase
+        .from('pharmacies')
+        .select(`
+          *,
+          profiles:owner_id (
+            id,
+            username,
+            full_name,
+            avatar_url,
+            email
+          )
+        `)
+        .eq('status', filter)
+        .order('created_at', { ascending: false });
+
+      if (pharmacyError) {
+        console.error('[AdminDashboard] Error fetching pharmacies (with join):', pharmacyError);
+        setError(pharmacyError.message);
+        showNotification('Erro ao carregar farmácias: ' + pharmacyError.message, 'error');
+      } else {
+        console.log('[AdminDashboard] Pharmacies fetched with profile join:', data);
+        setPharmaciesReq(data || []);
+      }
+    } catch (err: any) {
+      console.error('[AdminDashboard] Unexpected error in fetchPharmacies:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePharmacyAction = async (pharmacyId: string, action: 'approved' | 'rejected') => {
+    if (profile?.email !== 'davidcumbo69@gmail.com') {
+      showNotification('⚠️ Ação não permitida.', 'error');
+      return;
+    }
+
+    setProcessingId(pharmacyId);
+    try {
+      const { error } = await supabase
+        .from('pharmacies')
+        .update({ status: action, updated_at: new Date().toISOString() })
+        .eq('id', pharmacyId);
+
+      if (error) throw error;
+      showNotification(`✅ Farmácia ${action === 'approved' ? 'aprovada' : 'rejeitada'}!`);
+      fetchPharmacies();
+    } catch (err: any) {
+      showNotification(err.message, 'error');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const fetchEstablishments = async () => {
+    setLoading(true);
+    try {
+      const { data, error: estError } = await supabase
+        .from('medical_establishments')
+        .select('*, profiles:owner_id(*)')
+        .eq('status', filter)
+        .order('created_at', { ascending: false });
+
+      if (estError) throw estError;
+      setEstablishmentsReq(data || []);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEstablishmentAction = async (estId: string, action: 'approved' | 'rejected') => {
+    if (profile?.email !== 'davidcumbo69@gmail.com') return;
+
+    setProcessingId(estId);
+    try {
+      const { error } = await supabase
+        .from('medical_establishments')
+        .update({ status: action, updated_at: new Date().toISOString() })
+        .eq('id', estId);
+
+      if (error) throw error;
+      showNotification(`✅ Estabelecimento ${action}!`);
+      fetchEstablishments();
+    } catch (err: any) {
+      showNotification(err.message, 'error');
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -437,6 +555,28 @@ export default function AdminDashboard() {
                   <Megaphone className="w-3.5 h-3.5" />
                   <span>Ads</span>
                 </button>
+                <button
+                  onClick={() => setActiveTab('pharmacies')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2 ${
+                    activeTab === 'pharmacies' 
+                      ? 'bg-[#006747] text-white shadow-md' 
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  <Store className="w-3.5 h-3.5" />
+                  <span>Farmácias</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('establishments')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-2 ${
+                    activeTab === 'establishments' 
+                      ? 'bg-[#006747] text-white shadow-md' 
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>Estabelecimentos</span>
+                </button>
             </div>
 
             {activeTab !== 'ads' && (
@@ -491,7 +631,12 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
-        ) : (activeTab === 'users' ? requests : activeTab === 'reels' ? pendingReels : activeTab === 'videos' ? pendingVideos : ads).length === 0 ? (
+        ) : (activeTab === 'users' ? requests : 
+  activeTab === 'reels' ? pendingReels : 
+  activeTab === 'videos' ? pendingVideos : 
+  activeTab === 'pharmacies' ? pharmaciesReq :
+  activeTab === 'establishments' ? establishmentsReq :
+  ads).length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
             <Clock className="w-12 h-12 text-gray-200 mx-auto mb-4" />
             <p className="text-gray-400 font-medium">Não existem itens nesta categoria.</p>
@@ -591,6 +736,160 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                   )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        ) : activeTab === 'pharmacies' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <AnimatePresence>
+              {pharmaciesReq.map((ph) => (
+                <motion.div
+                  key={ph.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col"
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+                          <Store className="w-6 h-6 text-[#006747]" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900">{ph.name}</h3>
+                          <p className="text-xs text-gray-400">Proprietário: {ph.profiles?.full_name || ph.profiles?.username}</p>
+                        </div>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        ph.status === 'pending' ? 'bg-yellow-50 text-yellow-600' :
+                        ph.status === 'approved' ? 'bg-green-50 text-green-600' :
+                        'bg-red-50 text-red-600'
+                      }`}>
+                        {ph.status}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-center text-xs text-gray-600">
+                        <MapPin className="w-4 h-4 mr-2 text-gray-400" />
+                        <span>{ph.address}</span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-600">
+                        <FileText className="w-4 h-4 mr-2 text-gray-400" />
+                        <span>Licença: {ph.license_number}</span>
+                      </div>
+                      {ph.phone && (
+                        <div className="flex items-center text-xs text-gray-600">
+                          <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                          <span>{ph.phone}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {ph.opening_hours && (
+                      <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                        <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Horário de Funcionamento</p>
+                        <div className="grid grid-cols-2 gap-2 text-[10px]">
+                          {Object.entries(ph.opening_hours).map(([day, hours]: [any, any]) => (
+                            <div key={day} className="flex justify-between">
+                              <span className="font-bold uppercase">{day}:</span>
+                              <span className="text-gray-500">{hours}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {ph.status === 'pending' && (
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center space-x-3 mt-auto">
+                      <button
+                        onClick={() => handlePharmacyAction(ph.id, 'approved')}
+                        disabled={!!processingId}
+                        className="flex-1 bg-green-600 text-white rounded-xl py-2.5 text-sm font-bold flex items-center justify-center space-x-2 hover:bg-green-700 transition-colors shadow-lg shadow-green-100 disabled:opacity-50"
+                      >
+                        {processingId === ph.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Aprovar Farmácia</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handlePharmacyAction(ph.id, 'rejected')}
+                        disabled={!!processingId}
+                        className="flex-1 bg-white text-red-600 border border-red-100 rounded-xl py-2.5 text-sm font-bold flex items-center justify-center space-x-2 hover:bg-red-50 transition-colors disabled:opacity-50"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        <span>Rejeitar</span>
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        ) : activeTab === 'establishments' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <AnimatePresence>
+              {establishmentsReq.map((est) => (
+                <motion.div
+                  key={est.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col"
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+                          <Building2 className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900">{est.name}</h3>
+                          <p className="text-xs text-gray-400">Tipo: {est.type} • De: {est.profiles?.full_name}</p>
+                        </div>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        est.status === 'pending' ? 'bg-yellow-50 text-yellow-600' : 'bg-green-50 text-green-600'
+                      }`}>
+                        {est.status}
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-xs text-gray-600">
+                      <p>📍 {est.province} • {est.municipality}</p>
+                      <p>🏠 {est.address}</p>
+                      <p>📜 Licença: {est.license_number}</p>
+                      {est.services && est.services.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {est.services.map((s: string) => (
+                            <span key={s} className="bg-gray-100 px-2 py-0.5 rounded text-[9px] font-bold">{s}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {est.status === 'pending' && (
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center space-x-3">
+                      <button
+                        onClick={() => handleEstablishmentAction(est.id, 'approved')}
+                        disabled={!!processingId}
+                        className="flex-1 bg-green-600 text-white rounded-xl py-2.5 text-sm font-bold flex items-center justify-center space-x-2 disabled:opacity-50"
+                      >
+                         {processingId === est.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Aprovar</span>}
+                      </button>
+                      <button
+                        onClick={() => handleEstablishmentAction(est.id, 'rejected')}
+                        disabled={!!processingId}
+                        className="flex-1 bg-white text-red-600 border border-red-100 rounded-xl py-2.5 text-sm font-bold disabled:opacity-50"
+                      >
+                        Rejeitar
+                      </button>
+                    </div>
+                   )}
                 </motion.div>
               ))}
             </AnimatePresence>

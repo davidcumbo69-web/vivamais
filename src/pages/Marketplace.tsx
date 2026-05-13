@@ -202,7 +202,7 @@ export default function Marketplace() {
     };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#dae0e6]">
       <Header />
       
       <main className="max-w-6xl mx-auto px-4 pt-24 pb-24">

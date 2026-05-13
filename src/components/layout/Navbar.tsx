@@ -1,4 +1,4 @@
-import { Heart, Microscope, Pill, Hospital, Stethoscope, Film, CircleUser as UserIcon, Apple, CalendarCheck, ShoppingBag, LogOut, MessageSquare, FileText, ShieldCheck, Menu, X } from 'lucide-react';
+import { Heart, Microscope, Pill, Hospital, Stethoscope, Film, CircleUser as UserIcon, Apple, CalendarCheck, ShoppingBag, LogOut, MessageSquare, FileText, ShieldCheck, Menu, X, Store, Building2 } from 'lucide-react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
@@ -14,25 +14,27 @@ export function Navbar() {
   const isChatOpenOnMobile = location.pathname === '/mensagens' && searchParams.has('userId');
   
   const navItems = [
-    { icon: Stethoscope, label: 'Vital', path: '/' },
-    { icon: ShieldCheck, label: 'Validar', path: '/verificar' },
-    { icon: Film, label: 'Educação', path: '/reels' },
+    { icon: Microscope, label: 'Explorar', path: '/explorar' },
+    { icon: Pill, label: 'Farmácias', path: '/farmacias' },
+    { icon: Hospital, label: 'Estabelecimentos', path: '/estabelecimentos' },
     { icon: CalendarCheck, label: 'Consultas', path: '/consultas' },
-    { icon: MessageSquare, label: 'Mensagens', path: '/mensagens' },
     { icon: FileText, label: 'Receitas', path: '/historico-receitas' },
+    { icon: ShoppingBag, label: 'Loja VIVA', path: '/loja-viva' },
+    { icon: MessageSquare, label: 'Mensagens', path: '/mensagens' },
+    { icon: Film, label: 'Educação', path: '/reels' },
+    { icon: ShieldCheck, label: 'Validar', path: '/verificar' },
     ...(profile?.is_professional ? [
       { icon: Hospital, label: 'Criar', path: '/professional/dashboard' }
     ] : [
       { icon: Apple, label: 'Saúde', path: '/conquistas' }
     ]),
-    { icon: Pill, label: 'Loja VIVA', path: '/loja-viva' },
     { icon: UserIcon, label: 'Perfil', path: '/perfil' },
   ];
 
   const bottomNavItems = [
     { icon: Stethoscope, label: 'Início', path: '/' },
-    { icon: CalendarCheck, label: 'Consultas', path: '/consultas' },
-    { icon: Pill, label: 'Loja', path: '/loja-viva' },
+    { icon: Microscope, label: 'Explorar', path: '/explorar' },
+    { icon: ShoppingBag, label: 'Loja', path: '/loja-viva' },
     { icon: Film, label: 'Educação', path: '/reels' },
   ];
 

@@ -13,9 +13,16 @@ import { cn } from './lib/utils';
 
 // Optimized Lazy Imports (Code Splitting)
 const Home = lazy(() => import('./pages/Home'));
+const Explore = lazy(() => import('./pages/Explore'));
 const Reels = lazy(() => import('./pages/Reels'));
+const Pharmacies = lazy(() => import('./pages/Pharmacies'));
+const Establishments = lazy(() => import('./pages/Establishments'));
 const Marketplace = lazy(() => import('./pages/OptimizedMarketplace'));
 const MyOrders = lazy(() => import('./pages/MyOrders'));
+const MyManagedPharmacies = lazy(() => import('./pages/MyManagedPharmacies'));
+const MyManagedEstablishments = lazy(() => import('./pages/MyManagedEstablishments'));
+const RegisterPharmacy = lazy(() => import('./pages/RegisterPharmacy'));
+const RegisterEstablishment = lazy(() => import('./pages/RegisterEstablishment'));
 const Profile = lazy(() => import('./pages/Profile'));
 const ProfessionalSettings = lazy(() => import('./pages/ProfessionalSettings'));
 const Professionals = lazy(() => import('./pages/Professionals'));
@@ -76,9 +83,18 @@ function AppContent() {
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/explorar" element={<Explore />} />
             <Route path="/reels" element={<Reels />} />
+            <Route path="/farmacias" element={<Pharmacies />} />
+            <Route path="/estabelecimentos" element={<Establishments />} />
             <Route path="/loja-viva" element={<Marketplace />} />
             <Route path="/minhas-encomendas" element={<MyOrders />} />
+            <Route path="/settings/pharmacies" element={<MyManagedPharmacies />} />
+            <Route path="/settings/establishments" element={<MyManagedEstablishments />} />
+            <Route path="/farmacias/registar" element={<RegisterPharmacy />} />
+            <Route path="/farmacias/editar/:id" element={<RegisterPharmacy />} />
+            <Route path="/estabelecimentos/registar" element={<RegisterEstablishment />} />
+            <Route path="/estabelecimentos/editar/:id" element={<RegisterEstablishment />} />
             <Route path="/perfil" element={<Profile />} />
             <Route path="/perfil/editar" element={<EditProfile />} />
             <Route path="/perfil/:userId" element={<Profile />} />

@@ -12,7 +12,9 @@ import {
   Info,
   CheckCircle,
   ShieldCheck,
-  ChevronDown
+  ChevronDown,
+  Store,
+  Building2
 } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { useAuth } from '../hooks/useAuth';
@@ -39,6 +41,13 @@ export default function Settings() {
         { icon: Smartphone, label: 'Dispositivos e Apps', path: '/settings/devices', color: 'text-green-500' },
       ]
     },
+    ...(profile?.is_professional ? [{
+      title: 'Profissional',
+      items: [
+        { icon: Store, label: 'Minhas Farmácias', path: '/settings/pharmacies', color: 'text-emerald-600' },
+        { icon: Building2, label: 'Meus Estabelecimentos', path: '/settings/establishments', color: 'text-blue-600' },
+      ]
+    }] : []),
     {
       title: 'Privacidade e Segurança',
       items: [

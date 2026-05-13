@@ -59,6 +59,46 @@ export type Profile = {
   created_at: string;
 };
 
+export type Pharmacy = {
+  id: string;
+  owner_id: string;
+  name: string;
+  license_number: string;
+  address: string;
+  phone?: string;
+  email?: string;
+  opening_hours: {
+    [key: string]: string;
+  };
+  description?: string;
+  image_url?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  rating: number;
+  created_at: string;
+};
+
+export type MedicalEstablishment = {
+  id: string;
+  owner_id: string;
+  name: string;
+  type: 'Clínica' | 'Posto Médico' | 'Hospital';
+  license_number: string;
+  province: string;
+  municipality: string;
+  address: string;
+  phone?: string;
+  email?: string;
+  services: string[];
+  opening_hours: {
+    [key: string]: string;
+  };
+  description?: string;
+  image_url?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  rating: number;
+  created_at: string;
+};
+
 export type ProfessionalVerification = {
   id: string;
   user_id: string;

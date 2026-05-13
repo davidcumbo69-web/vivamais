@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { BadgeCheck, Stethoscope, FileText, CheckCircle2, AlertCircle, Camera, Building2, GraduationCap, MapPin, Phone, XCircle, Clock, Loader2 } from 'lucide-react';
+import { BadgeCheck, Stethoscope, FileText, CheckCircle2, AlertCircle, Camera, Building2, GraduationCap, MapPin, Phone, XCircle, Clock, Loader2, Store, Mail } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Header } from '../components/layout/Header';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -24,6 +24,28 @@ export default function ProfessionalSettings() {
   const [academicDegree, setAcademicDegree] = useState('Licenciatura');
   const [phoneBusiness, setPhoneBusiness] = useState('');
   const [bio, setBio] = useState(profile?.bio || '');
+  
+  // Pharmacy State
+  const [hasPharmacy, setHasPharmacy] = useState(false);
+  const [pharmacyName, setPharmacyName] = useState('');
+  const [pharmacyLicense, setPharmacyLicense] = useState('');
+  const [pharmacyAddress, setPharmacyAddress] = useState('');
+  const [pharmacyDescription, setPharmacyDescription] = useState('');
+  const [pharmacyPhone, setPharmacyPhone] = useState('');
+  const [pharmacyEmail, setPharmacyEmail] = useState('');
+  const [pharmacyOpeningHours, setPharmacyOpeningHours] = useState({
+    mon: '09:00-19:00',
+    tue: '09:00-19:00',
+    wed: '09:00-19:00',
+    thu: '09:00-19:00',
+    fri: '09:00-19:00',
+    sat: '09:00-13:00',
+    sun: 'Closed'
+  });
+  const [pharmacyStatus, setPharmacyStatus] = useState<string | null>(null);
+  const [pharmacyLoading, setPharmacyLoading] = useState(false);
+  const [pharmacySuccess, setPharmacySuccess] = useState(false);
+
   const [pendingRequest, setPendingRequest] = useState<any>(null);
   const [rejectedRequest, setRejectedRequest] = useState<any>(null);
 
@@ -33,6 +55,7 @@ export default function ProfessionalSettings() {
       setBio(profile.bio || '');
       fetchProfessionalData();
       fetchLatestRequest();
+      fetchPharmacy();
     }
   }, [profile]);
 
@@ -52,6 +75,27 @@ export default function ProfessionalSettings() {
       } else if (latest.status === 'rejected') {
         setRejectedRequest(latest);
       }
+    }
+  };
+
+  const fetchPharmacy = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('pharmacies')
+      .select('*')
+      .eq('owner_id', user.id)
+      .maybeSingle();
+    
+    if (data) {
+      setHasPharmacy(true);
+      setPharmacyName(data.name);
+      setPharmacyLicense(data.license_number);
+      setPharmacyAddress(data.address);
+      setPharmacyDescription(data.description || '');
+      setPharmacyPhone(data.phone || '');
+      setPharmacyEmail(data.email || '');
+      setPharmacyOpeningHours(data.opening_hours);
+      setPharmacyStatus(data.status);
     }
   };
 
@@ -149,6 +193,54 @@ export default function ProfessionalSettings() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRegisterPharmacy = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !profile) return;
+
+    setPharmacyLoading(true);
+    setPharmacySuccess(false);
+    setError(null);
+
+    try {
+      const pharmacyData = {
+        owner_id: user.id,
+        name: pharmacyName,
+        license_number: pharmacyLicense,
+        address: pharmacyAddress,
+        description: pharmacyDescription,
+        phone: pharmacyPhone,
+        email: pharmacyEmail,
+        opening_hours: pharmacyOpeningHours,
+        status: 'pending' // Always goes back to pending on update if it was rejected/not approved? 
+        // Or keep it approved if it's already approved? Usually for edits it stays approved unless critical fields change.
+        // For simplicity, let's keep it 'pending' to be re-vetted if it's a new registration.
+      };
+
+      if (hasPharmacy) {
+        const { error: upsertError } = await supabase
+          .from('pharmacies')
+          .update(pharmacyData)
+          .eq('owner_id', user.id);
+        
+        if (upsertError) throw upsertError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('pharmacies')
+          .insert(pharmacyData);
+        
+        if (insertError) throw insertError;
+        setHasPharmacy(true);
+      }
+      setPharmacyStatus('pending');
+      setPharmacySuccess(true);
+      await fetchPharmacy();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setPharmacyLoading(false);
     }
   };
 
