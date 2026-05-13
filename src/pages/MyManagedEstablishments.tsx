@@ -44,12 +44,6 @@ export default function MyManagedEstablishments() {
       <main className="max-w-4xl mx-auto px-4 pt-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => navigate('/perfil')}
-              className="p-2 hover:bg-white rounded-xl transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
             <div>
               <h1 className="text-3xl font-black text-gray-900 tracking-tight">Meus Estabelecimentos</h1>
               <p className="text-gray-500">Gira as suas clínicas, hospitais ou postos médicos.</p>

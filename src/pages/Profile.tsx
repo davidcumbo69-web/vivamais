@@ -1166,30 +1166,24 @@ export default function Profile() {
           {isOwnProfile && (
             <Link 
               to="/definicoes" 
-              className="group relative w-14 h-14 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300"
+              className="group relative w-12 h-12 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all duration-300"
               title="Definições"
             >
-              {/* Stylized Intestine Illustration (Black Line Art) */}
-              <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible relative z-10 transition-all duration-300 group-hover:scale-110">
-                <path 
-                  d="M30,40 C20,40 20,70 30,70 L70,70 C80,70 80,40 70,40 L60,40 C55,40 55,45 60,45 L70,45 C75,45 75,65 70,65 L30,65 C25,65 25,45 30,45 L40,45 C45,45 45,40 40,40 Z" 
-                  fill="none" 
-                  stroke="black" 
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path 
-                  d="M45,52 C47,48 53,48 55,52 C57,56 63,56 65,52 C68,48 68,60 65,60 C60,60 55,65 55,70 C55,65 50,60 45,60 C42,60 42,52 45,52" 
-                  fill="none" 
-                  stroke="black" 
-                  strokeWidth="2.5" 
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+              <svg viewBox="0 0 100 100" className="w-10 h-10 text-black" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                {/* Central Airway / Trachea */}
+                <path d="M48,15 L48,32 Q48,35 44,38 M52,15 L52,32 Q52,35 56,38" />
+                <path d="M48,18 H52 M48,22 H52 M48,26 H52 M48,30 H52" />
+                
+                {/* Left Lung Detailed */}
+                <path d="M42,38 C35,32 18,36 14,55 C10,80 18,92 38,92 C48,92 48,82 46,70 Q44,55 42,38" />
+                <path d="M38,45 Q30,50 20,48 M35,55 Q28,65 22,68 M38,65 Q35,75 30,82" strokeWidth="1" opacity="0.7" />
+                <path d="M30,50 Q32,52 34,50 M28,68 Q30,70 32,68" strokeWidth="1" opacity="0.5" />
+                
+                {/* Right Lung Detailed */}
+                <path d="M58,38 C65,32 82,36 86,55 C90,80 82,92 62,92 C52,92 52,82 54,70 Q56,55 58,38" />
+                <path d="M62,45 Q70,50 80,48 M65,55 Q72,65 78,68 M62,65 Q65,75 70,82" strokeWidth="1" opacity="0.7" />
+                <path d="M70,50 Q68,52 66,50 M72,68 Q70,70 68,68" strokeWidth="1" opacity="0.5" />
               </svg>
-              
-              {/* Sub-text or tiny icon removed as requested for a pure drawing */}
             </Link>
           )}
         </div>

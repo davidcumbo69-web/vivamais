@@ -771,24 +771,24 @@ export default function Home() {
     <div className="pb-20 md:pb-0 min-h-screen bg-[#dae0e6]">
       <Header />
       
-      <div className="max-w-[1200px] mx-auto flex justify-center md:pt-8 lg:px-4">
+      <div className="max-w-[1200px] mx-auto flex justify-center pt-4 md:pt-8 lg:px-4">
         {/* Main Feed Container */}
         <div className="w-full max-w-[700px] flex flex-col">
           
           {/* Create Post Action (Professionals) */}
           {profile?.is_professional && (
-            <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-4 shadow-sm mx-4 md:mx-0">
+            <div className="bg-white border border-gray-200 rounded-xl p-2 mb-4 shadow-sm mx-4 md:mx-0">
                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center">
+                  <div className="hidden md:flex w-7 h-7 rounded-full overflow-hidden border border-gray-100 bg-gray-50 items-center justify-center shrink-0">
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
+                      <CircleUser className="w-full h-full text-black stroke-[1px] p-1" />
                     )}
                   </div>
                   <button 
                     onClick={() => setShowCreateModal(true)}
-                    className="flex-1 bg-gray-50 hover:bg-gray-100 text-left px-4 py-2.5 rounded-full text-sm text-gray-400 transition-colors font-medium border border-gray-100"
+                    className="flex-1 bg-gray-50 hover:bg-gray-100 text-left px-3 py-1 rounded-lg text-sm text-gray-400 transition-colors font-medium border border-gray-200"
                   >
                     Partilhar conhecimento de saúde...
                   </button>
@@ -797,10 +797,10 @@ export default function Home() {
                         setNewPostType('image');
                         setShowCreateModal(true);
                     }} 
-                    className="p-2 text-[#006747] hover:bg-emerald-50 rounded-full transition-colors flex items-center space-x-1"
+                    className="p-1 text-gray-600 hover:bg-gray-50 rounded-md transition-colors flex items-center space-x-1.5"
                     title="Publicar Foto"
                   >
-                    <ImagePlus className="w-5 h-5" />
+                    <ImagePlus className="w-4 h-4 text-blue-500" />
                     <span className="text-[10px] font-bold uppercase hidden md:inline">Foto</span>
                   </button>
                   <button 
@@ -808,10 +808,10 @@ export default function Home() {
                         setNewPostType('video');
                         setShowCreateModal(true);
                     }} 
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors flex items-center space-x-1"
+                    className="p-1 text-gray-600 hover:bg-gray-50 rounded-md transition-colors flex items-center space-x-1.5"
                     title="Publicar Vídeo YouTube"
                   >
-                    <Play className="w-5 h-5" />
+                    <Play className="w-4 h-4 text-red-600" />
                     <span className="text-[10px] font-bold uppercase hidden md:inline">Vídeo</span>
                   </button>
                </div>
