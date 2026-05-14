@@ -249,21 +249,33 @@ export default function ProfessionalDashboard() {
       }
 
       // 5. Fetch Pharmacy Prescription Submissions
-      const { data: myPharms } = await supabase
-        .from('pharmacies')
-        .select('*')
-        .eq('owner_id', user.id);
+      const isAdmin = profile?.email === 'davidcumbo69@gmail.com';
       
-      if (myPharms && myPharms.length > 0) {
+      let pharmaciesQuery = supabase.from('pharmacies').select('*');
+      if (!isAdmin) {
+        pharmaciesQuery = pharmaciesQuery.eq('owner_id', user.id);
+      }
+      
+      const { data: myPharms } = await pharmaciesQuery;
+      
+      if (myPharms) {
         setMyPharmacies(myPharms);
-        const pharmIds = myPharms.map(p => p.id);
-        const { data: ords } = await supabase
-          .from('pharmacy_orders')
-          .select('*, user:user_id(full_name, username), pharmacy:pharmacy_id(name)')
-          .in('pharmacy_id', pharmIds)
-          .order('created_at', { ascending: false });
-        
-        if (ords) setPharmacyOrders(ords);
+        if (myPharms.length > 0) {
+          const pharmIds = myPharms.map(p => p.id);
+          const { data: ords } = await supabase
+            .from('pharmacy_orders')
+            .select(`
+              *,
+              user:profiles(full_name, username),
+              pharmacy:pharmacies(name)
+            `)
+            .in('pharmacy_id', pharmIds)
+            .order('created_at', { ascending: false });
+          
+          if (ords) {
+             setPharmacyOrders(ords);
+          }
+        }
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -1135,6 +1147,13 @@ export default function ProfessionalDashboard() {
                                                     </td>
                                                 </tr>
                                             ))}
+                                            {pharmacyOrders.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={4} className="px-8 py-12 text-center text-gray-400 font-bold italic">
+                                                        Nenhum pedido de farmácia encontrado.
+                                                    </td>
+                                                </tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
