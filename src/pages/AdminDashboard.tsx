@@ -14,7 +14,7 @@ import {
   Search,
   Play,
   FileText,
-  Film,
+  Eye,
   Megaphone,
   Plus,
   Image as ImageIcon,
@@ -23,7 +23,8 @@ import {
   CircleUser,
   Store,
   MapPin,
-  Phone
+  Phone,
+  Building2
 } from 'lucide-react';
 import { sanitizeAvatarUrl } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -530,7 +531,7 @@ export default function AdminDashboard() {
                       : 'text-gray-400 hover:text-gray-600'
                   }`}
                 >
-                  <Film className="w-3.5 h-3.5" />
+                  <Eye className="w-3.5 h-3.5" />
                   <span>Reels</span>
                 </button>
                 <button

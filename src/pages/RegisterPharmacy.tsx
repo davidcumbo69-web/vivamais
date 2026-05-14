@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Store, MapPin, Phone, Mail, Clock, Loader2, CheckCircle2, ArrowLeft, ShieldCheck, Info } from 'lucide-react';
+import { Store, MapPin, Phone, Mail, Clock, Loader2, CheckCircle2, ArrowLeft, ShieldCheck, Info, AlertCircle } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';

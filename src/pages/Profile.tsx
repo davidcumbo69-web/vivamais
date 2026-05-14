@@ -3,7 +3,7 @@ import {
   Stethoscope, CircleUser, Dna, ClipboardList, ShieldCheck, 
   Apple, HeartPulse, Award, Users, Loader2, Plus, Brain, CalendarCheck2, 
   ShoppingBag, PackageCheck, Truck, Clock, MessageSquare, Microscope, 
-  Film, Play, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, 
+  Eye, Play, Pill, Hospital, LogOut, LayoutDashboard, FileText, ChevronRight, 
   MapPin, Calendar, ChevronDown, ChevronUp, Activity, Thermometer, Share2,
   Droplet, Ruler, Sparkles, AlertTriangle, Info, CheckCircle2, Check, AlertCircle,
   CalendarRange, X, Star, Edit3, Trash2
@@ -1508,7 +1508,7 @@ export default function Profile() {
                  activeTab === 'reels' ? "border-[#006747] text-[#006747]" : "border-transparent text-gray-400 hover:text-gray-600"
                )}
              >
-               Vídeos
+               Reels
              </button>
           )}
 
@@ -2510,8 +2510,8 @@ export default function Profile() {
                   ))
                 ) : (
                   <div className="col-span-full py-20 text-center">
-                    <Film className="w-12 h-12 text-gray-100 mx-auto mb-4" />
-                    <p className="text-gray-400 text-sm font-bold uppercase tracking-widest">Sem Vídeos diponíveis</p>
+                    <Eye className="w-12 h-12 text-gray-100 mx-auto mb-4" />
+                    <p className="text-gray-400 text-sm font-bold uppercase tracking-widest">Sem Reels diponíveis</p>
                   </div>
                 );
               })()}
@@ -2618,7 +2618,7 @@ export default function Profile() {
                     )}
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2">
                       <div className="flex items-center space-x-1 mb-1">
-                        {item.item_type === 'post' && <Film className="w-2.5 h-2.5 text-white" />}
+                        {item.item_type === 'post' && <Eye className="w-2.5 h-2.5 text-white" />}
                         {item.item_type === 'direct_message' && <MessageSquare className="w-2.5 h-2.5 text-white" />}
                         {item.item_type === 'group_message' && <Users className="w-2.5 h-2.5 text-white" />}
                         {item.item_type === 'service' && <Stethoscope className="w-2.5 h-2.5 text-white" />}

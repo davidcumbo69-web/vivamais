@@ -1,4 +1,4 @@
-import { Heart, Microscope, Pill, Hospital, Stethoscope, Film, CircleUser as UserIcon, Apple, CalendarCheck, ShoppingBag, LogOut, MessageSquare, FileText, ShieldCheck, Menu, X, Store, Building2 } from 'lucide-react';
+import { Heart, Microscope, Pill, Hospital, Stethoscope, Eye, CircleUser as UserIcon, Apple, CalendarCheck, ShoppingBag, LogOut, MessageSquare, FileText, ShieldCheck, Menu, X, Store, Building2 } from 'lucide-react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
@@ -21,7 +21,7 @@ export function Navbar() {
     { icon: FileText, label: 'Receitas', path: '/historico-receitas' },
     { icon: ShoppingBag, label: 'Loja VIVA', path: '/loja-viva' },
     { icon: MessageSquare, label: 'Mensagens', path: '/mensagens' },
-    { icon: Film, label: 'Educação', path: '/reels' },
+    { icon: Eye, label: 'Reels', path: '/reels' },
     { icon: ShieldCheck, label: 'Validar', path: '/verificar' },
     ...(profile?.is_professional ? [
       { icon: Hospital, label: 'Criar', path: '/professional/dashboard' }
@@ -35,7 +35,7 @@ export function Navbar() {
     { icon: Stethoscope, label: 'Início', path: '/' },
     { icon: Microscope, label: 'Explorar', path: '/explorar' },
     { icon: ShoppingBag, label: 'Loja', path: '/loja-viva' },
-    { icon: Film, label: 'Educação', path: '/reels' },
+    { icon: Eye, label: 'Reels', path: '/reels' },
   ];
 
   const mobileMenuItems = navItems.filter(item => 

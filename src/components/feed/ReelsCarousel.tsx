@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Film, ShieldCheck, Play, Plus, CircleUser } from 'lucide-react';
+import { Eye, ShieldCheck, Play, Plus, CircleUser } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { cn, sanitizeAvatarUrl } from '../../lib/utils';
 import { Skeleton } from '../ui/Skeleton';
@@ -81,7 +81,7 @@ export function ReelsCarousel({ onAddClick }: ReelsCarouselProps) {
     <div className="bg-white border border-gray-200 rounded-xl py-6 px-4 mb-4 mx-4 md:mx-0 shadow-sm overflow-hidden relative">
       <div className="flex items-center justify-between mb-4 px-2">
         <div className="flex items-center space-x-2">
-          <Film className="w-5 h-5 text-[#006747]" />
+          <Eye className="w-5 h-5 text-[#006747]" />
           <h3 className="font-black text-sm uppercase tracking-tighter italic">Saúde em Movimento</h3>
         </div>
         <button 

@@ -19,6 +19,7 @@ import { Header } from '../components/layout/Header';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { AdCarousel } from '../components/ads/AdCarousel';
 
 type Category = 'all' | 'establishments' | 'professionals' | 'services' | 'pharmacies';
 
@@ -99,8 +100,16 @@ export default function Explore() {
       
       <main className="max-w-6xl mx-auto px-4 pt-8">
         {/* Hero Search Section */}
-        <div className="bg-[#006747] rounded-[2.5rem] p-8 md:p-12 mb-8 relative overflow-hidden shadow-2xl shadow-emerald-900/20">
-          <div className="absolute top-0 right-0 p-8 opacity-10">
+        <div className="rounded-[2.5rem] p-8 md:p-12 mb-8 relative overflow-hidden shadow-2xl shadow-zinc-900/20 bg-zinc-900">
+          <AdCarousel 
+            location="profiles" 
+            backgroundOnly 
+            className="absolute inset-0 w-full h-full opacity-100 z-0 pointer-events-none"
+          />
+          
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent z-0" />
+          
+          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none z-0">
             <Microscope className="w-64 h-64 text-white rotate-12" />
           </div>
           
