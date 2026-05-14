@@ -178,7 +178,8 @@ export default function ProfessionalDashboard() {
   }, [profile]);
 
   useEffect(() => {
-    if (user && profile?.is_professional) {
+    const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
+    if (user && (profile?.is_professional || isAdmin)) {
       fetchData();
     }
   }, [user, profile]);
@@ -249,32 +250,57 @@ export default function ProfessionalDashboard() {
       }
 
       // 5. Fetch Pharmacy Prescription Submissions
-      const isAdmin = profile?.email === 'davidcumbo69@gmail.com';
+      // Use user.email for immediate detection if profile is not yet loaded
+      const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
+      console.log('[Dashboard DEBUG] user.email:', user?.email, 'isAdmin:', isAdmin);
       
       let pharmaciesQuery = supabase.from('pharmacies').select('*');
       if (!isAdmin) {
         pharmaciesQuery = pharmaciesQuery.eq('owner_id', user.id);
       }
       
-      const { data: myPharms } = await pharmaciesQuery;
+      const { data: myPharms, error: pharmsError } = await pharmaciesQuery;
+      
+      if (pharmsError) console.error('[Dashboard DEBUG] Error fetching pharmacies:', pharmsError);
+      console.log('[Dashboard DEBUG] Pharmacies count:', myPharms?.length);
       
       if (myPharms) {
         setMyPharmacies(myPharms);
-        if (myPharms.length > 0) {
+        
+        // If Admin, fetch ALL orders. If not, only for my pharmacies.
+        let ordersQuery = supabase
+          .from('pharmacy_orders')
+          .select(`
+            *,
+            user:profiles(full_name, username),
+            pharmacy:pharmacies(name)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (!isAdmin && myPharms.length > 0) {
           const pharmIds = myPharms.map(p => p.id);
-          const { data: ords } = await supabase
-            .from('pharmacy_orders')
-            .select(`
-              *,
-              user:profiles(full_name, username),
-              pharmacy:pharmacies(name)
-            `)
-            .in('pharmacy_id', pharmIds)
-            .order('created_at', { ascending: false });
+          ordersQuery = ordersQuery.in('pharmacy_id', pharmIds);
+        } else if (!isAdmin && myPharms.length === 0) {
+          // If not admin and has no pharmacies, no orders to show
+          setPharmacyOrders([]);
+          return;
+        }
+
+        const { data: ords, error: ordsError } = await ordersQuery;
           
-          if (ords) {
-             setPharmacyOrders(ords);
-          }
+        if (ordsError) console.error('[Dashboard DEBUG] Error fetching pharmacy orders:', ordsError);
+        console.log('[Dashboard DEBUG] Pharmacy Orders count:', ords?.length);
+        
+        // Final fallback: try fetching absolute raw count without any joins or filters if count was 0
+        if (!ords || ords.length === 0) {
+          const { count, error: countError } = await supabase
+            .from('pharmacy_orders')
+            .select('*', { count: 'exact', head: true });
+          console.log('[Dashboard DEBUG] RAW TOTAL COUNT in pharmacy_orders table:', count, 'Error:', countError);
+        }
+
+        if (ords) {
+           setPharmacyOrders(ords);
         }
       }
     } catch (err) {
