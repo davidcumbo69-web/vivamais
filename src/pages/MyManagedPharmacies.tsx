@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Store, Plus, MapPin, Clock, Edit2, Loader2, CheckCircle2, AlertCircle, ChevronRight, ArrowLeft, Pill, ExternalLink } from 'lucide-react';
+import { Store, Plus, MapPin, Clock, Edit2, Loader2, CheckCircle2, AlertCircle, ChevronRight, ArrowLeft, Pill, ExternalLink, FileText } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
@@ -112,6 +112,13 @@ export default function MyManagedPharmacies() {
                   >
                     <Pill className="w-4 h-4" />
                     <span className="hidden sm:inline">Medicamentos</span>
+                  </Link>
+                  <Link
+                    to={`/farmacias/receitas/${pharmacy.id}`}
+                    className="flex items-center justify-center space-x-2 bg-blue-50 text-blue-700 px-4 py-3 rounded-xl font-bold hover:bg-blue-100 transition-colors"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span className="hidden sm:inline">Receitas</span>
                   </Link>
                   <Link
                     to={`/farmacias/editar/${pharmacy.id}`}

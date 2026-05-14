@@ -287,6 +287,7 @@ export default function Profile() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [orders, setOrders] = useState<any[]>([]);
+  const [pharmacyOrders, setPharmacyOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [services, setServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
@@ -772,14 +773,29 @@ export default function Profile() {
 
   const fetchUserOrders = async (targetUserId: string) => {
     setLoadingOrders(true);
-    const { data } = await supabase
-      .from('product_orders')
-      .select('*, product:product_id(*)')
-      .eq('buyer_id', targetUserId)
-      .order('created_at', { ascending: false });
-    
-    if (data) setOrders(data);
-    setLoadingOrders(false);
+    try {
+      // Fetch Product Orders
+      const { data: pOrders } = await supabase
+        .from('product_orders')
+        .select('*, product:product_id(*)')
+        .eq('buyer_id', targetUserId)
+        .order('created_at', { ascending: false });
+      
+      if (pOrders) setOrders(pOrders);
+
+      // Fetch Pharmacy Orders
+      const { data: phOrders } = await supabase
+        .from('pharmacy_orders')
+        .select('*, pharmacy:pharmacy_id(name)')
+        .eq('user_id', targetUserId)
+        .order('created_at', { ascending: false });
+      
+      if (phOrders) setPharmacyOrders(phOrders);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+    } finally {
+      setLoadingOrders(false);
+    }
   };
 
   const handleConfirmOrderReceipt = async (orderId: string) => {
@@ -2326,13 +2342,13 @@ export default function Profile() {
           )}
 
           {activeTab === 'orders' && (
-            <div className="space-y-4 px-2">
+            <div className="space-y-6 px-2 pb-10">
               {loadingOrders ? (
                 <div className="space-y-4">
                    {[...Array(3)].map((_, i) => (
-                     <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 flex items-center justify-between">
+                     <div key={i} className="bg-white rounded-[2rem] p-6 border border-gray-100 flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                           <Skeleton className="w-12 h-12 rounded-xl" />
+                           <Skeleton className="w-12 h-12 rounded-2xl" />
                            <div className="space-y-2">
                               <Skeleton className="h-4 w-32" />
                               <Skeleton className="h-3 w-24" />
@@ -2342,50 +2358,110 @@ export default function Profile() {
                      </div>
                    ))}
                 </div>
-              ) : orders.length > 0 ? (
-                orders.map(order => (
-                  <div key={order.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between group hover:border-[#006747]/20 transition-all">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden">
-                        <img src={order.product?.image_url} className="w-full h-full object-cover" alt="" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-900">{order.product?.name}</h4>
-                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest flex items-center mt-0.5">
-                          Qtd: {order.quantity} • Total: {order.total_price}€
-                        </p>
-                      </div>
-                    </div>
+              ) : (orders.length > 0 || pharmacyOrders.length > 0) ? (
+                <div className="space-y-8">
+                  {/* Pharmacy Orders Section */}
+                  {pharmacyOrders.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Encomendas de Farmácia</h3>
+                      {pharmacyOrders.map(order => (
+                        <div key={order.id} className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between group hover:border-[#006747]/20 transition-all">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-[#006747]">
+                              <Hospital className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900">{order.pharmacy?.name}</h4>
+                              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest flex items-center mt-0.5">
+                                {order.items?.length || 0} Items • {order.total_price?.toLocaleString()} Kz
+                              </p>
+                              <p className="text-[9px] text-gray-300 font-bold mt-1">
+                                {new Date(order.created_at).toLocaleDateString('pt-PT')}
+                              </p>
+                            </div>
+                          </div>
 
-                    <div className="mt-4 md:mt-0 flex items-center space-x-4">
-                       <div className={cn(
-                          "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center",
-                          order.status === 'pendente' ? "bg-yellow-50 text-yellow-700" : 
-                          order.status === 'enviado' ? "bg-blue-50 text-blue-700 font-bold animate-pulse" : 
-                          order.status === 'concluído' ? "bg-green-50 text-green-700" :
-                          "bg-red-50 text-red-700"
-                       )}>
-                          {order.status === 'enviado' ? <Truck className="w-3 h-3 mr-1.5" /> : null}
-                          {order.status === 'concluído' ? <PackageCheck className="w-3 h-3 mr-1.5" /> : null}
-                          {order.status}
-                       </div>
-                       
-                       {order.status === 'enviado' && (
-                           <button 
-                             onClick={() => handleConfirmOrderReceipt(order.id)}
-                             className="bg-[#006747] text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-100"
-                           >
-                             Confirmar Receção
-                           </button>
-                       )}
+                          <div className="mt-4 md:mt-0 flex items-center space-x-4">
+                             <div className={cn(
+                                "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center",
+                                order.status === 'pending' ? "bg-yellow-50 text-yellow-600" : 
+                                order.status === 'accepted' ? "bg-emerald-500 text-white" : 
+                                order.status === 'processing' ? "bg-blue-50 text-blue-600 font-bold" : 
+                                order.status === 'completed' ? "bg-emerald-50 text-emerald-600" :
+                                "bg-red-50 text-red-600"
+                             )}>
+                                {order.status === 'processing' ? <Truck className="w-3 h-3 mr-1.5" /> : null}
+                                {order.status === 'completed' ? <CheckCircle2 className="w-3 h-3 mr-1.5" /> : null}
+                                {order.status}
+                             </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                ))
+                  )}
+
+                  {/* Marketplace Orders Section */}
+                  {orders.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2"> Marketplace VIVA</h3>
+                      {orders.map(order => (
+                        <div key={order.id} className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between group hover:border-[#006747]/20 transition-all">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-gray-50 rounded-2xl overflow-hidden shadow-inner">
+                              {order.product?.image_url ? (
+                                <img src={order.product?.image_url} className="w-full h-full object-cover" alt="" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center p-2">
+                                  <ShoppingBag className="w-6 h-6 text-gray-200" />
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900">{order.product?.name || 'Produto Removido'}</h4>
+                              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest flex items-center mt-0.5">
+                                Qtd: {order.quantity} • Total: {order.total_price}€
+                              </p>
+                              <p className="text-[9px] text-gray-300 font-bold mt-1">
+                                {new Date(order.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 md:mt-0 flex items-center space-x-4">
+                             <div className={cn(
+                                "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center",
+                                order.status === 'pendente' ? "bg-yellow-50 text-yellow-700" : 
+                                order.status === 'enviado' ? "bg-blue-50 text-blue-700 font-bold animate-pulse" : 
+                                order.status === 'concluído' ? "bg-green-50 text-green-700" :
+                                "bg-red-50 text-red-700"
+                             )}>
+                                {order.status === 'enviado' ? <Truck className="w-3 h-3 mr-1.5" /> : null}
+                                {order.status === 'concluído' ? <PackageCheck className="w-3 h-3 mr-1.5" /> : null}
+                                {order.status}
+                             </div>
+                             
+                             {order.status === 'enviado' && (
+                                 <button 
+                                   onClick={() => handleConfirmOrderReceipt(order.id)}
+                                   className="bg-[#006747] text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-100"
+                                 >
+                                   Confirmar Receção
+                                 </button>
+                             )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ) : (
-                <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
-                   <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Sem encomendas</p>
-                   <p className="text-xs text-gray-400 px-10">Ainda não realizou compras no Marketplace VIVA.</p>
-                   <Link to="/loja-viva" className="mt-6 inline-block text-[#006747] font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-6 py-3 rounded-2xl hover:bg-emerald-100 transition-all">Ir para a Loja</Link>
+                <div className="text-center py-24 bg-gray-50 rounded-[3rem] border border-dashed border-gray-200">
+                   <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 shadow-sm">
+                      <ShoppingBag className="w-8 h-8 text-gray-100" />
+                   </div>
+                   <p className="text-sm text-gray-400 font-black uppercase tracking-widest mb-1">Sem encomendas</p>
+                   <p className="text-xs text-gray-400 px-12 leading-relaxed">Ainda não realizou compras ou pedidos de farmácia.</p>
+                   <Link to="/marketplace" className="mt-8 inline-flex bg-[#006747] text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-800 transition-all shadow-xl shadow-emerald-50">Explorar Saúde</Link>
                 </div>
               )}
             </div>

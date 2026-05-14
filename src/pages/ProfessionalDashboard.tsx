@@ -7,6 +7,7 @@ import {
   Calendar, 
   Users, 
   CheckCircle2, 
+  X,
   XCircle, 
   Clock, 
   TrendingUp, 
@@ -27,6 +28,11 @@ import {
   LineChart as LineChartIcon,
   HeartPulse as HeartPulseIcon,
   CircleUser,
+  FileText,
+  Hospital,
+  Pill,
+  Package,
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
@@ -48,17 +54,52 @@ import {
   Area
 } from 'recharts';
 
+const SubTabButton = ({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) => (
+    <button 
+        onClick={onClick}
+        className={cn(
+            "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+            active ? "bg-white text-[#006747] shadow-sm shadow-emerald-900/5 ring-1 ring-emerald-100" : "text-gray-400 hover:text-gray-600"
+        )}
+    >
+        {label}
+    </button>
+);
+
+const TabButton = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
+    <button 
+        onClick={onClick}
+        className={cn(
+            "flex items-center space-x-2 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+            active ? "bg-[#006747] text-white shadow-lg shadow-emerald-900/10" : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+        )}
+    >
+        {icon}
+        <span>{label}</span>
+    </button>
+);
+
 export default function ProfessionalDashboard() {
   const { user, profile } = useAuth();
   const [services, setServices] = useState<WellnessService[]>([]);
   const [bookings, setBookings] = useState<(Booking & { service?: WellnessService, patient?: Profile })[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [pharmacyOrders, setPharmacyOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'bookings' | 'products' | 'sales' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'products' | 'pharmacies' | 'patients' | 'analytics'>('overview');
+  const [subTab, setSubTab] = useState<string>('list');
+  const [myPharmacies, setMyPharmacies] = useState<any[]>([]);
+  const [patients, setPatients] = useState<Profile[]>([]);
+  const [selectedPharmacyOrder, setSelectedPharmacyOrder] = useState<any | null>(null);
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    setSubTab('list');
+  }, [activeTab]);
 
   useEffect(() => {
     if (notification) {
@@ -178,6 +219,15 @@ export default function ProfessionalDashboard() {
       if (bks) {
         const filtered = bks.filter(b => b.service?.provider_id === user.id);
         setBookings(filtered);
+        
+        // Extract unique patients
+        const uniquePatientsMap = new Map();
+        filtered.forEach(b => {
+          if (b.patient) {
+            uniquePatientsMap.set(b.user_id, b.patient);
+          }
+        });
+        setPatients(Array.from(uniquePatientsMap.values()));
       }
 
       // 3. Fetch Products
@@ -197,6 +247,24 @@ export default function ProfessionalDashboard() {
         const filteredOrds = ords.filter(o => o.product?.seller_id === user.id);
         setOrders(filteredOrds);
       }
+
+      // 5. Fetch Pharmacy Prescription Submissions
+      const { data: myPharms } = await supabase
+        .from('pharmacies')
+        .select('*')
+        .eq('owner_id', user.id);
+      
+      if (myPharms && myPharms.length > 0) {
+        setMyPharmacies(myPharms);
+        const pharmIds = myPharms.map(p => p.id);
+        const { data: ords } = await supabase
+          .from('pharmacy_orders')
+          .select('*, user:user_id(full_name, username), pharmacy:pharmacy_id(name)')
+          .in('pharmacy_id', pharmIds)
+          .order('created_at', { ascending: false });
+        
+        if (ords) setPharmacyOrders(ords);
+      }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -215,6 +283,26 @@ export default function ProfessionalDashboard() {
       .update(updateData)
       .eq('id', orderId);
     if (!error) fetchData();
+  };
+
+  const handleUpdatePharmacyOrderStatus = async (orderId: string, status: string) => {
+    setIsUpdatingOrder(true);
+    try {
+      const { error } = await supabase
+        .from('pharmacy_orders')
+        .update({ status })
+        .eq('id', orderId);
+
+      if (error) throw error;
+      fetchData();
+      if (selectedPharmacyOrder?.id === orderId) {
+        setSelectedPharmacyOrder((prev: any) => ({ ...prev, status }));
+      }
+    } catch (err) {
+      console.error('Error updating pharmacy order status:', err);
+    } finally {
+      setIsUpdatingOrder(false);
+    }
   };
 
   const handleCreateService = async (e: React.FormEvent) => {
@@ -515,71 +603,59 @@ export default function ProfessionalDashboard() {
                 <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Vendas</p>
                 <p className="text-xl font-black text-gray-900">{orders.length}</p>
             </div>
+
+            {pharmacyOrders.length > 0 && (
+              <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group">
+                  <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-[#006747] mb-3 group-hover:scale-110 transition-transform">
+                      <Hospital className="w-5 h-5" />
+                  </div>
+                  <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Pedidos Farmácia</p>
+                  <p className="text-xl font-black text-gray-900">{pharmacyOrders.length}</p>
+                  <div className="absolute -bottom-2 -right-2 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                    <Hospital className="w-20 h-20" />
+                  </div>
+              </div>
+            )}
         </div>
 
-        {/* Secondary Navigation */}
-        <div className="flex bg-white/50 p-1 rounded-2xl border border-gray-100 mb-8 max-w-2xl overflow-x-auto scrollbar-hide">
-            <button 
-                onClick={() => setActiveTab('overview')}
-                className={cn(
-                    "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                    activeTab === 'overview' ? "bg-white text-[#006747] shadow-sm" : "text-gray-400 hover:text-gray-600"
-                )}
-            >
-                Geral
-            </button>
-            <button 
-                onClick={() => setActiveTab('services')}
-                className={cn(
-                    "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                    activeTab === 'services' ? "bg-white text-[#006747] shadow-sm" : "text-gray-400 hover:text-gray-600"
-                )}
-            >
-                Serviços
-            </button>
-            <button 
-                onClick={() => setActiveTab('bookings')}
-                className={cn(
-                    "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                    activeTab === 'bookings' ? "bg-white text-[#006747] shadow-sm" : "text-gray-400 hover:text-gray-600"
-                )}
-            >
-                Agendas
-            </button>
-            <button 
-                onClick={() => setActiveTab('products')}
-                className={cn(
-                    "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                    activeTab === 'products' ? "bg-white text-[#006747] shadow-sm" : "text-gray-400 hover:text-gray-600"
-                )}
-            >
-                Produtos
-            </button>
-            <button 
-                onClick={() => setActiveTab('sales')}
-                className={cn(
-                    "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                    activeTab === 'sales' ? "bg-white text-[#006747] shadow-sm" : "text-gray-400 hover:text-gray-600"
-                )}
-            >
-                Vendas
-            </button>
-            <button 
-                onClick={() => setActiveTab('analytics')}
-                className={cn(
-                    "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                    activeTab === 'analytics' ? "bg-white text-[#006747] shadow-sm" : "text-gray-400 hover:text-gray-600"
-                )}
-            >
-                Análises
-            </button>
-            <Link 
-                to="/professional/patients"
-                className="flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap text-gray-400 hover:text-[#006747] flex items-center justify-center space-x-2"
-            >
-                <HeartPulseIcon className="w-3 h-3" />
-                <span>Pacientes</span>
-            </Link>
+        {/* Secondary Navigation - Professional Tabs */}
+        <div className="sticky top-4 z-40 flex bg-white/90 backdrop-blur-md p-1.5 rounded-[2rem] border border-gray-100 mb-8 overflow-x-auto scrollbar-hide shadow-lg">
+            <TabButton 
+                active={activeTab === 'overview'} 
+                onClick={() => { setActiveTab('overview'); setSubTab('default'); }}
+                icon={<LayoutDashboard className="w-4 h-4" />}
+                label="Geral"
+            />
+            <TabButton 
+                active={activeTab === 'services'} 
+                onClick={() => { setActiveTab('services'); setSubTab('list'); }}
+                icon={<Stethoscope className="w-4 h-4" />}
+                label="Serviços"
+            />
+            <TabButton 
+                active={activeTab === 'products'} 
+                onClick={() => { setActiveTab('products'); setSubTab('list'); }}
+                icon={<ShoppingBag className="w-4 h-4" />}
+                label="Produtos"
+            />
+            <TabButton 
+                active={activeTab === 'pharmacies'} 
+                onClick={() => { setActiveTab('pharmacies'); setSubTab('list'); }}
+                icon={<Hospital className="w-4 h-4" />}
+                label="Farmácias"
+            />
+            <TabButton 
+                active={activeTab === 'patients'} 
+                onClick={() => { setActiveTab('patients'); setSubTab('default'); }}
+                icon={<Users className="w-4 h-4" />}
+                label="Pacientes"
+            />
+            <TabButton 
+                active={activeTab === 'analytics'} 
+                onClick={() => { setActiveTab('analytics'); setSubTab('default'); }}
+                icon={<TrendingUp className="w-4 h-4" />}
+                label="Análises"
+            />
         </div>
 
         {loading ? (
@@ -612,294 +688,458 @@ export default function ProfessionalDashboard() {
         ) : (
             <div className="space-y-8">
                 {activeTab === 'overview' && (
+                  <>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Pending Approvals */}
-                        <section>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-black text-gray-900 flex items-center">
-                                    <Clock className="w-5 h-5 mr-2 text-orange-500" />
-                                    Aguardando Confirmação
-                                </h3>
-                                <span className="text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-lg">
-                                    {pendingBookings.length} NOVAS
-                                </span>
+                        {/* Summary of Performance */}
+                        <section className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-center">
+                            <h3 className="font-black text-gray-900 flex items-center mb-6">
+                                <TrendingUp className="w-5 h-5 mr-3 text-emerald-500" />
+                                Desempenho Hoje
+                            </h3>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Novos Pacientes</p>
+                                    <p className="text-2xl font-black text-gray-900">+{patients.filter(p => new Date(p.created_at || '').toDateString() === new Date().toDateString()).length}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Atendimentos</p>
+                                    <p className="text-2xl font-black text-gray-900">{bookings.filter(b => b.status === 'concluído').length}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">VITUS Hoje</p>
+                                    <p className="text-2xl font-black text-amber-500">+{bookings.filter(b => b.status === 'concluído' && new Date(b.scheduled_at).toDateString() === new Date().toDateString()).length * 10} VTS</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nível de Satisfação</p>
+                                    <p className="text-2xl font-black text-emerald-600">98%</p>
+                                </div>
                             </div>
+                        </section>
+
+                        <section className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                             <h3 className="font-black text-gray-900 flex items-center mb-4">
+                                <Bell className="w-5 h-5 mr-3 text-emerald-500" />
+                                Alertas de Sistema
+                            </h3>
                             <div className="space-y-4">
-                                {pendingBookings.length > 0 ? pendingBookings.map(bk => (
-                                    <motion.div 
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        key={bk.id} 
-                                        className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#006747]/20 transition-all"
-                                    >
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden">
-                                                {sanitizeAvatarUrl(bk.patient?.avatar_url) ? (
-                                                    <img src={sanitizeAvatarUrl(bk.patient.avatar_url)!} className="w-full h-full object-cover" alt="" />
-                                                ) : (
-                                                    <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
-                                                )}
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-gray-900">{bk.patient?.full_name || bk.patient?.username}</h4>
-                                                <p className="text-xs text-[#006747] font-bold uppercase">{bk.service?.name}</p>
-                                                <div className="flex items-center text-[10px] text-gray-400 font-bold mt-1">
-                                                    <Calendar className="w-3 h-3 mr-1" />
-                                                    {new Date(bk.scheduled_at).toLocaleDateString('pt-PT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                                </div>
-                                            </div>
+                                {pendingBookings.length > 0 && (
+                                    <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex items-center space-x-3">
+                                        <div className="bg-white p-2 rounded-xl text-orange-500 shadow-sm">
+                                            <Calendar className="w-5 h-5" />
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                            <button 
-                                                onClick={() => handleUpdateBookingStatus(bk.id, 'confirmado')}
-                                                className="bg-emerald-50 text-[#006747] p-3 rounded-2xl hover:bg-[#006747] hover:text-white transition-all shadow-sm"
-                                            >
-                                                <CheckCircle2 className="w-5 h-5" />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleUpdateBookingStatus(bk.id, 'cancelado')}
-                                                className="bg-red-50 text-red-500 p-3 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm"
-                                            >
-                                                <XCircle className="w-5 h-5" />
-                                            </button>
+                                        <div>
+                                            <p className="text-xs font-black text-orange-900 uppercase">Novos Agendamentos</p>
+                                            <p className="text-[10px] font-bold text-orange-700">Você tem {pendingBookings.length} consultas pendentes para confirmar.</p>
+                                            <button onClick={() => { setActiveTab('services'); setSubTab('bookings'); }} className="text-[10px] font-black text-orange-900 underline mt-2">VER AGENDAS</button>
                                         </div>
-                                    </motion.div>
-                                )) : (
-                                    <div className="bg-white/50 p-12 text-center rounded-[2rem] border-2 border-dashed border-gray-200">
-                                        <p className="text-gray-400 font-bold text-sm">Sem pedidos pendentes.</p>
+                                    </div>
+                                )}
+                                {pharmacyOrders.filter(o => o.status === 'pending').length > 0 && (
+                                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center space-x-3">
+                                        <div className="bg-white p-2 rounded-xl text-emerald-600 shadow-sm">
+                                            <Hospital className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-black text-[#006747] uppercase">Pedidos de Farmácia</p>
+                                            <p className="text-[10px] font-bold text-emerald-700">Existem {pharmacyOrders.filter(o => o.status === 'pending').length} novos pedidos aguardando ação.</p>
+                                            <button onClick={() => { setActiveTab('pharmacies'); setSubTab('orders'); }} className="text-[10px] font-black text-[#006747] underline mt-2">VER PEDIDOS</button>
+                                        </div>
+                                    </div>
+                                )}
+                                {pendingBookings.length === 0 && pharmacyOrders.filter(o => o.status === 'pending').length === 0 && (
+                                    <div className="py-8 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sem alertas novos</p>
+                                        <p className="text-[9px] text-gray-400">Tudo em ordem no seu consultório.</p>
                                     </div>
                                 )}
                             </div>
                         </section>
+                    </div>
 
-                        {/* Recent Activity / Next Appointments */}
-                        <section>
-                             <h3 className="font-black text-gray-900 flex items-center mb-4">
-                                <Calendar className="w-5 h-5 mr-2 text-blue-500" />
-                                Próximas Consultas
-                            </h3>
-                            <div className="space-y-4">
-                                {confirmedBookings.length > 0 ? confirmedBookings.slice(0, 5).map(bk => (
-                                    <div key={bk.id} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                    {pharmacyOrders.length > 0 && (
+                        <section className="mt-8">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-black text-gray-900 flex items-center">
+                                    <Hospital className="w-5 h-5 mr-3 text-emerald-500" />
+                                    Últimos Pedidos de Farmácia
+                                </h3>
+                                <button 
+                                    onClick={() => { setActiveTab('pharmacies'); setSubTab('orders'); }}
+                                    className="text-[10px] font-black text-[#006747] uppercase tracking-widest hover:underline"
+                                >
+                                    Ver Todos
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {pharmacyOrders.slice(0, 3).map(order => (
+                                    <div key={order.id} className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#006747]/20 transition-all">
                                         <div className="flex items-center space-x-3">
-                                            <div className="bg-blue-50 text-blue-600 p-2 rounded-xl">
-                                                <Clock className="w-4 h-4" />
+                                            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-[#006747]">
+                                                <FileText className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-sm">{bk.patient?.full_name || bk.patient?.username}</h4>
-                                                <p className="text-[10px] text-gray-400 font-bold">
-                                                    {new Date(bk.scheduled_at).toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                                </p>
+                                                <h4 className="font-bold text-sm text-gray-900 leading-tight">{order.user?.full_name || order.user?.username}</h4>
+                                                <p className="text-[10px] text-gray-400 font-bold">{order.items?.length || 0} Items • {order.total_price?.toLocaleString()} Kz</p>
                                             </div>
                                         </div>
-                                        <button className="text-gray-300 hover:text-gray-600">
+                                        <button 
+                                            onClick={() => setSelectedPharmacyOrder(order)}
+                                            className="p-2 bg-gray-50 rounded-lg text-gray-400 group-hover:text-[#006747] group-hover:bg-emerald-50 transition-all"
+                                        >
                                             <ChevronRight className="w-5 h-5" />
                                         </button>
                                     </div>
-                                )) : (
-                                    <div className="bg-white/50 p-12 text-center rounded-[2rem] border border-gray-200">
-                                        <p className="text-gray-400 text-sm">Agenda vazia para os próximos dias.</p>
-                                    </div>
-                                )}
+                                ))}
                             </div>
                         </section>
-                    </div>
+                    )}
+                  </>
                 )}
 
                 {activeTab === 'services' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {services.map(svc => (
-                            <motion.div 
-                                layout
-                                key={svc.id} 
-                                className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group"
-                            >
-                                <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button className="text-gray-400 hover:text-gray-900">
-                                        <MoreVertical className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-[#006747] mb-4">
-                                    <Stethoscope className="w-6 h-6" />
-                                </div>
-                                <h4 className="text-lg font-black text-gray-900 mb-1">{svc.name}</h4>
-                                <p className="text-[10px] font-black text-[#006747] uppercase tracking-widest mb-4">{svc.category}</p>
-                                <p className="text-gray-500 text-sm line-clamp-2 mb-6 font-medium leading-relaxed">
-                                    {svc.description || "Sem descrição disponível."}
-                                </p>
-                                <div className="flex items-center justify-between pt-6 border-t border-gray-50">
-                                    <div className="flex items-center font-black text-gray-900">
-                                        <Euro className="w-4 h-4 mr-1 text-[#006747]" />
-                                        {svc.base_price}€
-                                    </div>
-                                    <div className="flex items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                                        <MapPin className="w-3 h-3 mr-1" />
-                                        {svc.location || 'Online'}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
+                  <div className="space-y-8">
+                    <div className="bg-white/40 backdrop-blur-sm p-1.5 rounded-2xl border border-gray-100 flex space-x-2 w-fit">
+                        <SubTabButton active={subTab === 'list'} onClick={() => setSubTab('list')} label="Meus Serviços" />
+                        <SubTabButton active={subTab === 'bookings'} onClick={() => setSubTab('bookings')} label="Agendas e Reservas" />
                     </div>
-                )}
 
-                {activeTab === 'bookings' && (
-                    <div className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden shadow-sm">
-                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                            <h3 className="font-black text-gray-900">Histórico de Agendas</h3>
+                    {subTab === 'list' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {services.map(svc => (
+                                <motion.div 
+                                    layout
+                                    key={svc.id} 
+                                    className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group"
+                                >
+                                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button className="text-gray-400 hover:text-gray-900">
+                                            <MoreVertical className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-[#006747] mb-4">
+                                        <Stethoscope className="w-6 h-6" />
+                                    </div>
+                                    <h4 className="text-lg font-black text-gray-900 mb-1">{svc.name}</h4>
+                                    <p className="text-[10px] font-black text-[#006747] uppercase tracking-widest mb-4">{svc.category}</p>
+                                    <p className="text-gray-500 text-sm line-clamp-2 mb-6 font-medium leading-relaxed">
+                                        {svc.description || "Sem descrição disponível."}
+                                    </p>
+                                    <div className="flex items-center justify-between pt-6 border-t border-gray-50">
+                                        <div className="flex items-center font-black text-gray-900">
+                                            <Euro className="w-4 h-4 mr-1 text-[#006747]" />
+                                            {svc.base_price}€
+                                        </div>
+                                        <div className="flex items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                            <MapPin className="w-3 h-3 mr-1" />
+                                            {svc.location || 'Online'}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-gray-50/50">
-                                    <tr>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-wider">Paciente</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-wider">Serviço</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-wider">Data/Hora</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-wider">Status</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-wider text-right">Valor</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {bookings.map(bk => (
-                                        <tr key={bk.id} className="hover:bg-gray-50/30 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
-                                                        {sanitizeAvatarUrl(bk.patient?.avatar_url) ? (
-                                                          <img src={sanitizeAvatarUrl(bk.patient.avatar_url)!} alt="" className="w-full h-full object-cover" />
-                                                        ) : (
-                                                          <CircleUser className="w-full h-full text-black stroke-[1px] p-1.5" />
-                                                        )}
-                                                    </div>
-                                                    <span className="font-bold text-sm text-gray-900">{bk.patient?.full_name || bk.patient?.username}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-xs font-bold text-gray-500">{bk.service?.name}</span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-xs font-bold text-gray-500">
-                                                    {new Date(bk.scheduled_at).toLocaleDateString('pt-PT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className={cn(
-                                                    "inline-flex px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest",
-                                                    bk.status === 'confirmado' ? "bg-green-50 text-green-700" : 
-                                                    bk.status === 'pendente' ? "bg-orange-50 text-orange-600" :
-                                                    bk.status === 'concluído' ? "bg-blue-50 text-blue-600" :
-                                                    "bg-red-50 text-red-600"
-                                                )}>
-                                                    {bk.status}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <span className="font-black text-gray-900">{bk.total_price}€</span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'products' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {products.map(prod => (
-                            <div key={prod.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
-                                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-4 overflow-hidden">
-                                    {prod.image_url ? (
-                                        <img src={prod.image_url} className="w-full h-full object-cover" alt="" />
-                                    ) : (
-                                        <ShoppingBag className="w-6 h-6" />
-                                    )}
-                                </div>
-                                <h4 className="text-lg font-black text-gray-900 mb-1">{prod.name}</h4>
-                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4">{prod.category}</p>
-                                <p className="text-gray-500 text-sm line-clamp-2 mb-6 font-medium leading-relaxed">{prod.description}</p>
-                                <div className="flex items-center justify-between pt-6 border-t border-gray-50">
-                                    <span className="font-black text-gray-900">{prod.price}€</span>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Estoque: {prod.stock_quantity}</span>
+                    ) : (
+                        <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
+                            <div className="p-8 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
+                                <h3 className="font-black text-gray-900 uppercase tracking-tight">Gestão de Agendamentos</h3>
+                                <div className="flex items-center space-x-2">
+                                    <span className="text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-lg">{pendingBookings.length} PENDENTES</span>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                )}
-
-                {activeTab === 'sales' && (
-                    <div className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden shadow-sm">
-                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                            <h3 className="font-black text-gray-900">Vendas de Produtos</h3>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-gray-50/50">
-                                    <tr>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-wider">Produto</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-wider">Qtd</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-wider">Comprador</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-wider">Status</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase text-gray-400 tracking-wider text-right">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {orders.map(order => (
-                                        <tr key={order.id} className="hover:bg-gray-50/30 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <span className="text-xs font-bold text-gray-900">{order.product?.name}</span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-xs font-black text-[#006747] bg-emerald-50 px-2 py-1 rounded-lg">x{order.quantity}</span>
-                                            </td>
-                                            <td className="px-6 py-4 text-xs font-medium text-gray-500">
-                                                {order.buyer?.full_name || order.buyer?.username}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center space-x-2">
-                                                    {order.status === 'pendente' ? (
-                                                        <button 
-                                                            onClick={() => handleUpdateOrderStatus(order.id, 'enviado')}
-                                                            className="text-[9px] font-black uppercase bg-blue-50 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-600 hover:text-white transition-all font-sans"
-                                                        >
-                                                            Marcar como Enviado
-                                                        </button>
-                                                    ) : order.status === 'enviado' ? (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-gray-50/50">
+                                        <tr>
+                                            <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Paciente</th>
+                                            <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Serviço</th>
+                                            <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Data / Hora</th>
+                                            <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Ação / Status</th>
+                                            <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest text-right">Preço</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {bookings.map(bk => (
+                                            <tr key={bk.id} className="hover:bg-gray-50/30 transition-colors">
+                                                <td className="px-8 py-5">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center border border-gray-200">
+                                                            {sanitizeAvatarUrl(bk.patient?.avatar_url) ? (
+                                                              <img src={sanitizeAvatarUrl(bk.patient.avatar_url)!} alt="" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                              <CircleUser className="w-full h-full text-black stroke-[1px] p-2" />
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-black text-gray-900 text-sm">{bk.patient?.full_name || bk.patient?.username}</p>
+                                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">ID: {bk.id.slice(0, 4)}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <span className="text-xs font-black text-[#006747] uppercase bg-emerald-50 px-3 py-1.5 rounded-lg">{bk.service?.name}</span>
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <div className="text-xs font-black text-gray-600">
+                                                        {new Date(bk.scheduled_at).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}
+                                                    </div>
+                                                    <div className="text-[10px] font-bold text-gray-400">
+                                                        {new Date(bk.scheduled_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    {bk.status === 'pendente' ? (
                                                         <div className="flex items-center space-x-2">
-                                                            <span className="text-[9px] font-black uppercase bg-blue-100 text-blue-700 px-3 py-1 rounded-lg flex items-center">
-                                                                <Truck className="w-3 h-3 mr-1" />
-                                                                Aguardando Confirmação
-                                                            </span>
-                                                            <button 
-                                                                onClick={() => handleUpdateOrderStatus(order.id, 'pendente')}
-                                                                className="text-[9px] font-black uppercase bg-gray-100 text-gray-400 px-2 py-1 rounded-lg hover:bg-red-50 hover:text-red-500 transition-all font-sans"
-                                                            >
-                                                                Anular
+                                                            <button onClick={() => handleUpdateBookingStatus(bk.id, 'confirmado')} className="p-2 bg-emerald-50 text-[#006747] rounded-lg hover:bg-[#006747] hover:text-white transition-all shadow-sm">
+                                                                <CheckCircle2 className="w-4 h-4" />
+                                                            </button>
+                                                            <button onClick={() => handleUpdateBookingStatus(bk.id, 'cancelado')} className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                                                                <XCircle className="w-4 h-4" />
                                                             </button>
                                                         </div>
                                                     ) : (
-                                                        <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-lg ${order.status === 'concluído' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                                                            {order.status === 'concluído' && <PackageCheck className="w-3 h-3 mr-1 inline" />}
-                                                            {order.status}
-                                                        </span>
+                                                        <div className={cn(
+                                                            "inline-flex px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest",
+                                                            bk.status === 'confirmado' ? "bg-green-50 text-green-700" : 
+                                                            bk.status === 'concluído' ? "bg-blue-50 text-blue-600" :
+                                                            "bg-red-50 text-red-600"
+                                                        )}>
+                                                            {bk.status}
+                                                        </div>
                                                     )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex flex-col items-end">
-                                                    <span className="font-black text-gray-900">{order.total_price}€</span>
-                                                    {order.vitus_used > 0 && (
-                                                        <span className="text-[8px] font-black text-amber-600 uppercase flex items-center mt-0.5">
-                                                            <Zap className="w-2.5 h-2.5 mr-0.5" />
-                                                            {order.vitus_used.toFixed(1)} Vitus
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                                </td>
+                                                <td className="px-8 py-5 text-right">
+                                                    <span className="font-black text-gray-900 text-sm">{bk.total_price}€</span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'products' && (
+                  <div className="space-y-8">
+                    <div className="bg-white/40 backdrop-blur-sm p-1.5 rounded-2xl border border-gray-100 flex space-x-2 w-fit">
+                        <SubTabButton active={subTab === 'list'} onClick={() => setSubTab('list')} label="Meus Produtos" />
+                        <SubTabButton active={subTab === 'sales'} onClick={() => setSubTab('sales')} label="Histórico de Vendas" />
+                    </div>
+
+                    {subTab === 'list' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {products.map(prod => (
+                                <div key={prod.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm group">
+                                    <div className="w-full aspect-square bg-gray-50 rounded-[1.5rem] mb-4 overflow-hidden relative border border-gray-100">
+                                        {prod.image_url ? (
+                                            <img src={prod.image_url} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-200">
+                                                <ShoppingBag className="w-12 h-12" />
+                                            </div>
+                                        )}
+                                        <div className="absolute top-3 right-3">
+                                            <div className="bg-[#006747] text-white px-3 py-1.5 rounded-xl text-[10px] font-black">{prod.price}€</div>
+                                        </div>
+                                    </div>
+                                    <h4 className="text-lg font-black text-gray-900 mb-1 leading-tight">{prod.name}</h4>
+                                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4">{prod.category}</p>
+                                    <p className="text-gray-500 text-xs line-clamp-2 mb-6 font-medium leading-relaxed">{prod.description}</p>
+                                    <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">ESTOQUE</span>
+                                            <span className="text-xs font-black text-gray-900">{prod.stock_quantity} unidades</span>
+                                        </div>
+                                        <button className="text-[9px] font-black text-gray-400 uppercase hover:text-gray-900 transition-colors">Editar</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
+                            <div className="p-8 border-b border-gray-50 bg-gray-50/50">
+                                <h3 className="font-black text-gray-900 uppercase tracking-tight">Controle de Vendas</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-gray-50/50">
+                                        <tr>
+                                            <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Produto</th>
+                                            <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest text-center">Status Envio</th>
+                                            <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest text-center">Data</th>
+                                            <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest text-right">Valor Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {orders.map(order => (
+                                            <tr key={order.id} className="hover:bg-gray-50/30 transition-colors">
+                                                <td className="px-8 py-5">
+                                                    <div className="flex items-center space-x-4">
+                                                        <div className="w-10 h-10 bg-gray-50 rounded-xl overflow-hidden border border-gray-200 shrink-0">
+                                                            {order.product?.image_url && <img src={order.product.image_url} className="w-full h-full object-cover" />}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-black text-gray-900">{order.product?.name}</p>
+                                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">QTD: x{order.quantity} • {order.buyer?.full_name}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-5 text-center">
+                                                    {order.status === 'pendente' ? (
+                                                        <button 
+                                                            onClick={() => handleUpdateOrderStatus(order.id, 'enviado')}
+                                                            className="text-[9px] font-black uppercase bg-[#006747] text-white px-4 py-2 rounded-xl shadow-lg shadow-emerald-900/10 hover:scale-105 transition-all"
+                                                        >
+                                                            Despachar Pedido
+                                                        </button>
+                                                    ) : (
+                                                        <div className={cn(
+                                                            "inline-flex px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest",
+                                                            order.status === 'enviado' ? "bg-blue-50 text-blue-600" :
+                                                            order.status === 'concluído' ? "bg-emerald-50 text-emerald-600" :
+                                                            "bg-gray-100 text-gray-400"
+                                                        )}>
+                                                            {order.status === 'enviado' && <Truck className="w-3 h-3 mr-1.5" />}
+                                                            {order.status}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-8 py-5 text-center">
+                                                    <span className="text-xs font-bold text-gray-400">{new Date(order.created_at).toLocaleDateString('pt-PT')}</span>
+                                                </td>
+                                                <td className="px-8 py-5 text-right">
+                                                    <p className="text-sm font-black text-gray-900">{order.total_price}€</p>
+                                                    {order.vitus_used > 0 && <p className="text-[8px] font-black text-amber-500 uppercase tracking-widest">+{order.vitus_used.toFixed(1)} VITUS UTILIZADOS</p>}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'pharmacies' && (
+                    <div className="space-y-8">
+                        <div className="bg-white/40 backdrop-blur-sm p-1.5 rounded-2xl border border-gray-100 flex space-x-2 w-fit">
+                            <SubTabButton active={subTab === 'list'} onClick={() => setSubTab('list')} label="Unidades Farmacêuticas" />
+                            <SubTabButton active={subTab === 'orders'} onClick={() => setSubTab('orders')} label="Pedidos e Receitas" />
+                        </div>
+
+                        {subTab === 'list' ? (
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Gestão de Unidades</h3>
+                                    <Link to="/farmacias/registar" className="bg-[#006747] text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-900/10 hover:scale-105 active:scale-95 transition-all">
+                                        Registar Nova Unidade
+                                    </Link>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {myPharmacies.map(pharm => (
+                                        <div key={pharm.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm group hover:border-[#006747]/20 transition-all flex flex-col md:flex-row gap-6">
+                                            <div className="w-20 h-20 bg-emerald-50 rounded-[2rem] flex items-center justify-center text-[#006747] shrink-0">
+                                                <Hospital className="w-10 h-10" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h4 className="text-xl font-black text-gray-900">{pharm.name}</h4>
+                                                    <div className={cn(
+                                                        "px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest",
+                                                        pharm.status === 'active' ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-400"
+                                                    )}>
+                                                        {pharm.status === 'active' ? 'Ativa' : 'Pendente'}
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-gray-400 font-bold mb-4 flex items-center">
+                                                    <MapPin className="w-3 h-3 mr-1" />
+                                                    {pharm.address}
+                                                </p>
+                                                <div className="flex items-center space-x-3 pt-6 border-t border-gray-50 mt-4">
+                                                    <Link to={`/farmacias/${pharm.id}`} className="text-[10px] font-black uppercase text-[#006747] hover:bg-emerald-50 p-2 rounded-xl transition-all">Perfil Público</Link>
+                                                    <button className="text-[10px] font-black uppercase text-gray-400 hover:text-gray-900 transition-colors p-2">Definições</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {myPharmacies.length === 0 && (
+                                        <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-gray-200">
+                                            <Hospital className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                                            <p className="text-gray-400 font-bold">Nenhuma farmácia vinculada ao seu perfil profissional.</p>
+                                            <Link to="/farmacias/registar" className="mt-6 inline-block text-[#006747] font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-8 py-3 rounded-2xl hover:bg-emerald-100 transition-all">Criar Agora</Link>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
+                                <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+                                    <h3 className="font-black text-gray-900 uppercase tracking-tight">Fila de Atendimento de Receitas</h3>
+                                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl uppercase tracking-widest">Ativos: {pharmacyOrders.length}</span>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-gray-50/50">
+                                            <tr>
+                                                <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Cliente / Paciente</th>
+                                                <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Unidade Destino</th>
+                                                <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest text-center">Status Pedido</th>
+                                                <th className="px-8 py-4 text-[10px] font-black uppercase text-gray-400 tracking-widest text-right">Ação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {pharmacyOrders.map(sub => (
+                                                <tr key={sub.id} className="hover:bg-gray-50/30 transition-colors">
+                                                    <td className="px-8 py-5">
+                                                        <div className="flex items-center space-x-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-[#006747]/5 flex items-center justify-center text-[#006747] border border-[#006747]/10">
+                                                                <FileText className="w-5 h-5" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-black text-sm text-gray-900">{sub.user?.full_name || sub.user?.username}</p>
+                                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Items: {sub.items?.length || 0}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-5">
+                                                        <p className="text-xs font-black text-[#006747] uppercase leading-tight">{sub.pharmacy?.name}</p>
+                                                        <p className="text-[9px] font-bold text-gray-400">Total: {sub.total_price?.toLocaleString()} Kz</p>
+                                                    </td>
+                                                    <td className="px-8 py-5 text-center">
+                                                        <div className={cn(
+                                                            "inline-flex px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest",
+                                                            sub.status === 'pending' ? "bg-orange-50 text-orange-600" :
+                                                            sub.status === 'processing' ? "bg-blue-50 text-blue-600" :
+                                                            sub.status === 'completed' ? "bg-emerald-50 text-emerald-600 shadow-sm" :
+                                                            "bg-gray-100 text-gray-400"
+                                                        )}>
+                                                            {sub.status}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-5 text-right">
+                                                        <div className="flex items-center justify-end space-x-2">
+                                                            <button 
+                                                                onClick={() => setSelectedPharmacyOrder(sub)}
+                                                                className="text-[9px] font-black uppercase text-[#006747] bg-emerald-50 px-4 py-2 rounded-xl hover:bg-[#006747] hover:text-white transition-all shadow-sm"
+                                                            >
+                                                                Processar
+                                                            </button>
+                                                            <Link 
+                                                                to={`/mensagens?userId=${sub.user_id}`}
+                                                                className="p-2 border border-gray-100 text-gray-400 rounded-xl hover:text-[#006747] hover:bg-gray-50 transition-all"
+                                                            >
+                                                                <MessageSquare className="w-4 h-4" />
+                                                            </Link>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -1125,6 +1365,50 @@ export default function ProfessionalDashboard() {
                         </div>
                     </div>
                 )}
+                {activeTab === 'patients' && (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Meus Pacientes</h3>
+                            <div className="flex items-center space-x-3">
+                                <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-3 py-1.5 rounded-xl uppercase tracking-widest">Total: {patients.length}</span>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {patients.map(patient => (
+                                <div key={patient.id} className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col items-center text-center transition-all hover:border-[#006747]/20 group">
+                                    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center overflow-hidden mb-4 border-4 border-white shadow-md relative group-hover:scale-105 transition-transform">
+                                        {sanitizeAvatarUrl(patient.avatar_url) ? (
+                                            <img src={sanitizeAvatarUrl(patient.avatar_url)!} className="w-full h-full object-cover" alt="" />
+                                        ) : (
+                                            <CircleUser className="w-full h-full text-black stroke-[1px] p-4" />
+                                        )}
+                                    </div>
+                                    <h4 className="font-black text-lg text-gray-900 mb-1">{patient.full_name || patient.username}</h4>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6">Paciente desde {new Date(patient.created_at || Date.now()).toLocaleDateString('pt-PT')}</p>
+                                    
+                                    <div className="flex items-center justify-center space-x-3 w-full">
+                                        <Link 
+                                            to={`/mensagens?userId=${patient.id}`}
+                                            className="flex-1 bg-emerald-50 text-[#006747] px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#006747] hover:text-white transition-all shadow-sm"
+                                        >
+                                            Mensagem
+                                        </Link>
+                                        <button className="flex items-center justify-center w-12 h-12 bg-gray-50 text-gray-400 rounded-2xl hover:text-gray-900 transition-all border border-gray-100">
+                                            <MoreVertical className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            {patients.length === 0 && (
+                                <div className="col-span-full py-24 text-center bg-white/50 rounded-[3rem] border border-dashed border-gray-200">
+                                    <Users className="w-16 h-16 text-gray-200 mx-auto mb-6 opacity-30" />
+                                    <p className="text-lg font-bold text-gray-400">Você ainda não tem pacientes registados.</p>
+                                    <p className="text-sm text-gray-400 mt-2 px-12">Pacientes aparecerão aqui assim que agendarem consultas com você.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         )}
       </main>
@@ -1339,6 +1623,191 @@ export default function ProfessionalDashboard() {
                     </div>
                 </motion.div>
             )}
+        </AnimatePresence>
+
+        {/* Pharmacy Order Details Modal */}
+        <AnimatePresence>
+          {selectedPharmacyOrder && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+               <motion.div 
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+                 onClick={() => setSelectedPharmacyOrder(null)}
+                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+               />
+               <motion.div 
+                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                 animate={{ opacity: 1, scale: 1, y: 0 }}
+                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                 className="relative bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden max-h-[90vh]"
+               >
+                  <div className="p-8 border-b border-gray-100 flex items-center justify-between">
+                     <div>
+                        <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight leading-none mb-1">
+                          Pedido #{selectedPharmacyOrder.id.slice(0, 8).toUpperCase()}
+                        </h3>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Detalhes da Encomenda de Farmácia</p>
+                     </div>
+                     <button onClick={() => setSelectedPharmacyOrder(null)} className="p-2 bg-gray-50 rounded-xl text-gray-400 hover:text-gray-600 transition-colors">
+                        <X className="w-6 h-6" />
+                     </button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                     {/* Client Info */}
+                     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div className="flex items-center space-x-3">
+                           <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-gray-100 shadow-sm">
+                              <CircleUser className="w-6 h-6 text-[#006747]" />
+                           </div>
+                           <div>
+                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Cliente</p>
+                              <p className="font-bold text-gray-900">{selectedPharmacyOrder.user?.full_name || selectedPharmacyOrder.user?.username}</p>
+                           </div>
+                        </div>
+                        <Link 
+                           to={`/mensagens?userId=${selectedPharmacyOrder.user_id}`}
+                           className="flex items-center space-x-2 bg-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#006747] border border-emerald-100 shadow-sm hover:bg-emerald-50 transition-all"
+                        >
+                           <MessageSquare className="w-4 h-4" />
+                           <span>Abrir Chat</span>
+                        </Link>
+                     </div>
+
+                     {/* Items */}
+                     <div className="space-y-4">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Medicamentos Solicitados</p>
+                        <div className="space-y-2">
+                           {selectedPharmacyOrder.items?.map((item: any, idx: number) => (
+                              <div key={idx} className="flex justify-between items-center p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                                 <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-[#006747]">
+                                       <Pill className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                       <p className="text-xs font-black uppercase text-gray-900 leading-none">{item.name}</p>
+                                       <p className="text-[9px] font-bold text-gray-400 mt-1">{item.category}</p>
+                                    </div>
+                                 </div>
+                                 <div className="text-right">
+                                    <p className="text-xs font-black">{item.price?.toLocaleString()} Kz</p>
+                                    <p className="text-[10px] font-bold text-gray-400">Qtd: {item.quantity || 1}</p>
+                                 </div>
+                              </div>
+                           ))}
+                           {(!selectedPharmacyOrder.items || selectedPharmacyOrder.items.length === 0) && (
+                              <div className="py-8 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                 <Package className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nenhum item listado</p>
+                                 <p className="text-[9px] text-gray-400 italic">O cliente pode ter enviado apenas a receita.</p>
+                              </div>
+                           )}
+                        </div>
+                     </div>
+
+                     {/* Prescription Details */}
+                     {(selectedPharmacyOrder.prescription_code || selectedPharmacyOrder.prescription_image_url) && (
+                        <div className="space-y-4">
+                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Receita Médica</p>
+                           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6">
+                              {selectedPharmacyOrder.prescription_code && (
+                                 <div className="flex-1">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Código da Receita</p>
+                                    <div className="p-4 bg-emerald-50 rounded-xl text-center border border-emerald-100">
+                                       <p className="text-xl font-black text-[#006747] tracking-[0.3em] font-mono">{selectedPharmacyOrder.prescription_code}</p>
+                                    </div>
+                                 </div>
+                              )}
+                              {selectedPharmacyOrder.prescription_image_url && (
+                                 <div className="flex-1">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Foto da Receita</p>
+                                    <a 
+                                      href={selectedPharmacyOrder.prescription_image_url} 
+                                      target="_blank" 
+                                      rel="no-referrer"
+                                      className="block group relative rounded-xl overflow-hidden shadow-sm"
+                                    >
+                                       <img src={selectedPharmacyOrder.prescription_image_url} className="w-full h-24 object-cover" />
+                                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <p className="text-[10px] font-black text-white uppercase tracking-widest">Abrir Imagem</p>
+                                       </div>
+                                    </a>
+                                 </div>
+                              )}
+                           </div>
+                        </div>
+                     )}
+
+                     {/* Delivery & Notes */}
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Morada de Entrega</p>
+                           <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                              <p className="text-xs font-bold text-gray-700 leading-relaxed">{selectedPharmacyOrder.delivery_address || 'Entrega na farmácia / Não especificado'}</p>
+                           </div>
+                        </div>
+                        <div className="space-y-2">
+                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Observações</p>
+                           <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                              <p className="text-xs font-bold text-gray-500 italic leading-relaxed">{selectedPharmacyOrder.description || selectedPharmacyOrder.notes || 'Sem observações adicionais.'}</p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="p-8 bg-gray-50 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                     <div className="flex items-center space-x-2">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Status:</p>
+                        <div className={cn(
+                           "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest",
+                           selectedPharmacyOrder.status === 'pending' ? "bg-orange-50 text-orange-600 border border-orange-100" :
+                           selectedPharmacyOrder.status === 'processing' ? "bg-blue-50 text-blue-600 border border-blue-100 font-bold" :
+                           selectedPharmacyOrder.status === 'completed' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
+                           "bg-red-50 text-red-600 border border-red-100"
+                        )}>
+                           {selectedPharmacyOrder.status}
+                        </div>
+                     </div>
+
+                     <div className="flex items-center space-x-3 w-full md:w-auto">
+                        {selectedPharmacyOrder.status === 'pending' && (
+                           <>
+                              <button 
+                                 disabled={isUpdatingOrder}
+                                 onClick={() => handleUpdatePharmacyOrderStatus(selectedPharmacyOrder.id, 'cancelled')}
+                                 className="flex-1 md:flex-none px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-500 border border-red-100 hover:bg-red-50 transition-all"
+                              >
+                                 Rejeitar
+                              </button>
+                              <button 
+                                 disabled={isUpdatingOrder}
+                                 onClick={() => handleUpdatePharmacyOrderStatus(selectedPharmacyOrder.id, 'processing')}
+                                 className="flex-1 md:flex-none px-8 py-3 bg-[#006747] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-900/20 hover:scale-105 active:scale-95 transition-all"
+                              >
+                                 Aceitar Pedido
+                              </button>
+                           </>
+                        )}
+                        {selectedPharmacyOrder.status === 'processing' && (
+                           <button 
+                              disabled={isUpdatingOrder}
+                              onClick={() => handleUpdatePharmacyOrderStatus(selectedPharmacyOrder.id, 'completed')}
+                              className="w-full md:w-auto px-8 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all"
+                           >
+                              Marcar como Pronto / Entregue
+                           </button>
+                        )}
+                        {selectedPharmacyOrder.status === 'completed' && (
+                           <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center">
+                              <CheckCircle2 className="w-4 h-4 mr-2" /> Pedido Concluído
+                           </p>
+                        )}
+                     </div>
+                  </div>
+               </motion.div>
+            </div>
+          )}
         </AnimatePresence>
     </div>
   );

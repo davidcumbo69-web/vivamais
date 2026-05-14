@@ -7,6 +7,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { AlertProvider } from './hooks/useAlert';
+import { Toaster } from 'sonner';
 import { Navbar } from './components/layout/Navbar';
 import { BackButton } from './components/ui/BackButton';
 import { cn } from './lib/utils';
@@ -52,6 +53,7 @@ const PageLoader = () => (
 
 const ManagePharmacyStock = lazy(() => import('./pages/ManagePharmacyStock'));
 const PharmacyProfile = lazy(() => import('./pages/PharmacyProfile'));
+const PharmacyPrescriptionSubmissions = lazy(() => import('./pages/PharmacyPrescriptionSubmissions'));
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -80,6 +82,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-[#dae0e6] flex flex-col md:flex-row">
+      <Toaster position="top-right" richColors />
       {user && <Navbar />}
       <main className={cn("flex-1 overflow-y-auto relative", user && "md:ml-20 lg:ml-64")}>
         {user && <BackButton />}
@@ -98,6 +101,7 @@ function AppContent() {
             <Route path="/farmacias/registar" element={<RegisterPharmacy />} />
             <Route path="/farmacias/editar/:id" element={<RegisterPharmacy />} />
             <Route path="/farmacias/gerir-stock/:id" element={<ManagePharmacyStock />} />
+            <Route path="/farmacias/receitas/:pharmacyId" element={<PharmacyPrescriptionSubmissions />} />
             <Route path="/estabelecimentos/registar" element={<RegisterEstablishment />} />
             <Route path="/estabelecimentos/editar/:id" element={<RegisterEstablishment />} />
             <Route path="/perfil" element={<Profile />} />
