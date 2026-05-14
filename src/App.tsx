@@ -50,6 +50,9 @@ const PageLoader = () => (
   </div>
 );
 
+const ManagePharmacyStock = lazy(() => import('./pages/ManagePharmacyStock'));
+const PharmacyProfile = lazy(() => import('./pages/PharmacyProfile'));
+
 function AppContent() {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -86,6 +89,7 @@ function AppContent() {
             <Route path="/explorar" element={<Explore />} />
             <Route path="/reels" element={<Reels />} />
             <Route path="/farmacias" element={<Pharmacies />} />
+            <Route path="/farmacia/:id" element={<PharmacyProfile />} />
             <Route path="/estabelecimentos" element={<Establishments />} />
             <Route path="/loja-viva" element={<Marketplace />} />
             <Route path="/minhas-encomendas" element={<MyOrders />} />
@@ -93,6 +97,7 @@ function AppContent() {
             <Route path="/settings/establishments" element={<MyManagedEstablishments />} />
             <Route path="/farmacias/registar" element={<RegisterPharmacy />} />
             <Route path="/farmacias/editar/:id" element={<RegisterPharmacy />} />
+            <Route path="/farmacias/gerir-stock/:id" element={<ManagePharmacyStock />} />
             <Route path="/estabelecimentos/registar" element={<RegisterEstablishment />} />
             <Route path="/estabelecimentos/editar/:id" element={<RegisterEstablishment />} />
             <Route path="/perfil" element={<Profile />} />

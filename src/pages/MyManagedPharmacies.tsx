@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Store, Plus, MapPin, Clock, Edit2, Loader2, CheckCircle2, AlertCircle, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Store, Plus, MapPin, Clock, Edit2, Loader2, CheckCircle2, AlertCircle, ChevronRight, ArrowLeft, Pill, ExternalLink } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
@@ -99,6 +99,20 @@ export default function MyManagedPharmacies() {
                 </div>
 
                 <div className="flex items-center space-x-3">
+                  <Link
+                    to={`/farmacia/${pharmacy.id}`}
+                    className="p-3 bg-gray-50 text-gray-500 rounded-xl hover:bg-emerald-50 hover:text-[#006747] transition-all"
+                    title="Ver Perfil Público"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    to={`/farmacias/gerir-stock/${pharmacy.id}`}
+                    className="flex items-center justify-center space-x-2 bg-emerald-50 text-emerald-700 px-4 py-3 rounded-xl font-bold hover:bg-emerald-100 transition-colors"
+                  >
+                    <Pill className="w-4 h-4" />
+                    <span className="hidden sm:inline">Medicamentos</span>
+                  </Link>
                   <Link
                     to={`/farmacias/editar/${pharmacy.id}`}
                     className="flex-1 md:flex-none flex items-center justify-center space-x-2 bg-gray-50 text-gray-700 px-5 py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors"

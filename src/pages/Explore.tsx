@@ -13,7 +13,9 @@ import {
   Star, 
   ArrowRight,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  Calendar,
+  Clock
 } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { motion, AnimatePresence } from 'motion/react';
@@ -27,6 +29,7 @@ export default function Explore() {
   const [activeCategory, setActiveCategory] = useState<Category>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedService, setSelectedService] = useState<any>(null);
   
   const [results, setResults] = useState<{
     establishments: any[];
@@ -56,7 +59,14 @@ export default function Explore() {
       ] = await Promise.all([
         supabase.from('medical_establishments').select('*').eq('status', 'approved').limit(20),
         supabase.from('profiles').select('*').eq('is_professional', true).limit(20),
-        supabase.from('wellness_services').select('*').limit(20),
+        supabase.from('wellness_services').select(`
+          *,
+          provider:provider_id (
+            id,
+            full_name,
+            avatar_url
+          )
+        `).limit(20),
         supabase.from('pharmacies').select('*').eq('status', 'approved').limit(20)
       ]);
 
@@ -107,7 +117,7 @@ export default function Explore() {
             className="absolute inset-0 w-full h-full opacity-100 z-0 pointer-events-none"
           />
           
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent z-0" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent z-0" />
           
           <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none z-0">
             <Microscope className="w-64 h-64 text-white rotate-12" />
@@ -175,8 +185,8 @@ export default function Explore() {
               <section>
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-blue-50 rounded-xl">
-                      <Stethoscope className="w-5 h-5 text-blue-600" />
+                    <div className="p-2 bg-emerald-50 rounded-xl">
+                      <Stethoscope className="w-5 h-5 text-emerald-600" />
                     </div>
                     <h2 className="text-2xl font-black tracking-tight">Profissionais Certificados</h2>
                   </div>
@@ -226,25 +236,118 @@ export default function Explore() {
                     Ver todos <ArrowRight className="w-4 h-4 ml-1" />
                   </Link>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredResults.establishments.slice(0, 3).map((est) => (
-                    <div key={est.id} className="bg-white rounded-3xl p-6 border border-gray-100 hover:shadow-xl transition-all">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-emerald-600">
-                          <Hospital className="w-8 h-8" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredResults.establishments.slice(0, 4).map((est) => (
+                    <div key={est.id} className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all group flex flex-row h-32">
+                      {/* Left Image Section */}
+                      <div className="relative w-32 shrink-0 overflow-hidden">
+                        <img 
+                          src={est.type === 'Hospital' 
+                            ? "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop"
+                            : "https://images.unsplash.com/photo-1512678080530-7760d81faba6?q=80&w=2074&auto=format&fit=crop"
+                          } 
+                          alt={est.name}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
+                      </div>
+
+                      {/* Content Section */}
+                      <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[8px] font-black uppercase text-emerald-600 tracking-widest">{est.type}</span>
+                            <span className="text-[8px] font-black uppercase text-[#006747]">VIVA+ OFICIAL</span>
+                          </div>
+                          <h3 className="text-base font-black text-gray-900 uppercase truncate leading-tight">
+                            {est.name}
+                          </h3>
+                          <div className="flex items-center text-[10px] font-bold text-gray-400 mt-1 truncate">
+                             <MapPin className="w-3 h-3 mr-1 shrink-0" />
+                             <span className="truncate">{est.municipality}, {est.province}</span>
+                          </div>
                         </div>
-                        <span className="bg-gray-100 text-gray-500 text-[9px] font-black uppercase px-2 py-1 rounded">
-                          {est.type}
-                        </span>
+
+                        <div className="flex items-center space-x-2">
+                           <Link 
+                             to="/estabelecimentos"
+                             className="flex-1 bg-gray-50 hover:bg-emerald-50 text-emerald-700 py-2 rounded-xl text-[9px] font-black uppercase transition-all text-center border border-emerald-50"
+                           >
+                             Ver Unidade
+                           </Link>
+                           <Link 
+                             to="/estabelecimentos"
+                             className="flex-1 bg-[#006747] hover:bg-emerald-700 text-white py-2 rounded-xl text-[9px] font-black uppercase transition-all shadow-lg shadow-emerald-900/20 text-center"
+                           >
+                             Reservar
+                           </Link>
+                        </div>
                       </div>
-                      <h3 className="font-black text-lg mb-1 leading-tight">{est.name}</h3>
-                      <div className="flex items-center text-gray-400 text-xs mb-4">
-                        <MapPin className="w-3.5 h-3.5 mr-1" />
-                        {est.municipality}, {est.province}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {(activeCategory === 'all' || activeCategory === 'services') && filteredResults.services.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-emerald-50 rounded-xl">
+                      <Sparkles className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <h2 className="text-2xl font-black tracking-tight">Experiências & Serviços</h2>
+                  </div>
+                  <Link to="/consultas" className="text-sm font-bold text-[#006747] hover:underline flex items-center">
+                    Ver todos <ArrowRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredResults.services.slice(0, 6).map((svc) => (
+                    <div key={svc.id} className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all group flex flex-row h-32">
+                      {/* Left Image Section */}
+                      <div className="relative w-32 shrink-0 overflow-hidden">
+                        <img 
+                          src="https://images.unsplash.com/photo-1540339832862-47459980783f?q=80&w=2070&auto=format&fit=crop"
+                          alt={svc.name}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
                       </div>
-                      <Link to="/estabelecimentos" className="w-full bg-emerald-50 text-[#006747] py-3 rounded-xl font-bold text-xs flex items-center justify-center hover:bg-[#006747] hover:text-white transition-all">
-                        Detalhes da Unidade
-                      </Link>
+
+                      {/* Content Section */}
+                      <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[8px] font-black uppercase text-emerald-600 tracking-widest">{svc.category}</span>
+                            <span className="text-[10px] font-black text-[#006747]">
+                              {svc.base_price ? `${svc.base_price.toLocaleString('pt-PT')} Kz` : 'Sob Consulta'}
+                            </span>
+                          </div>
+                          <h3 className="text-base font-black text-gray-900 uppercase truncate leading-tight">
+                            {svc.name}
+                          </h3>
+                          <div className="flex items-center text-[10px] font-bold text-gray-400 mt-1 truncate">
+                             <Sparkles className="w-3 h-3 mr-1 shrink-0 text-emerald-400" />
+                             <span className="truncate">Experiência VIVA+ Certificada</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                           <button 
+                             onClick={() => setSelectedService(svc)}
+                             className="flex-1 bg-gray-50 hover:bg-emerald-50 text-emerald-700 py-2 rounded-xl text-[9px] font-black uppercase transition-all text-center border border-emerald-50"
+                           >
+                             Detalhes
+                           </button>
+                           <Link 
+                             to="/consultas"
+                             className="flex-1 bg-[#006747] hover:bg-emerald-700 text-white py-2 rounded-xl text-[9px] font-black uppercase transition-all shadow-lg shadow-emerald-900/20 text-center"
+                           >
+                             Reservar
+                           </Link>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -256,8 +359,8 @@ export default function Explore() {
               <section>
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-purple-50 rounded-xl">
-                      <Pill className="w-5 h-5 text-purple-600" />
+                    <div className="p-2 bg-emerald-50 rounded-xl">
+                      <Pill className="w-5 h-5 text-emerald-600" />
                     </div>
                     <h2 className="text-2xl font-black tracking-tight">Farmácias de Plantão</h2>
                   </div>
@@ -265,15 +368,52 @@ export default function Explore() {
                     Ver todas <ArrowRight className="w-4 h-4 ml-1" />
                   </Link>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredResults.pharmacies.slice(0, 3).map((pharm) => (
-                    <div key={pharm.id} className="bg-white p-5 rounded-3xl border border-gray-100 flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shrink-0">
-                        <Pill className="w-6 h-6" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredResults.pharmacies.slice(0, 6).map((pharm) => (
+                    <div key={pharm.id} className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all group flex flex-row h-32">
+                      {/* Left Image Section */}
+                      <div className="relative w-32 shrink-0 overflow-hidden">
+                        <img 
+                          src="https://images.unsplash.com/photo-1576602976047-174ef57a4645?q=80&w=2070&auto=format&fit=crop"
+                          alt={pharm.name}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
+                        <div className="absolute top-2 left-2">
+                          <Pill className="w-3 h-3 text-white opacity-50" />
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <h4 className="font-bold truncate">{pharm.name}</h4>
-                        <p className="text-[10px] text-gray-400 truncate">{pharm.address}</p>
+
+                      {/* Content Section */}
+                      <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[8px] font-black uppercase text-emerald-500 tracking-widest">ABERTA 24H</span>
+                            <span className="text-[10px] font-black text-[#006747]">PLANTÃO</span>
+                          </div>
+                          <h3 className="text-base font-black text-gray-900 uppercase truncate leading-tight">
+                            {pharm.name}
+                          </h3>
+                          <div className="flex items-center text-[10px] font-bold text-gray-400 mt-1 truncate">
+                             <MapPin className="w-3 h-3 mr-1 shrink-0 text-emerald-400" />
+                             <span className="truncate">{pharm.address} • {pharm.municipality}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                           <Link 
+                             to={`/farmacia/${pharm.id}`}
+                             className="flex-1 bg-gray-50 hover:bg-emerald-50 text-emerald-700 py-2 rounded-xl text-[9px] font-black uppercase transition-all text-center border border-emerald-50"
+                           >
+                             Ver Stock
+                           </Link>
+                           <Link 
+                             to={`/farmacia/${pharm.id}`}
+                             className="flex-1 bg-[#006747] hover:bg-emerald-700 text-white py-2 rounded-xl text-[9px] font-black uppercase transition-all shadow-lg shadow-emerald-900/20 text-center"
+                           >
+                             Pedir Já
+                           </Link>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -292,6 +432,97 @@ export default function Explore() {
           </div>
         )}
       </main>
+
+      {/* Details Modal */}
+      <AnimatePresence>
+        {selectedService && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedService(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl"
+            >
+              <div className="relative h-64">
+                <img 
+                  src="https://images.unsplash.com/photo-1540339832862-47459980783f?q=80&w=2070&auto=format&fit=crop"
+                  alt={selectedService.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+                <button 
+                  onClick={() => setSelectedService(null)}
+                  className="absolute top-6 right-6 w-10 h-10 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all"
+                >
+                  <ArrowRight className="w-5 h-5 rotate-180" />
+                </button>
+                <div className="absolute bottom-8 left-8 right-8">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="bg-[#006747] text-white text-[10px] font-black uppercase px-3 py-1 rounded-full">
+                      {selectedService.category}
+                    </span>
+                    {selectedService.provider && (
+                      <Link 
+                        to={`/perfil/${selectedService.provider.id}`}
+                        className="bg-white/10 backdrop-blur-md text-white text-[10px] font-black uppercase px-3 py-1 rounded-full border border-white/20 hover:bg-white/20 transition-all flex items-center"
+                      >
+                        <UserCheck className="w-3 h-3 mr-1.5" />
+                        {selectedService.provider.full_name || 'Profissional'}
+                      </Link>
+                    )}
+                  </div>
+                  <h2 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">
+                    {selectedService.name}
+                  </h2>
+                </div>
+              </div>
+              
+              <div className="p-8">
+                <p className="text-gray-500 text-lg font-bold mb-8 leading-relaxed">
+                  {selectedService.description || "Uma experiência exclusiva desenhada para oferecer o máximo de bem-estar e performance à sua saúde. Inovação e cuidado premium em cada detalhe."}
+                </p>
+
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                   <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100">
+                      <div className="flex items-center text-[#006747] font-black uppercase text-[10px] tracking-widest mb-1">
+                        <Calendar className="w-3.5 h-3.5 mr-2" /> Próxima Data
+                      </div>
+                      <div className="text-gray-900 font-black">Disponível Hoje</div>
+                   </div>
+                   <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100">
+                      <div className="flex items-center text-[#006747] font-black uppercase text-[10px] tracking-widest mb-1">
+                        <MapPin className="w-3.5 h-3.5 mr-2" /> Localização
+                      </div>
+                      <div className="text-gray-900 font-black truncate">Unidade VIVA+, Luanda</div>
+                   </div>
+                </div>
+
+                <div className="flex items-center justify-between p-6 bg-[#006747] rounded-[2rem]">
+                  <div>
+                    <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Investimento</p>
+                    <p className="text-3xl font-black text-white">
+                      {selectedService.base_price ? `${selectedService.base_price.toLocaleString('pt-PT')} Kz` : 'Sob Consulta'}
+                    </p>
+                  </div>
+                  <Link 
+                    to="/consultas"
+                    className="bg-white text-[#006747] hover:bg-emerald-50 px-10 py-5 rounded-2xl text-xs font-black uppercase transition-all shadow-xl shadow-black/20 active:scale-95"
+                  >
+                    Reservar Agora
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
