@@ -426,7 +426,7 @@ export default function PharmacyProfile() {
                           </div>
                           <div className="flex items-center space-x-4">
                              <div className="text-emerald-700 font-black text-[10px]">
-                                {med.price?.toLocaleString('pt-PT')} Kz
+                                {med.price?.toLocaleString('pt-PT')}€
                              </div>
                              {user?.id !== pharmacy.owner_id && (
                                <button 
@@ -462,7 +462,7 @@ export default function PharmacyProfile() {
                   >
                      <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-0.5">{cart.length} Medicamentos Selecionados</p>
-                        <p className="text-2xl font-black">{totalPrice.toLocaleString('pt-PT')} Kz</p>
+                        <p className="text-2xl font-black">{totalPrice.toLocaleString('pt-PT')}€</p>
                      </div>
                      <button 
                        onClick={() => setShowOrderModal(true)}
@@ -541,7 +541,7 @@ export default function PharmacyProfile() {
                         <p className="text-[9px] font-bold text-gray-400 mt-1">{item.quantity}x • {item.category}</p>
                       </div>
                       <div className="text-right">
-                         <p className="text-xs font-black">{(item.price * item.quantity).toLocaleString()} Kz</p>
+                         <p className="text-xs font-black">{(item.price * item.quantity).toLocaleString('pt-PT')}€</p>
                          <button onClick={() => removeFromCart(item.id)} className="text-[9px] font-black text-red-400 uppercase mt-1">Remover</button>
                       </div>
                     </div>
@@ -557,11 +557,11 @@ export default function PharmacyProfile() {
                 <div className="pt-6 border-t border-gray-200 space-y-2">
                    <div className="flex justify-between items-center text-gray-500">
                        <span className="text-[10px] font-black uppercase tracking-widest">Subtotal</span>
-                       <span className="text-xs font-bold">{totalPrice.toLocaleString()} Kz</span>
+                       <span className="text-xs font-bold">{totalPrice.toLocaleString('pt-PT')}€</span>
                    </div>
                    <div className="flex justify-between items-center bg-[#006747] p-4 rounded-2xl text-white">
                        <span className="text-[10px] font-black uppercase tracking-widest opacity-70">Total</span>
-                       <span className="text-xl font-black">{totalPrice.toLocaleString()} Kz</span>
+                       <span className="text-xl font-black">{totalPrice.toLocaleString('pt-PT')}€</span>
                    </div>
                 </div>
               </div>

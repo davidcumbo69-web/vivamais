@@ -42,9 +42,10 @@ export default function RegisterEstablishment() {
   const [newService, setNewService] = useState('');
 
   const PROVINCES = [
-    'Bengo', 'Benguela', 'Bié', 'Cabinda', 'Cunene', 'Huambo', 'Huíla', 
-    'Kuando Kubango', 'Kwanza Norte', 'Kwanza Sul', 'Luanda', 'Lunda Norte', 
-    'Lunda Sul', 'Malanje', 'Moxico', 'Namibe', 'Uíge', 'Zaire'
+    'Aveiro', 'Beja', 'Braga', 'Bragança', 'Castelo Branco', 'Coimbra', 
+    'Évora', 'Faro', 'Guarda', 'Leiria', 'Lisboa', 'Portalegre', 
+    'Porto', 'Santarém', 'Setúbal', 'Viana do Castelo', 'Vila Real', 'Viseu',
+    'Açores', 'Madeira'
   ];
 
   useEffect(() => {

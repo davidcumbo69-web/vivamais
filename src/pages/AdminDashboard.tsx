@@ -62,6 +62,50 @@ export default function AdminDashboard() {
     }
   }, [notification]);
 
+  const handleDeletePharmacy = async (pharmacyId: string) => {
+    console.log('[AdminDashboard] handleDeletePharmacy called for ID:', pharmacyId);
+    if (!confirm('Tem certeza que deseja eliminar esta farmácia permanentemente?')) return;
+    setProcessingId(pharmacyId);
+    try {
+      console.log('[AdminDashboard] Attempting to delete pharmacy from Supabase...');
+      const { error } = await supabase.from('pharmacies').delete().eq('id', pharmacyId);
+      if (error) {
+        console.error('[AdminDashboard] Error deleting pharmacy:', error);
+        throw error;
+      }
+      console.log('[AdminDashboard] Pharmacy deleted successfully');
+      showNotification('Farmácia eliminada com sucesso!', 'success');
+      fetchPharmacies();
+    } catch (err: any) {
+      console.error('[AdminDashboard] Catch block error:', err);
+      showNotification(err.message, 'error');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeleteEstablishment = async (estId: string) => {
+    console.log('[AdminDashboard] handleDeleteEstablishment called for ID:', estId);
+    if (!confirm('Tem certeza que deseja eliminar este estabelecimento permanentemente?')) return;
+    setProcessingId(estId);
+    try {
+      console.log('[AdminDashboard] Attempting to delete establishment from Supabase...');
+      const { error } = await supabase.from('medical_establishments').delete().eq('id', estId);
+      if (error) {
+        console.error('[AdminDashboard] Error deleting establishment:', error);
+        throw error;
+      }
+      console.log('[AdminDashboard] Establishment deleted successfully');
+      showNotification('Estabelecimento eliminado com sucesso!', 'success');
+      fetchEstablishments();
+    } catch (err: any) {
+      console.error('[AdminDashboard] Catch block error:', err);
+      showNotification(err.message, 'error');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
   };
@@ -146,13 +190,37 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteAd = async (adId: string) => {
-    if (!confirm('Tem certeza?')) return;
+    console.log('[AdminDashboard] handleDeleteAd initiating for ID:', adId);
+    if (!confirm('Tem certeza que deseja eliminar este anúncio permanentemente?')) {
+      console.log('[AdminDashboard] Delete canceled by user');
+      return;
+    }
+    
+    setProcessingId(adId);
     try {
-      const { error } = await supabase.from('ads').delete().eq('id', adId);
-      if (error) throw error;
-      fetchAds();
+      console.log('[AdminDashboard] Calling Supabase delete for ads table...');
+      const { data, error, status } = await supabase
+        .from('ads')
+        .delete()
+        .eq('id', adId)
+        .select();
+      
+      console.log('[AdminDashboard] Supabase response:', { data, error, status });
+      
+      if (error) {
+        console.error('[AdminDashboard] Supabase delete error:', error);
+        throw error;
+      }
+      
+      console.log('[AdminDashboard] Ad deleted successfully, refreshing list');
+      showNotification('✅ Anúncio eliminado com sucesso!');
+      await fetchAds();
     } catch (err: any) {
-      showNotification(err.message, 'error');
+      console.error('[AdminDashboard] Exception in handleDeleteAd:', err);
+      showNotification('Erro ao eliminar: ' + (err.message || 'Erro desconhecido'), 'error');
+    } finally {
+      console.log('[AdminDashboard] handleDeleteAd finished');
+      setProcessingId(null);
     }
   };
 
@@ -763,12 +831,21 @@ export default function AdminDashboard() {
                           <p className="text-xs text-gray-400">Proprietário: {ph.profiles?.full_name || ph.profiles?.username}</p>
                         </div>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        ph.status === 'pending' ? 'bg-yellow-50 text-yellow-600' :
-                        ph.status === 'approved' ? 'bg-green-50 text-green-600' :
-                        'bg-red-50 text-red-600'
-                      }`}>
-                        {ph.status}
+                      <div className="flex items-center space-x-2">
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          ph.status === 'pending' ? 'bg-yellow-50 text-yellow-600' :
+                          ph.status === 'approved' ? 'bg-green-50 text-green-600' :
+                          'bg-red-50 text-red-600'
+                        }`}>
+                          {ph.status}
+                        </div>
+                        <button 
+                          onClick={() => handleDeletePharmacy(ph.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          title="Eliminar Farmácia"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
 
@@ -859,6 +936,13 @@ export default function AdminDashboard() {
                       }`}>
                         {est.status}
                       </div>
+                      <button 
+                        onClick={() => handleDeleteEstablishment(est.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="Eliminar Estabelecimento"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                     <div className="space-y-2 text-xs text-gray-600">
                       <p>📍 {est.province} • {est.municipality}</p>
@@ -1099,10 +1183,20 @@ export default function AdminDashboard() {
                       
                       <div className="flex items-center space-x-2 mt-auto">
                         <button 
-                          onClick={() => handleDeleteAd(ad.id)}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteAd(ad.id);
+                          }}
+                          disabled={processingId === ad.id}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                          title="Eliminar Anúncio"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {processingId === ad.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
                         </button>
                         <a 
                           href={ad.link_url} 

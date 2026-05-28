@@ -317,7 +317,7 @@ export default function PharmacyPrescriptionSubmissions() {
                                   </div>
                                   <div className="text-right">
                                      <p className="text-sm font-black">{item.quantity}x</p>
-                                     <p className="text-[9px] font-bold text-[#006747]">{item.price?.toLocaleString()} Kz</p>
+                                     <p className="text-[9px] font-bold text-[#006747]">{item.price?.toLocaleString('pt-PT')}€</p>
                                   </div>
                                </div>
                             ))}
@@ -327,7 +327,7 @@ export default function PharmacyPrescriptionSubmissions() {
                       <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-gray-100 mt-auto">
                          <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total da Encomenda</p>
-                            <p className="text-3xl font-black text-gray-900">{order.total_price.toLocaleString()} Kz</p>
+                            <p className="text-3xl font-black text-gray-900">{order.total_price.toLocaleString('pt-PT')}€</p>
                          </div>
 
                          <div className="flex items-center space-x-3 w-full md:w-auto">

@@ -42,6 +42,7 @@ const DigitalPrescriptionView = lazy(() => import('./pages/PrescriptionVerificat
 const PrescriptionSearch = lazy(() => import('./pages/PrescriptionSearch'));
 const EditProfile = lazy(() => import('./pages/EditProfile'));
 const Login = lazy(() => import('./pages/Login'));
+const Pitch = lazy(() => import('./pages/Pitch'));
 
 const PageLoader = () => (
   <div className="h-full w-full flex items-center justify-center p-20">
@@ -122,6 +123,7 @@ function AppContent() {
             <Route path="/c/:name" element={<CommunityDetail />} />
             <Route path="/profissionais" element={<Professionals />} />
             <Route path="/professional/settings" element={<ProfessionalSettings />} />
+            <Route path="/pitch" element={<Pitch />} />
             <Route path="/explore" element={<Home />} /> {/* Mock redirect */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

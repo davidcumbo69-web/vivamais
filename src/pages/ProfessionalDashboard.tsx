@@ -20,9 +20,12 @@ import {
   MoreVertical,
   LayoutDashboard,
   ShoppingBag,
+  Trash2,
+  Loader2,
   Zap,
   Truck,
   PackageCheck,
+  Copy,
   PieChart as PieChartIcon,
   BarChart3,
   LineChart as LineChartIcon,
@@ -81,6 +84,8 @@ const TabButton = ({ active, onClick, icon, label }: { active: boolean, onClick:
 
 export default function ProfessionalDashboard() {
   const { user, profile } = useAuth();
+  const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const [services, setServices] = useState<WellnessService[]>([]);
   const [bookings, setBookings] = useState<(Booking & { service?: WellnessService, patient?: Profile })[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -178,11 +183,10 @@ export default function ProfessionalDashboard() {
   }, [profile]);
 
   useEffect(() => {
-    const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
     if (user && (profile?.is_professional || isAdmin)) {
       fetchData();
     }
-  }, [user, profile]);
+  }, [user, profile, isAdmin]);
 
   const fetchData = async () => {
     if (!user) return;
@@ -205,10 +209,11 @@ export default function ProfessionalDashboard() {
       }
 
       // 1. Fetch Services
-      const { data: svcs } = await supabase
-        .from('wellness_services')
-        .select('*')
-        .eq('provider_id', user.id);
+      let svcsQuery = supabase.from('wellness_services').select('*');
+      if (!isAdmin) {
+        svcsQuery = svcsQuery.eq('provider_id', user.id);
+      }
+      const { data: svcs } = await svcsQuery;
       if (svcs) setServices(svcs);
 
       // 2. Fetch Bookings
@@ -218,7 +223,7 @@ export default function ProfessionalDashboard() {
         .order('scheduled_at', { ascending: false });
       
       if (bks) {
-        const filtered = bks.filter(b => b.service?.provider_id === user.id);
+        const filtered = bks.filter(b => isAdmin || b.service?.provider_id === user.id);
         setBookings(filtered);
         
         // Extract unique patients
@@ -232,10 +237,11 @@ export default function ProfessionalDashboard() {
       }
 
       // 3. Fetch Products
-      const { data: prods } = await supabase
-        .from('products')
-        .select('*')
-        .eq('seller_id', user.id);
+      let prodsQuery = supabase.from('products').select('*');
+      if (!isAdmin) {
+        prodsQuery = prodsQuery.eq('seller_id', user.id);
+      }
+      const { data: prods } = await prodsQuery;
       if (prods) setProducts(prods);
 
       // 4. Fetch Sales (Orders)
@@ -245,13 +251,12 @@ export default function ProfessionalDashboard() {
         .order('created_at', { ascending: false });
       
       if (ords) {
-        const filteredOrds = ords.filter(o => o.product?.seller_id === user.id);
+        const filteredOrds = ords.filter(o => isAdmin || o.product?.seller_id === user.id);
         setOrders(filteredOrds);
       }
 
       // 5. Fetch Pharmacy Prescription Submissions
       // Use user.email for immediate detection if profile is not yet loaded
-      const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
       console.log('[Dashboard DEBUG] user.email:', user?.email, 'isAdmin:', isAdmin);
       
       let pharmaciesQuery = supabase.from('pharmacies').select('*');
@@ -371,6 +376,76 @@ export default function ProfessionalDashboard() {
     }
   };
 
+  const handleDeleteService = async (serviceId: string) => {
+    console.log('[ProfessionalDashboard] handleDeleteService initiating for ID:', serviceId);
+    if (!confirm('Tem certeza que deseja eliminar este serviço permanentemente?')) {
+      console.log('[ProfessionalDashboard] Delete canceled');
+      return;
+    }
+    
+    setProcessingId(serviceId);
+    try {
+      console.log('[ProfessionalDashboard] Calling Supabase delete for wellness_services...');
+      const { data, error, status } = await supabase
+        .from('wellness_services')
+        .delete()
+        .eq('id', serviceId)
+        .select();
+
+      console.log('[ProfessionalDashboard] Supabase response:', { data, error, status });
+
+      if (error) {
+        console.error('[ProfessionalDashboard] Error deleting service:', error);
+        showNotification('Erro ao eliminar serviço: ' + error.message, 'error');
+      } else {
+        console.log('[ProfessionalDashboard] Service deleted successfully');
+        showNotification('✅ Serviço eliminado com sucesso!');
+        await fetchData();
+      }
+    } catch (err: any) {
+      console.error('[ProfessionalDashboard] Exception in handleDeleteService:', err);
+      showNotification('Erro inesperado: ' + err.message, 'error');
+    } finally {
+      console.log('[ProfessionalDashboard] handleDeleteService finished');
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    console.log('[ProfessionalDashboard] handleDeleteProduct initiating for ID:', productId);
+    if (!confirm('Tem certeza que deseja eliminar este produto permanentemente?')) {
+      console.log('[ProfessionalDashboard] Delete canceled');
+      return;
+    }
+    
+    setProcessingId(productId);
+    try {
+      console.log('[ProfessionalDashboard] Calling Supabase delete for products...');
+      const { data, error, status } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId)
+        .select();
+
+      console.log('[ProfessionalDashboard] Supabase response:', { data, error, status });
+
+      if (error) {
+        console.error('[ProfessionalDashboard] Error deleting product:', error);
+        showNotification('Erro ao eliminar produto: ' + error.message, 'error');
+      } else {
+        console.log('[ProfessionalDashboard] Product deleted successfully');
+        showNotification('✅ Produto eliminado com sucesso!');
+        await fetchData();
+      }
+    } catch (err: any) {
+      console.error('[ProfessionalDashboard] Exception in handleDeleteProduct:', err);
+      showNotification('Erro inesperado: ' + err.message, 'error');
+    } finally {
+      console.log('[ProfessionalDashboard] handleDeleteProduct finished');
+      setProcessingId(null);
+    }
+  };
+
   const handleUpdateBookingStatus = async (bookingId: string, status: string) => {
     const { error } = await supabase
       .from('bookings')
@@ -380,7 +455,7 @@ export default function ProfessionalDashboard() {
     if (!error) fetchData();
   };
 
-  if (!profile?.is_professional) {
+  if (!profile?.is_professional && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="text-center max-w-md">
@@ -394,7 +469,6 @@ export default function ProfessionalDashboard() {
       </div>
     );
   }
-
   const pendingBookings = bookings.filter(b => b.status === 'pendente');
   const confirmedBookings = bookings.filter(b => b.status === 'confirmado');
   
@@ -817,7 +891,7 @@ export default function ProfessionalDashboard() {
                                             </div>
                                             <div>
                                                 <h4 className="font-bold text-sm text-gray-900 leading-tight">{order.user?.full_name || order.user?.username}</h4>
-                                                <p className="text-[10px] text-gray-400 font-bold">{order.items?.length || 0} Items • {order.total_price?.toLocaleString()} Kz</p>
+                                                <p className="text-[10px] text-gray-400 font-bold">{order.items?.length || 0} Items • {order.total_price?.toLocaleString('pt-PT')}€</p>
                                             </div>
                                         </div>
                                         <button 
@@ -849,9 +923,21 @@ export default function ProfessionalDashboard() {
                                     key={svc.id} 
                                     className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group"
                                 >
-                                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button className="text-gray-400 hover:text-gray-900">
-                                            <MoreVertical className="w-5 h-5" />
+                                    <div className={`absolute top-0 right-0 p-4 transition-opacity flex items-center space-x-2 ${isAdmin ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                        <button 
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              handleDeleteService(svc.id);
+                                            }}
+                                            disabled={processingId === svc.id}
+                                            className="p-2 bg-white/90 backdrop-blur-md rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm disabled:opacity-50"
+                                            title="Eliminar Serviço"
+                                        >
+                                            {processingId === svc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                        </button>
+                                        <button className="p-2 bg-white/90 backdrop-blur-md rounded-xl text-gray-400 hover:text-gray-900 transition-all shadow-sm">
+                                            <MoreVertical className="w-4 h-4" />
                                         </button>
                                     </div>
                                     <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-[#006747] mb-4">
@@ -988,7 +1074,20 @@ export default function ProfessionalDashboard() {
                                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">ESTOQUE</span>
                                             <span className="text-xs font-black text-gray-900">{prod.stock_quantity} unidades</span>
                                         </div>
-                                        <button className="text-[9px] font-black text-gray-400 uppercase hover:text-gray-900 transition-colors">Editar</button>
+                                        <div className="flex items-center space-x-3">
+                                            <button className="text-[9px] font-black text-gray-400 uppercase hover:text-gray-900 transition-colors">Editar</button>
+                                            <button 
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  handleDeleteProduct(prod.id);
+                                                }}
+                                                disabled={processingId === prod.id}
+                                                className="text-[9px] font-black text-red-400 uppercase hover:text-red-600 transition-colors disabled:opacity-50"
+                                            >
+                                                {processingId === prod.id ? 'Eliminando...' : 'Eliminar'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -1136,13 +1235,32 @@ export default function ProfessionalDashboard() {
                                                             </div>
                                                             <div>
                                                                 <p className="font-black text-sm text-gray-900">{sub.user?.full_name || sub.user?.username}</p>
-                                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Items: {sub.items?.length || 0}</p>
+                                                                <div className="flex items-center space-x-2">
+                                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Código: {sub.prescription_code}</p>
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            if (sub.prescription_code) {
+                                                                                navigator.clipboard.writeText(sub.prescription_code);
+                                                                                const btn = document.getElementById(`copy-btn-${sub.id}`);
+                                                                                if (btn) btn.classList.add('text-emerald-500');
+                                                                                setTimeout(() => {
+                                                                                    if (btn) btn.classList.remove('text-emerald-500');
+                                                                                }, 2000);
+                                                                            }
+                                                                        }}
+                                                                        id={`copy-btn-${sub.id}`}
+                                                                        className="text-gray-300 hover:text-[#006747] transition-all"
+                                                                        title="Copiar código"
+                                                                    >
+                                                                        <Copy className="w-3 h-3" />
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-5">
                                                         <p className="text-xs font-black text-[#006747] uppercase leading-tight">{sub.pharmacy?.name}</p>
-                                                        <p className="text-[9px] font-bold text-gray-400">Total: {sub.total_price?.toLocaleString()} Kz</p>
+                                                        <p className="text-[9px] font-bold text-gray-400">Total: {sub.total_price?.toLocaleString('pt-PT')}€</p>
                                                     </td>
                                                     <td className="px-8 py-5 text-center">
                                                         <div className={cn(
@@ -1736,7 +1854,7 @@ export default function ProfessionalDashboard() {
                                     </div>
                                  </div>
                                  <div className="text-right">
-                                    <p className="text-xs font-black">{item.price?.toLocaleString()} Kz</p>
+                                    <p className="text-xs font-black">{item.price?.toLocaleString('pt-PT')}€</p>
                                     <p className="text-[10px] font-bold text-gray-400">Qtd: {item.quantity || 1}</p>
                                  </div>
                               </div>

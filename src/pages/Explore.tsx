@@ -321,7 +321,7 @@ export default function Explore() {
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-[8px] font-black uppercase text-emerald-600 tracking-widest">{svc.category}</span>
                             <span className="text-[10px] font-black text-[#006747]">
-                              {svc.base_price ? `${svc.base_price.toLocaleString('pt-PT')} Kz` : 'Sob Consulta'}
+                              {svc.base_price ? `${svc.base_price.toLocaleString('pt-PT')}€` : 'Sob Consulta'}
                             </span>
                           </div>
                           <h3 className="text-base font-black text-gray-900 uppercase truncate leading-tight">
@@ -508,7 +508,7 @@ export default function Explore() {
                   <div>
                     <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Investimento</p>
                     <p className="text-3xl font-black text-white">
-                      {selectedService.base_price ? `${selectedService.base_price.toLocaleString('pt-PT')} Kz` : 'Sob Consulta'}
+                      {selectedService.base_price ? `${selectedService.base_price.toLocaleString('pt-PT')}€` : 'Sob Consulta'}
                     </p>
                   </div>
                   <Link 

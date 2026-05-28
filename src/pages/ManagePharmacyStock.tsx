@@ -179,7 +179,7 @@ export default function ManagePharmacyStock() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-gray-400 tracking-widest pl-1">Preço (Kz)</label>
+                  <label className="text-xs font-black uppercase text-gray-400 tracking-widest pl-1">Preço (€)</label>
                   <input 
                     type="number"
                     value={newMed.price}
@@ -235,7 +235,7 @@ export default function ManagePharmacyStock() {
                   <div>
                     <h3 className="font-black text-gray-900 leading-tight">{med.name}</h3>
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">
-                      {med.category || 'Geral'} • {med.price?.toLocaleString('pt-PT')} Kz
+                      {med.category || 'Geral'} • {med.price?.toLocaleString('pt-PT')}€
                     </p>
                   </div>
                 </div>

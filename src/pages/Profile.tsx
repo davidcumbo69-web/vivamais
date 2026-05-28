@@ -2373,7 +2373,7 @@ export default function Profile() {
                             <div>
                               <h4 className="font-bold text-gray-900">{order.pharmacy?.name}</h4>
                               <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest flex items-center mt-0.5">
-                                {order.items?.length || 0} Items • {order.total_price?.toLocaleString()} Kz
+                                {order.items?.length || 0} Items • {order.total_price?.toLocaleString('pt-PT')}€
                               </p>
                               <p className="text-[9px] text-gray-300 font-bold mt-1">
                                 {new Date(order.created_at).toLocaleDateString('pt-PT')}

@@ -1,4 +1,4 @@
-import { Heart, Microscope, Pill, Hospital, Stethoscope, Eye, CircleUser as UserIcon, Apple, CalendarCheck, ShoppingBag, LogOut, MessageSquare, FileText, ShieldCheck, Menu, X, Store, Building2 } from 'lucide-react';
+import { Heart, Microscope, Pill, Hospital, Stethoscope, Eye, CircleUser as UserIcon, Apple, CalendarCheck, ShoppingBag, LogOut, MessageSquare, FileText, ShieldCheck, Menu, X, Store, Building2, Presentation } from 'lucide-react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../hooks/useAuth';
@@ -6,7 +6,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export function Navbar() {
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
+  const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -28,6 +29,9 @@ export function Navbar() {
     ] : [
       { icon: Apple, label: 'Saúde', path: '/conquistas' }
     ]),
+    ...(isAdmin ? [
+      { icon: Presentation, label: 'Pitch', path: '/pitch' }
+    ] : []),
     { icon: UserIcon, label: 'Perfil', path: '/perfil' },
   ];
 

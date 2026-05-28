@@ -104,7 +104,7 @@ function AppointmentCard({ svc, user, onClick, onClickDetails }: { svc: any, use
           <div className="flex items-center justify-between mb-1">
             <span className="text-[8px] font-black uppercase text-emerald-600 tracking-widest">{svc.category}</span>
             <span className="text-[10px] font-black text-[#006747]">
-              {svc.base_price.toLocaleString('pt-PT')} Kz
+              {svc.base_price.toLocaleString('pt-PT')}€
             </span>
           </div>
           <h3 className="text-base font-black text-gray-900 uppercase truncate leading-tight">
@@ -312,7 +312,7 @@ export default function Appointments() {
                     </div>
                     <div className="flex items-center justify-between py-4 border-t border-gray-50 mt-6">
                         <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">Preço da Consulta</span>
-                        <span className="text-2xl font-black text-[#006747]">{bookingModal.base_price.toLocaleString('pt-PT')} Kz</span>
+                        <span className="text-2xl font-black text-[#006747]">{bookingModal.base_price.toLocaleString('pt-PT')}€</span>
                     </div>
                     <button 
                         onClick={handleBookService}
@@ -400,7 +400,7 @@ export default function Appointments() {
                   <div>
                     <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Investimento</p>
                     <p className="text-3xl font-black text-white">
-                      {detailsModal.base_price.toLocaleString('pt-PT')} Kz
+                      {detailsModal.base_price.toLocaleString('pt-PT')}€
                     </p>
                   </div>
                   <button 
