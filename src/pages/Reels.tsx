@@ -417,9 +417,11 @@ export default function Reels() {
                             <div className="flex flex-col">
                               <span className="text-white font-bold text-sm flex items-center drop-shadow-md group-hover:text-emerald-400 transition-colors">
                                 {reel.user.username}
-                                {reel.user.isProf && <ShieldCheck className="ml-1.5 w-4 h-4 text-[#006747] fill-white" />}
+                                {reel.user.isProf && <ShieldCheck className="ml-1.5 w-4 h-4 text-emerald-400 fill-emerald-950" />}
                               </span>
-                              <span className="text-[10px] text-white/60 font-medium tracking-wider uppercase group-hover:text-white transition-colors">Membro VIVA+ Health</span>
+                              <span className="text-[10px] text-emerald-300 font-bold tracking-wider uppercase group-hover:text-white transition-colors">
+                                {reel.user.isProf ? 'Influenciador Clínico Certificado' : 'Membro VIVA+ Health'}
+                              </span>
                             </div>
                           </Link>
                           <button className="ml-4 px-4 py-1.5 bg-white text-black text-[10px] rounded-full font-black uppercase tracking-wider hover:bg-gray-200 transition-colors shadow-lg">

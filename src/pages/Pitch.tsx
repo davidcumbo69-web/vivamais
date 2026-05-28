@@ -52,90 +52,90 @@ const DEFAULT_SLIDES: Slide[] = [
     id: 'default-1',
     slide_order: 1,
     title: 'VIVA+ SAÚDE',
-    subtitle: 'Ecossistema Inteligente de Saúde Digital e Bem-Estar',
+    subtitle: 'Ecossistema Inteligente de Saúde de Portugal para a Europa',
     category: 'Identificação',
-    content: '• Introdução: Uma plataforma digital de saúde inovadora que conecta pacientes, profissionais de saúde e farmácias num único ecossistema inteligente, moderno e seguro. Focada no bem-estar, na prevenção ativa e na saúde personalizada, revolucionando o acesso e a celeridade em Portugal, com expansão estratégica para o mercado europeu.\n• Pacientes: Inclusão digital avançada, acompanhamento inteligente e alertas de medicação em tempo real em Portugal e na Europa.\n• Médicos & SNS: Telemedicina ágil integrada, prescrições eletrónicas e interligação com clínicas e hospitais nacionais.\n• Farmácias: Integração inteligente de stocks e aviamento rápido de receitas de bem-estar com cobertura universal.',
+    content: '• Introdução: Plataforma digital pan-europeia de saúde que conecta pacientes digitalmente ativos, profissionais de saúde e farmácias num único ecossistema ágil e seguro, cobrindo todo o Portugal e expandindo-se estrategicamente para a Europa.\n• Cronograma Interativo: Tecnologia assistiva que permite ao profissional clicar no cronograma e verificar instantaneamente que o paciente já foi medicado com total rastreabilidade.\n• Influença Certificada: Apenas promotores e profissionais de saúde com registo e documentos validados pela plataforma podem atuar como criadores de conteúdos de saúde, tornando a rede totalmente segura contra fake news.\n• Grupos Académicos: Espaços de debate criados exclusivamente por profissionais licenciados para debates, esclarecimento personalizado e promoção da saúde.',
     duration_seconds: 40
   },
   {
     id: 'default-2',
     slide_order: 2,
     title: 'A Oportunidade e o Problema',
-    subtitle: 'Rompendo a Inacessibilidade em Portugal e na Europa',
+    subtitle: 'Desinformação, Desconexão e Falha de Controlo de Tomas',
     category: 'Identificação',
-    content: '• Cobertura Integrada: Combater a descentralização e otimizar o acesso à saúde célere em Portugal e em toda a Europa.\n• Falta de Rastreamento: Ausência de rastreio inteligente e dinâmico de medicação pelos próprios pacientes.\n• Interação Desconectada: Lacunas severas na ligação digital célere entre pacientes, médicos e farmácias locais.\n• Desperdício de Deslocações: Horas perdidas em viagens cansativas por pacientes e cuidadores de todo o país.',
+    content: '• Conteúdo Sem Certificação: Proliferação perigosa de pseudo-influenciadores da saúde no digital sem verificação oficial de ordens profissionais.\n• Falta de Rastreamento: Ausência de monitorização interativa de medicação pelos cuidadores e clínicos em tempo real.\n• Descarte Tecnológico Sénior: Perda de foco ao forçar canais digitais ao público sénior não digitalizado, sendo necessário priorizar a população operacionalmente digital.\n• Fronteiras Sob Consulta: Dificuldade histórica de interoperabilidade de prescrições e dados de saúde que respeitem as normas locais em toda a União Europeia.',
     duration_seconds: 45
   },
   {
     id: 'default-3',
     slide_order: 3,
     title: 'O Produto e Serviço VIVA+',
-    subtitle: 'O que oferecemos no ecossistema e plataforma?',
+    subtitle: 'Inovação em Acompanhamento Farmacoterapêutico e Educação',
     category: 'Identificação',
-    content: '• Alertas Inteligentes: Acompanhamento de medicação com notificações e avisos automáticos em tempo real.\n• Telemedicina Ágil: Consultas digitais integradas e agendamento de cuidados de saúde privados e públicos.\n• Saúde Certificada: Artigos científicos oficiais de médicos parceiros credenciados na nossa rede.\n• Receitas Digitais: Prescrições desmaterializadas em PDF enviadas diretamente ao smartphone do utente.\n• Redes & Comunidade: Fóruns moderados, Reels educativos e comunidades ativas de apoio familiar.\n• Sincronia Farmácias: Encomendas instantâneas integradas ao stock de receitas nas farmácias aderentes.',
+    content: '• Cronograma Assistido: Ao premir um horário no cronograma de medicação assistido de forma interativa, o profissional de saúde visualiza instantaneamente que o paciente já foi medicado.\n• Feed da Saúde Seguro: Canal integrado de Reels informativos curados onde apenas utilizadores com cédula e registos homologados criam conteúdos verificados de saúde pública.\n• Debates & Grupos de Elite: Fóruns criados restritamente por profissionais para mentoria académica de estudantes de saúde e esclarecimento ético e personalizado a cidadãos.\n• Receitas & Encomendas: Emissão de prescrições em PDF partilhadas síncronas que cruzam bases de farmácias para aviamento célere no mercado nacional e europeu.',
     duration_seconds: 45
   },
   {
     id: 'default-4',
     slide_order: 4,
     title: 'Inovação da Empresa',
-    subtitle: 'Diferencial de Produto e Inovação Incremental',
+    subtitle: 'Diferencial Tecnológico de Rigor e Foco Dinâmico',
     category: 'Inovação',
-    content: '• Inovação de Produto/Serviço: Desenvolvimento de plataforma multifuncional integrada que unifica farmácias, clínicas e profissionais num único ecossistema.\n• Inovação Incremental: Melhoria de processos de saúde já existentes através de tecnologia digital robusta, tornando-os céleres, acessíveis e eficientes.\n• Diferencial: Foco na segurança jurídica, conformidade com o RGPD, certificação de médicos, acompanhamento focado em termalismo e reabilitação ativa.',
+    content: '• Tecnologia Síncrona Registada: Primeiro e-cronograma médico bidirecional focado em verificação direta de adesão entre médicos e utentes.\n• Filtro de Influenciadores Doc: Verificação rigorosa em tempo real de documentos de acreditação médica antes de libertar funcionalidades de influencer, estabelecendo o padrão ouro em Portugal.\n• Foco Digital Dedicado: Direcionamento total do UX para utilizadores e cuidadores ativos digitalmente, assegurando máxima retenção na plataforma.\n• Multi-Regulação Integrada: Estrutura desenhada para Portugal inteiro de raiz, escalável para a Europa adaptando as regras e leis locais de cada país.',
     duration_seconds: 45
   },
   {
     id: 'default-5',
     slide_order: 5,
     title: 'Business Model Canvas - Clientes & Proposta',
-    subtitle: 'A quem servimos e como geramos valor?',
+    subtitle: 'Unindo Valor Terapêutico e Operação Escalável',
     category: 'Business Canvas',
-    content: '• Proposta de Valor: Conectar o ecossistema de saúde num ambiente seguro, de confiança, comodidade e inovação constante.\n• Segmentos de Clientes:\n  - Pacientes digitalmente ativos e cuidadores informais.\n  - Pessoas interessadas em bem-estar, saúde preventiva e termalismo.\n  - Profissionais de saúde autónomos que precisam de ferramentas de telemedicina.\n  - Farmácias locais e clínicas visando captação digital.',
+    content: '• Proposta de Valor: Oferecer rigor científico de saúde, garantia de conformidade com RGPD, facilidade de controlo assistido de fármacos e debates académicos.\n• Persona Principal: População digitalmente operacional interessada em acompanhamento de saúde rápido e fiável em Portugal e Europa.\n• Segmento Académico: Estudantes do ensino superior de saúde que utilizam as comunidades profissionais para partilha de conhecimento e crescimento científico.\n• Pro de Vanguarda: Profissionais licenciados e farmácias que adquirem visibilidade qualificada e ferramentas inovadoras SaaS.',
     duration_seconds: 40
   },
   {
     id: 'default-6',
     slide_order: 6,
     title: 'BMC - Canais, Relação e Receitas',
-    subtitle: 'Sustentabilidade e Fontes de Rendimento',
+    subtitle: 'Monetização de Alto Impacto para Lucro Recorrente',
     category: 'Business Canvas',
-    content: '• Canais: App móvel, Plataforma Web, Redes sociais e Parcerias públicas/privadas.\n• Relacionamento: Atendimento automatizado, Comunidades moderadas por profissionais.\n• Fontes de Receita:\n  - Subscrições Premium de gestão para Profissionais de Saúde (VIVA+ Pro).\n  - Taxa/Comissão sobre consultas realizadas e produtos na Loja VIVA (Marketplace).\n  - Taxa de integração e processamento de receitas para farmácias aderentes.\n  - Publicidade ética de marcas de bem-estar certificadas.',
+    content: '• Canais: WebApp robusta com cronograma de medicação partilhado e feed de saúde científica homologada de fácil acesso.\n• Relacionamento: Grupos especializados criados exclusivamente por médicos para conversas personalizadas e proximidade com utentes.\n• Subscrição VIVA+ Pro: Planos mensais SaaS para clínicos e centros de saúde geriátricos ou de telemedicina em toda a Europa.\n• Marketplace e Parcerias: Margem ativa sobre aviamento na Loja VIVA e publicidade ética de laboratórios devidamente credenciados.',
     duration_seconds: 45
   },
   {
     id: 'default-7',
     slide_order: 7,
     title: 'Missão, Visão e Valores',
-    subtitle: 'Guiados pela ética, segurança e escala europeia',
+    subtitle: 'Alinhados com a Ciência de Vanguarda e Escala Pan-Europeia',
     category: 'Missão & Valores',
-    content: '• Missão: Transformar o acesso à saúde através de tecnologia digital, conectando pacientes, profissionais e farmácias numa rede segura, moderna e intuitiva.\n• Visão: Ser a plataforma líder nacional em Portugal e de referência na Europa em saúde preventiva, bem-estar e reabilitação ativa.\n• Valores: Inovação continuada, Segurança de dados (RGPD), Ética profissional, Transparência, Inclusão de doentes rurais/urbanos e Responsabilidade Social ativa.',
+    content: '• Missão: Garantir a promoção da saúde e o controlo terapêutico assente em canais rápidos de conhecimento fidedigno, usando tecnologia inteligente assistiva.\n• Visão: Ser o maior canal pan-europeu de saúde digital verificado de Portugal para a Europa, promovendo a partilha segura e debates de integridade e ética indubitável.\n• Valores: Responsabilidade jurídica sólida, validação científica rigorosa, celeridade na comunicação médica e ética profissional protetora.',
     duration_seconds: 40
   },
   {
     id: 'default-8',
     slide_order: 8,
     title: 'Forma Jurídica e Finanças',
-    subtitle: 'Prontos para escalar o negócio com governança',
+    subtitle: 'Projetos Estruturados com Governação Corporativa',
     category: 'Forma Jurídica',
-    content: '• Promotores principais: David Cumbo e Equipa.\n• Forma Jurídica: Sociedade por Quotas (LDA) constituída legalmente em Portugal.\n• Capital Social Inicial: 10.000 € de capital social registado.\n• Estrutura Societária: David Cumbo (70% de quota-parte) e Co-promotores/Parceiros (30%).\n• Aplicação do capital: Desenvolvimento do MVP nacional, conformidade com o RGPD europeu e marketing estratégico de Portugal ao mercado europeu.',
+    content: '• Direção do Ecossistema: Impulsionado por David Cumbo (Fundador e Diretor) e equipa técnica de healthtech com experiência no setor.\n• Forma de Constituição: Sociedade por Quotas (LDA) constituída legalmente em Portugal, desenhada para captar investimento institucional.\n• Alocação de Ativos: 70% detidos por David Cumbo, com 30% reservados a co-promotores de alto relevo.\n• Foco de Custos: Infraestrutura de validação de influencers certificadores, engenharia do cronograma de medicação interativo e expansão à UE.',
     duration_seconds: 40
   },
   {
     id: 'default-9',
     slide_order: 9,
     title: 'Porquê Investir na VIVA+?',
-    subtitle: 'Conclusão & Apelo de Negócio para Investidores',
+    subtitle: 'Inovação de Saúde Sem Barreiras e Escalável',
     category: 'Investimento',
-    content: '• Escalabilidade Europeia: Iniciando com piloto ágil em Chaves/Alto Tâmega, projetado para rápida expansão por todo o Portugal e escalabilidade subsequente na Europa.\n• Rentabilidade Recorrente SaaS: Modelo financeiro escalável baseado em subscrições clínicas mensais estáveis (SaaS) e comissões sobre consultas privadas e vendas digitais em toda a UE.\n• Forte Impacto Social (ESG): Alinhamento rigoroso com os Objetivos de Desenvolvimento Sustentável da UE, elegível para fundos de fomento nacional e de coesão europeus.',
+    content: '• Combate à Desinformação: A primeira e única plataforma com influencers 100% verificados por documentos reais, captando anunciantes éticos premium.\n• Acompanhamento Diferenciado: O clique interativo no cronograma de medicação garante adesão e revoluciona o acompanhamento clínico rápido no ecossistema.\n• Escala Digital Europeia: Uma solução robusta para toda a extensão territorial portuguesa e escalabilidade imediata para mercados europeus com conformidade legislativa local.',
     duration_seconds: 45
   },
   {
     id: 'default-10',
     slide_order: 10,
     title: 'Agradecimentos & Contactos',
-    subtitle: 'O Futuro da Saúde Digital Começa Hoje',
+    subtitle: 'Construa o Futuro do Impacto Clínico Connosco',
     category: 'Encerramento',
-    content: '• David Cumbo: Fundador e Diretor do Ecossistema VIVA+\n• Contacto Directo: davidcumbo69@gmail.com\n• Sede Registral: Chaves, Alto Tâmega, Portugal (Hub para Europa)\n• Visão Final: "Unindo inovação de excelência, segurança extrema de dados clínicos e empatia humana para garantir que ninguém seja deixado para trás no futuro da saúde digital em Portugal e na Europa."',
+    content: '• Líder Executivo: David Cumbo (Fundador e Diretor Geral)\n• Contacto Direto: davidcumbo69@gmail.com\n• Sede e Hub Legal: Lisboa, Portugal (Polo de Desenvolvimento e Escala de Portugal para a Europa)\n• Visão Final: "Unindo celeridade, rigor científico com influencers credenciados e tecnologia assistiva para redefinir o cuidado médico inteligente de Portugal para a Europa."',
     duration_seconds: 35
   }
 ];
@@ -564,74 +564,72 @@ export default function Pitch() {
         title: "🔋 DICA 1: Introdução à VIVA+",
         points: [
           "Cumprimente o júri com confiança e olhar firme.",
-          "Foque que a VIVA+ preenche um vazio geográfico em Portugal (Chaves, Alto Tâmega).",
-          "Destaque o tripé: utentes, médicos privados/SNS e farmácias locais interligados de forma inteligente."
+          "Foque que a VIVA+ cobre todo o Portugal de raiz, desenhada sob escalabilidade ágil para a Europa.",
+          "Destaque o tripé: utentes tecnologicamente ativos, médicos licenciados e farmácias integradas."
         ]
       },
       {
         title: "🚨 DICA 2: Oportunidade e Dor",
         points: [
-          "Seja expressivo no problema. A população aqui no interior envelhece sã e salva, mas é isolada.",
-          "Mencione a falta de transporte para ir à farmácia buscar medicamentos e futilidades burocráticas.",
-          "Esclareça o alto índice de internamento decorrente da falta de controle de medicação pelos utentes."
+          "Seja expressivo no problema: falta de controle na toma terapêutica e proliferação de fake news médicas digitais.",
+          "Evidencie a ineficiência de forçar tecnologia móvel aos idosos não digitais, justificando o descarte desta faixa.",
+          "Destaque o perigo dos pseudo-influencers de saúde enganando audiências sem qualquer validação técnica."
         ]
       },
       {
         title: "💡 DICA 3: O ecossistema VIVA+",
         points: [
-          "Apresente nossa solução unificada. Tudo em um (receitas, alertas automáticos, marketplace de farmácia).",
-          "Ensine que os fóruns e reels de saúde fortalecem o conhecimento médico seguro fidedigno contra fake news."
+          "Apresente o cronograma assistido: um só clique permite ao profissional ver imediatamente que o paciente já foi medicado.",
+          "Apresente os Reels de criadores 100% certificados por documentos oficiais e cédulas válidas."
         ]
       },
       {
         title: "🚀 DICA 4: Diferencial Tecnológico",
         points: [
-          "Explique a Inovação Incremental: melhoramos serviços já existentes via automação rápida.",
-          "Evidencie a conformidade total com o RGPD, que assegura o sigilo na troca de prescrições em PDF."
+          "Explique a Inovação de Produto: verificação síncrona de medicação bidirecional e filtro documental rigoroso.",
+          "Destaque a segurança sob o RGPD e conformidade com as regulações médicas locais de cada país europeu."
         ]
       },
       {
         title: "🎯 DICA 5: BMC - Segmentos",
         points: [
-          "Defina clara e objetivamente quem paga e usa: pacientes seniores com cuidadores, médicos liberais e farmácias locais desejando escoar stock de bem-estar."
+          "Defina de forma honesta: população digitalmente operacional, estudantes de saúde em busca de redes académicas de debate e profissionais SaaS."
         ]
       },
       {
         title: "💰 DICA 6: Sustentabilidade e EBITDA",
         points: [
-          "Segure no modelo de receita: subscrições VIVA+ Pro para profissionais de saúde, taxas de transação em vendas de fármacos e anúncios médicos verificados.",
-          "Mostre que temos alta previsibilidade financeira desde as primeiras parcerias."
+          "Descreva o SaaS estável VIVA+ Pro para profissionais e farmácias, além das comissões integradas do marketplace.",
+          "Mostre a ausência de atritos físicos com escalabilidade multinacional assente em software puro."
         ]
       },
       {
         title: "🌟 DICA 7: Missão e Identidade Social",
         points: [
-          "Fale com o coração. Nosso maior valor é a inclusão digital das pessoas rurais e o acompanhamento de reabilitação termal.",
-          "Conecte o termalismo tradicional do norte ao modelo tecnológico móvel moderno."
+          "Fale com o coração: nossa missão é curar a desinformação digital e otimizar aderências clínicas.",
+          "Reforce os grupos e debates de integridade inquestionável, de criação inteiramente profissional."
         ]
       },
       {
         title: "🏢 DICA 8: Fecho e Estrutura LDA",
         points: [
-          "Apresente que a VIVA+ já nasce legalmente saudável como uma LDA de 10.000€ de capital social inicial.",
-          "A maioria de 70% sob controle de coordenação do e-mail de David Cumbo garante celeridade decisória.",
-          "Prepare o terreno para o apelo do investimento final."
+          "Apresente que a VIVA+ já nasce legalmente saudável como uma LDA de 10.000€ de capital social registado.",
+          "A quota-parte de 70% detida por David Cumbo assegura decisões dinâmicas para captação célere de capital."
         ]
       },
       {
         title: "⚡ DICA 9: Conclusão e Investimento",
         points: [
-          "Explique que o Tâmega é um oceano azul livre de concorrentes estruturados.",
-          "Destaque as margens de lucro elevadas e a receita recorrente do modelo SaaS.",
-          "Foque no forte valor ESG que facilita a captação de subsídios de fomento europeus."
+          "Fale do mercado bilionário português e europeu livre de concorrentes com curadoria documental de criadores.",
+          "Destaque as margens de lucro elevadas recorrentes do modelo de subscrição (SaaS) e transações na União Europeia."
         ]
       },
       {
         title: "🤝 DICA 10: Encerramento & Agradecimento",
         points: [
           "Faça os agradecimentos formais em nome de David Cumbo.",
-          "Apresente os contactos para reuniões pós-pitch e atração de novos investidores.",
-          "Encerre com paixão: 'Unindo inovação e proximidade para cuidar da nossa população! Muito obrigado!'"
+          "Apresente a sede nacional de escala para a Europa para atração de novos investidores.",
+          "Encerre com paixão: 'Unindo celeridade, segurança e ciência para digitalizar o cuidado médico! Muito obrigado!'"
         ]
       }
     ];
@@ -1058,7 +1056,7 @@ export default function Pitch() {
       let teamPct = 30;
       let teamName = "Equipa & Consultores";
       let capitalSocial = "10.000 €";
-      let sede = "Chaves, Portugal";
+      let sede = "Lisboa, Portugal";
       let formaJuridica = "Sociedade por Quotas (LDA)";
       let promotores = "David Cumbo e Equipa";
       const aplFundos: string[] = [];
@@ -1359,7 +1357,7 @@ export default function Pitch() {
       let fName = "David Cumbo";
       let fRole = "Fundador & Core Promotor";
       let fEmail = "davidcumbo69@gmail.com";
-      let fSede = "Chaves, Alto Tâmega, Portugal (Hub para Europa)";
+      let fSede = "Lisboa, Portugal (Hub de Escala para a Europa)";
       let fQuote = "Unindo inovação de excelência, segurança extrema de dados clínicos e empatia humana para garantir que ninguém seja deixado para trás no futuro da saúde digital em Portugal e na Europa.";
 
       lines.forEach(line => {
