@@ -1043,6 +1043,7 @@ export default function Pitch() {
       let capitalSocial = "10.000 €";
       let sede = "Chaves, Portugal";
       let formaJuridica = "Sociedade por Quotas (LDA)";
+      let promotores = "David Cumbo e Equipa";
       const aplFundos: string[] = [];
 
       lines.forEach(line => {
@@ -1051,7 +1052,7 @@ export default function Pitch() {
         const key = colonIdx > -1 ? cleaned.substring(0, colonIdx).trim().toLowerCase() : cleaned.toLowerCase();
         const val = colonIdx > -1 ? cleaned.substring(colonIdx + 1).trim() : '';
 
-        if (key.includes("david cumbo") || key.includes("societária") || key.includes("fundador")) {
+        if (key.includes("estrutura societ") || key.includes("quota-parte") || (key.includes("david cumbo") && !key.includes("promotores"))) {
           const match = cleaned.match(/(\d+)%/);
           if (match) {
             founderPct = parseInt(match[1]);
@@ -1068,79 +1069,212 @@ export default function Pitch() {
           if (colonIdx > -1) {
             teamName = cleaned.substring(0, colonIdx).trim();
           }
-        } else if (key.includes("capital")) {
+        } else if (key.includes("capital social") || (key.startsWith("capital") && !key.includes("aplicação") && !key.includes("alocação"))) {
           capitalSocial = val || cleaned;
-        } else if (key.includes("forma")) {
+        } else if (key.includes("forma juríd") || key === "forma") {
           formaJuridica = val || cleaned;
         } else if (key.includes("sede")) {
           sede = val || cleaned;
+        } else if (key.includes("promotore")) {
+          promotores = val || cleaned;
         } else if (cleaned) {
-          aplFundos.push(cleaned);
+          if (key.includes("aplicação") || key.includes("alocação") || key.includes("investimento")) {
+            const listStr = val || cleaned;
+            const parts = listStr.split(/[,;.]+/).map(p => p.trim()).filter(p => p.length > 5);
+            parts.forEach(p => {
+              if (!aplFundos.includes(p)) aplFundos.push(p);
+            });
+          } else {
+            aplFundos.push(cleaned);
+          }
         }
       });
 
-      const finalApl = aplFundos.length ? aplFundos.slice(0, 3) : ["Desenvolvimento do MVP Nacional", "Conformidade do RGPD Europeu", "Ações de Expansão Nacional e UE"];
+      // Filter out any overlap with standard labels in application of funds
+      const finalApl = aplFundos.filter(item => {
+        const lower = item.toLowerCase();
+        return !lower.includes("david cumbo e equipa") && 
+               !lower.includes("sociedade por quotas") && 
+               !lower.includes("10.000 €") &&
+               !lower.includes("promotores principais");
+      });
+
+      if (finalApl.length === 0) {
+        finalApl.push(
+          "Desenvolvimento do MVP nacional focado no ecossistema e portal VIVA+",
+          "Conformidade total com as normas do RGPD português e diretrizes europeias",
+          "Marketing estratégico de ativação e inserção célere nos mercados alvo"
+        );
+      }
+
+      const r = 40;
+      const circ = 2 * Math.PI * r; // ~251.32
+      const founderDash = (founderPct / 100) * circ;
+      const teamDash = (teamPct / 100) * circ;
 
       return (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mt-1 h-full font-sans text-left">
-          {/* Shares visualization */}
-          <div className="p-3 bg-white/5 border border-white/5 rounded-2xl md:col-span-2 flex flex-col justify-between hover:bg-white/10 transition-all">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 mt-1 h-full font-sans text-left items-stretch">
+          {/* Card 1: Estudo Societário com Gráfico Real de Quotas */}
+          <div className="p-3.5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all shadow-lg backdrop-blur-md">
             <div>
-              <span className="text-[9px] uppercase font-bold text-white/40 tracking-wider">Governação & Quotas</span>
-              <h4 className="text-xs md:text-sm font-bold text-white uppercase mt-1 mb-2">Estrutura Societária (LDA)</h4>
+              <div className="flex items-center gap-1.5 mb-1 bg-white/[0.04] w-fit px-2 py-0.5 rounded-full border border-white/5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-[9px] uppercase font-bold text-white/50 tracking-widest font-mono">Governação & Quotas</span>
+              </div>
+              <h4 className="text-xs md:text-sm font-extrabold text-white tracking-tight uppercase mb-1">Estrutura Societária</h4>
               
+              {/* Gráfico Real Dividido SVG */}
+              <div className="flex justify-center items-center py-2.5 relative my-2">
+                <svg width="120" height="120" className="transform -rotate-90">
+                  {/* Background Track */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r={r}
+                    fill="transparent"
+                    stroke="rgba(255, 255, 255, 0.05)"
+                    strokeWidth="10"
+                  />
+                  {/* Founder Segment (Emerald) */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r={r}
+                    fill="transparent"
+                    stroke="#10b981"
+                    strokeWidth="10"
+                    strokeDasharray={`${founderDash} ${circ}`}
+                    strokeDashoffset="0"
+                    strokeLinecap="round"
+                    className="transition-all duration-1000 ease-out"
+                  />
+                  {/* Team Segment (Blue) */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r={r}
+                    fill="transparent"
+                    stroke="#3b82f6"
+                    strokeWidth="10"
+                    strokeDasharray={`${teamDash} ${circ}`}
+                    strokeDashoffset={-founderDash}
+                    strokeLinecap="round"
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                
+                {/* Center Badge */}
+                <div className="absolute flex flex-col items-center justify-center text-center">
+                  <span className="text-[8px] font-black text-white/40 uppercase tracking-widest font-mono">Total LDA</span>
+                  <span className="text-xs font-black text-emerald-400 tracking-tight">100%</span>
+                </div>
+              </div>
+
+              {/* Legenda do Gráfico */}
               <div className="space-y-2 mt-2">
-                <div>
-                  <div className="flex justify-between text-[11px] text-white/95 font-medium mb-1">
-                    <span className="truncate max-w-[130px]" title={founderName}>{founderName}</span>
-                    <span className="text-emerald-400 font-bold">{founderPct}%</span>
+                <div className="bg-white/[0.02] p-2 rounded-xl border border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-2 max-w-[70%]">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    <span className="text-[11px] text-white/95 font-medium truncate" title={founderName}>{founderName}</span>
                   </div>
-                  <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
-                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${founderPct}%` }} />
-                  </div>
+                  <span className="text-xs font-bold text-emerald-400 font-mono">{founderPct}%</span>
                 </div>
 
-                <div>
-                  <div className="flex justify-between text-[11px] text-white/70 font-normal mb-1">
-                    <span className="truncate max-w-[130px]" title={teamName}>{teamName}</span>
-                    <span className="text-white/40">{teamPct}%</span>
+                <div className="bg-white/[0.02] p-2 rounded-xl border border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-2 max-w-[70%]">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                    <span className="text-[11px] text-white/70 font-medium truncate" title={teamName}>{teamName}</span>
                   </div>
-                  <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
-                    <div className="bg-slate-500 h-full rounded-full" style={{ width: `${teamPct}%` }} />
-                  </div>
+                  <span className="text-xs font-bold text-blue-400 font-mono">{teamPct}%</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-emerald-500/10 text-emerald-300 p-2 rounded-xl text-xs font-bold leading-relaxed font-mono flex items-center justify-between mt-4">
-              <span>Capital Social:</span>
-              <span className="font-extrabold text-white">{capitalSocial}</span>
+            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-2 rounded-xl text-xs font-medium font-sans flex items-center justify-between mt-3">
+              <span className="text-white/60 text-[10px]">Capital de Registo:</span>
+              <span className="font-bold text-white text-[10px] font-mono">{capitalSocial}</span>
             </div>
           </div>
 
-          {/* Finance info table */}
-          <div className="p-3 bg-[#111622] border border-white/5 rounded-2xl md:col-span-3 flex flex-col justify-start hover:bg-white/5 transition-all">
-            <span className="text-[9px] uppercase font-bold text-white/45 tracking-wider mb-2">Estrutura Financeira e Aplicação</span>
-            
-            <div className="divide-y divide-white/10 text-xs">
-              <div className="py-1.5 flex justify-between items-center">
-                <span className="text-white/40">Forma Jurídica</span>
-                <span className="text-white font-medium">{formaJuridica}</span>
+          {/* Card 2: Detalhes Societários */}
+          <div className="p-3.5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all shadow-lg backdrop-blur-md">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1 bg-white/[0.04] w-fit px-2 py-0.5 rounded-full border border-white/5">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                <span className="text-[9px] uppercase font-bold text-white/50 tracking-widest font-mono">Enquadramento Legal</span>
               </div>
-              <div className="py-1.5 flex justify-between items-center">
-                <span className="text-white/40">Sede Registal</span>
-                <span className="text-white font-medium">{sede}</span>
-              </div>
-              <div className="py-1.5 flex flex-col justify-start items-start">
-                <span className="text-white/40 mb-1">Aplicação de Fundos MVP</span>
-                <div className="flex flex-wrap gap-1 mt-0.5">
-                  {finalApl.map((f, i) => (
-                    <span key={i} className="bg-white/5 border border-white/10 text-[10px] text-white/80 px-2 py-0.5 rounded-lg font-normal">
-                      ✓ {f}
-                    </span>
-                  ))}
+              <h4 className="text-xs md:text-sm font-extrabold text-white tracking-tight uppercase mb-1">Dados da Sociedade</h4>
+
+              <div className="space-y-2 mt-2 text-[11px]">
+                {/* Promotores */}
+                <div className="p-2 bg-white/[0.02] border border-white/5 rounded-xl">
+                  <span className="text-[8px] text-white/40 uppercase font-mono tracking-wider block mb-0.5">Promotores Principais</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 font-bold text-[9px]">
+                      V+
+                    </div>
+                    <span className="text-white font-medium truncate max-w-[180px]">{promotores}</span>
+                  </div>
+                </div>
+
+                {/* Forma Jurídica */}
+                <div className="p-2 bg-white/[0.02] border border-white/5 rounded-xl">
+                  <span className="text-[8px] text-white/40 uppercase font-mono tracking-wider block mb-0.5">Forma Jurídica</span>
+                  <span className="text-white font-medium leading-snug block">{formaJuridica}</span>
+                </div>
+
+                {/* Sede Registal */}
+                <div className="p-2 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="text-[8px] text-white/40 uppercase font-mono tracking-wider block">Sede Registal</span>
+                    <span className="text-white font-bold mt-0.5 block">{sede}</span>
+                  </div>
+                  <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] px-1.5 py-0.5 rounded-full font-extrabold tracking-widest uppercase font-mono">PT</span>
                 </div>
               </div>
+            </div>
+
+            <div className="text-[9px] text-white/30 mt-3 pt-2 border-t border-white/5 flex justify-between items-center font-mono">
+              <span>Jurisdição: Portugal (UE)</span>
+              <span>Ativo 100%</span>
+            </div>
+          </div>
+
+          {/* Card 3: Aplicação Estratégica / Alocação */}
+          <div className="p-3.5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all shadow-lg backdrop-blur-md">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1 bg-white/[0.04] w-fit px-2 py-0.5 rounded-full border border-white/5">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                <span className="text-[9px] uppercase font-bold text-white/50 tracking-widest font-mono">Aplicação do Capital</span>
+              </div>
+              <h4 className="text-xs md:text-sm font-extrabold text-white tracking-tight uppercase mb-1">Ativos do MVP</h4>
+
+              <div className="space-y-2 mt-2">
+                {finalApl.slice(0, 3).map((item, idx) => {
+                  const colors = [
+                    { border: "border-emerald-500/20", bg: "bg-emerald-500/10", text: "text-emerald-400", label: "01. MVP" },
+                    { border: "border-blue-500/20", bg: "bg-blue-500/10", text: "text-blue-400", label: "02. RGPD" },
+                    { border: "border-amber-500/20", bg: "bg-amber-500/10", text: "text-amber-400", label: "03. GO-TO-MARKET" }
+                  ];
+                  const scheme = colors[idx % colors.length];
+
+                  return (
+                    <div key={idx} className={`p-2 bg-white/[0.02] border border-white/5 rounded-xl flex items-start gap-2 transition-all hover:bg-white/[0.04]`}>
+                      <span className={`px-1 rounded text-[7px] font-black tracking-wider uppercase font-mono shrink-0 ${scheme.bg} ${scheme.border} ${scheme.text} border mt-0.5`}>
+                        {scheme.label}
+                      </span>
+                      <p className="text-[10px] text-white/90 leading-tight font-normal">
+                        {item}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-white/5 text-white/50 text-[9px] p-2 rounded-xl flex items-center justify-center gap-1 mt-3 font-mono">
+              <span className="text-amber-400">⚡</span>
+              <span>Escalar nacional e europeu</span>
             </div>
           </div>
         </div>
