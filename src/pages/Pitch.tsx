@@ -26,7 +26,15 @@ import {
   Activity,
   Maximize2,
   Minimize2,
-  Settings
+  Settings,
+  ArrowRight,
+  Shield,
+  Users,
+  Target,
+  TrendingUp,
+  Coins,
+  Layers,
+  Table
 } from 'lucide-react';
 
 interface Slide {
@@ -520,55 +528,502 @@ export default function Pitch() {
 
   // Dynamic slide content renderer designed to fit without forcing scrolling, with clean weight and high legibility
   const renderSlideRows = (content: string, insideFullscreen: boolean = false) => {
-    const lines = content.split('\n');
-    return (
-      <div className={`space-y-2 md:space-y-3 ${insideFullscreen ? 'mt-3' : 'mt-2'}`}>
-        {lines.map((line, idx) => {
-          const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
-          const textWithoutMarker = line.replace(/^[•\-\s]+/, '').trim();
+    const lines = content.split('\n').map(l => l.trim()).filter(l => l);
+    const cleanIndex = currentSlideIndex % 8;
 
-          if (!textWithoutMarker) return null;
+    // Helper for beautiful visually rich cards
+    const cardPadding = insideFullscreen ? 'p-3 md:p-4' : 'p-2.5 md:p-3';
+    const textBase = insideFullscreen ? 'text-xs md:text-sm lg:text-base' : 'text-[11px] md:text-xs lg:text-sm';
+    const titleBase = insideFullscreen ? 'text-sm md:text-base font-bold' : 'text-xs md:text-sm font-semibold';
 
-          if (isBullet) {
+    // Slide 1 Layout (Index 0): Welcome & Stakeholder hub layout
+    if (cleanIndex === 0) {
+      const defaultHub = [
+        { title: "Pacientes", desc: "Inclusão digital de idosos rurais, acompanhamento termal ativo e alertas de medicação em tempo real.", check: "✓ Foco no Utente" },
+        { title: "Médicos & SNS", desc: "Telemedicina ágil, prescrições eletrónicas diretas em PDF e redes saudáveis com verificação fidedigna.", check: "✓ Celeridade" },
+        { title: "Farmácias", desc: "Integração inteligente de stocks e aviamento rápido de receitas de bem-estar na região do Tâmega.", check: "✓ Logística Local" }
+      ];
+
+      const hubItems = lines.length >= 3 ? lines.slice(0, 3).map((line, i) => {
+        const cleaned = line.replace(/^[•\-\s]+/, '').trim();
+        const colonIdx = cleaned.indexOf(':');
+        const title = colonIdx > -1 ? cleaned.substring(0, colonIdx).trim() : (defaultHub[i]?.title || "Tópico");
+        const desc = colonIdx > -1 ? cleaned.substring(colonIdx + 1).trim() : cleaned;
+        return { title, desc, check: defaultHub[i]?.check || "✓ Ativo" };
+      }) : defaultHub;
+
+      const icons = [Users, Activity, Layers];
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 h-full">
+          {hubItems.map((item, idx) => {
+            const IconComp = icons[idx] || Users;
+            return (
+              <div key={idx} className={`${cardPadding} bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all`}>
+                <div>
+                  <div className="flex items-center space-x-2 mb-1.5">
+                    <div className={`p-1.5 rounded-lg ${slideTheme.badgeBg}`}>
+                      <IconComp className="w-4 h-4" />
+                    </div>
+                    <h3 className={`${titleBase} text-white`}>{item.title}</h3>
+                  </div>
+                  <p className={`${textBase} text-white/70 font-normal leading-relaxed`}>
+                    {item.desc}
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono text-white/35 mt-2">{item.check}</span>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Slide 2 Layout (Index 1): Problems Bento warning Grid (2x2)
+    if (cleanIndex === 1) {
+      const problemTitles = [
+        "Isolamento Geográfico",
+        "Falta de Rastreamento",
+        "Interação Desconectada",
+        "Desperdício de Deslocações"
+      ];
+      const icons = [Info, Clock, Users, Activity];
+
+      const pItems = lines.slice(0, 4).map((line, idx) => {
+        const cleaned = line.replace(/^[•\-\s]+/, '').trim();
+        const colonIdx = cleaned.indexOf(':');
+        const heading = colonIdx > -1 ? cleaned.substring(0, colonIdx).trim() : (problemTitles[idx] || "Desafio Identificado");
+        const textContent = colonIdx > -1 ? cleaned.substring(colonIdx + 1).trim() : cleaned;
+        return { heading, textContent };
+      });
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-3.5">
+          {pItems.map((item, idx) => {
+            const IconComponent = icons[idx] || Info;
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.04 }}
+                key={idx}
+                className={`${cardPadding} bg-red-950/20 hover:bg-red-950/30 border border-red-500/10 rounded-2xl flex items-start space-x-2.5 transition-all`}
+              >
+                <div className="p-1.5 bg-red-500/10 rounded-lg text-red-400 shrink-0">
+                  <IconComponent className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className={`text-red-350 font-bold ${insideFullscreen ? 'text-[11px] md:text-xs' : 'text-[10px] md:text-[11px]'} uppercase tracking-wide leading-none mb-1`}>{item.heading}</h4>
+                  <p className={`${textBase} text-white/80 font-normal leading-relaxed`}>
+                    {item.textContent}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Slide 3 Layout (Index 2): 3x2 Feature Grid (O Produto e Serviço VIVA+)
+    if (cleanIndex === 2) {
+      const titles = ["Alertas Inteligentes", "Telemedicina Ágil", "Saúde Certificada", "Receitas Digitais", "Redes & Comunidade", "Sincronia Farmácias"];
+      const fItems = lines.slice(0, 6).map((line, idx) => {
+        const cleaned = line.replace(/^[•\-\s]+/, '').trim();
+        const colonIdx = cleaned.indexOf(':');
+        const title = colonIdx > -1 ? cleaned.substring(0, colonIdx).trim() : (titles[idx] || "Funcionalidade");
+        const textContent = colonIdx > -1 ? cleaned.substring(colonIdx + 1).trim() : cleaned;
+        return { title, textContent };
+      });
+      
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
+          {fItems.map((item, idx) => {
+            return (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.03 }}
+                key={idx}
+                className={`${insideFullscreen ? 'p-2.5 md:p-3' : 'p-2 md:p-2.5'} bg-cyan-950/15 hover:bg-cyan-950/30 border border-cyan-500/10 rounded-xl transition-all`}
+              >
+                <div className="flex items-center space-x-1.5 mb-1 bg-cyan-500/5 px-2 py-0.5 rounded-md w-fit">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+                  <span className={`font-bold uppercase tracking-wider text-cyan-300 ${insideFullscreen ? 'text-[9px] md:text-[10px]' : 'text-[8px] md:text-[9px]'}`}>
+                    {item.title}
+                  </span>
+                </div>
+                <p className={`${insideFullscreen ? 'text-xs md:text-sm' : 'text-[10px] md:text-xs'} text-white/85 leading-relaxed`}>
+                  {item.textContent}
+                </p>
+              </motion.div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // Slide 4 Layout (Index 3): Chevron stages / Three pillars layout (Inovação da Empresa)
+    if (cleanIndex === 3) {
+      const innovationTitles = [
+        "Inovação de Produto",
+        "Inovação Incremental",
+        "Diferencial Chaves"
+      ];
+      const colors = ["border-fuchsia-500/20 bg-fuchsia-950/15", "border-indigo-500/20 bg-indigo-950/15", "border-purple-500/20 bg-purple-950/15"];
+      const badgeColors = ["text-fuchsia-400 bg-fuchsia-500/15", "text-indigo-400 bg-indigo-500/15", "text-purple-400 bg-purple-500/15"];
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-4 font-sans text-left mt-1">
+          {lines.slice(0, 3).map((line, idx) => {
+            const textContent = line.replace(/^[•\-\s]+/, '').trim();
+            const parts = textContent.split(':');
+            const mainTitle = parts[0] || innovationTitles[idx];
+            const desc = parts[1] || parts[0];
+
             return (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.05, duration: 0.3 }}
+                transition={{ delay: idx * 0.05 }}
                 key={idx}
-                className={`flex items-start space-x-2.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 transition-all duration-200 ${
-                  insideFullscreen ? 'p-2.5 md:p-3.5' : 'p-2'
-                }`}
+                className={`p-3 md:p-4 rounded-2xl border ${colors[idx]} flex flex-col justify-between hover:scale-[1.01] transition-all`}
               >
-                {/* Visual bullet marker themed with slide aesthetic */}
-                <span className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${slideTheme.bulletLight} shadow-sm`} />
-                
-                <div className={`font-normal tracking-wide text-white/95 leading-relaxed antialiased ${
-                  insideFullscreen 
-                    ? 'text-sm md:text-base lg:text-lg font-normal' 
-                    : 'text-xs md:text-sm font-normal'
-                }`}>
-                  {textWithoutMarker}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full ${badgeColors[idx]}`}>
+                      Etapa 0{idx + 1}
+                    </span>
+                    <Layers className="w-4 h-4 text-white/20" />
+                  </div>
+                  <h4 className={`${titleBase} text-white font-bold leading-tight mb-1.5 uppercase`}>
+                    {mainTitle}
+                  </h4>
+                  <p className={`${textBase} text-white/80 leading-relaxed font-normal`}>
+                    {desc.trim()}
+                  </p>
+                </div>
+                <div className="border-t border-white/5 pt-1.5 mt-3 text-[9px] font-mono text-white/30 flex items-center justify-between">
+                  <span>VIVA+ Inovação</span>
+                  <ArrowRight className="w-3 h-3 text-white/25" />
                 </div>
               </motion.div>
             );
-          } else {
+          })}
+        </div>
+      );
+    }
+
+    // Slide 5 Layout (Index 4): BMC - Clientes & Proposta split layout
+    if (cleanIndex === 4) {
+      const proposta = lines.find(l => l.toLowerCase().includes("proposta")) || "Conectar o ecossistema de saúde num ambiente seguro, de confiança, comodidade e inovação constante.";
+      const clientSegments = lines.filter(l => !l.toLowerCase().includes("proposta"));
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 h-full">
+          {/* Proposta de Valor banner */}
+          <div className={`${cardPadding} md:col-span-2 bg-teal-950/15 border border-teal-500/15 rounded-2xl flex flex-col justify-between`}>
+            <div>
+              <span className="text-[9px] uppercase font-bold text-teal-300 tracking-wider">Business Canvas</span>
+              <h4 className={`${titleBase} text-teal-150 font-bold uppercase mt-1 mb-2`}>Proposta de Valor</h4>
+              <p className={`${textBase} text-white/85 font-normal leading-relaxed`}>
+                {proposta.replace(/^[•\-\s]+(Proposta de Valor:)?/i, '').trim()}
+              </p>
+            </div>
+            <div className="p-2 bg-teal-500/10 rounded-xl flex items-center space-x-2 mt-3">
+              <Shield className="w-4 h-4 text-teal-400 shrink-0" />
+              <span className="text-[10px] text-teal-300/90 font-mono">100% Protegido & RGPD</span>
+            </div>
+          </div>
+
+          {/* Segmentos de Clientes */}
+          <div className={`${cardPadding} md:col-span-3 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-start`}>
+            <span className="text-[9px] uppercase font-bold text-white/40 tracking-wider mb-2">Segmentos de Clientes</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
+              {clientSegments.map((segment, idx) => {
+                const text = segment.replace(/^[•\-\s]+(Segmentos de Clientes:)?/i, '').trim();
+                if (!text) return null;
+                return (
+                  <div key={idx} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 flex items-start space-x-2 transition-all">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400 mt-1.5 shrink-0" />
+                    <span className="text-xs text-white/95 font-normal leading-tight">{text}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Slide 6 Layout (Index 5): BMC - Canais, Relações e Receitas 3-Column horizontal boards
+    if (cleanIndex === 5) {
+      const canais = lines.filter(l => l.toLowerCase().startsWith("• canais") || l.toLowerCase().includes("canais:"));
+      const relacao = lines.filter(l => l.toLowerCase().includes("relacionamento") || l.toLowerCase().includes("relação:"));
+
+      const parseSectionItems = (list: string[], defaultVal: string) => {
+        if (!list.length) return [defaultVal];
+        const text = list[0].replace(/^[•\-\s]+(Canais:|Relacionamento:|Fontes de Receita:)?/gi, '').trim();
+        if (text.includes(',')) {
+          return text.split(',').map(s => s.trim());
+        }
+        return [text];
+      };
+
+      const canaisItems = canais.length ? parseSectionItems(canais, "App, Web, Redes") : ["App móvel", "Plataforma Web", "Redes sociais", "Parcerias locais"];
+      const relacaoItems = relacao.length ? parseSectionItems(relacao, "Suporte ativo") : ["Atendimento automatizado", "Comunidade de Profissionais"];
+      const receitasItems = ["VIVA+ Pro Subscrições (Profissionais)", "Taxas de Transação Loja & Farmácia", "Publicidade ética verificada"];
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Canais */}
+          <div className="p-3 bg-amber-950/10 border border-amber-500/10 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center space-x-1.5 mb-2 border-b border-amber-500/10 pb-1.5">
+                <Target className="w-4 h-4 text-amber-400" />
+                <span className="text-[10px] md:text-xs font-bold text-amber-300 uppercase shrink-0">Canais de Distribuição</span>
+              </div>
+              <div className="space-y-1">
+                {canaisItems.map((item, id) => (
+                  <div key={id} className="text-xs text-white/80 font-normal leading-relaxed flex items-center space-x-1.5">
+                    <span className="w-1 h-1 rounded-full bg-amber-400" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Relacionamento */}
+          <div className="p-3 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center space-x-1.5 mb-2 border-b border-white/10 pb-1.5">
+                <Users className="w-4 h-4 text-amber-300" />
+                <span className="text-[10px] md:text-xs font-bold text-white/85 uppercase shrink-0">Relação Especial</span>
+              </div>
+              <div className="space-y-1">
+                {relacaoItems.map((item, id) => (
+                  <div key={id} className="text-xs text-white/80 font-normal leading-relaxed flex items-center space-x-1.5">
+                    <span className="w-1 h-1 bg-amber-400 rounded-sm shrink-0" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Receitas */}
+          <div className="p-3 bg-amber-950/15 border border-amber-500/15 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center space-x-1.5 mb-2 border-b border-amber-500/15 pb-1.5">
+                <Coins className="w-4 h-4 text-amber-400" />
+                <span className="text-[10px] md:text-xs font-bold text-amber-300 uppercase shrink-0">Fontes de Receita</span>
+              </div>
+              <div className="space-y-1">
+                {receitasItems.map((item, id) => (
+                  <div key={id} className="text-xs text-white/90 font-medium leading-relaxed flex items-center space-x-1.5">
+                    <span className="text-amber-400 font-bold shrink-0 text-[10px]">$</span>
+                    <span className="line-clamp-2">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Slide 7 Layout (Index 6): Missão, Visão e Valores Horizontal Column Cards
+    if (cleanIndex === 6) {
+      const titles = ["Missão", "Visão", "Valores"];
+      const items = lines.slice(0, 3);
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {titles.map((title, idx) => {
+            const line = items[idx] || "";
+            const textContent = line.replace(/^[•\-\s]+(Missão:|Visão:|Valores:)?/gi, '').trim();
+
             return (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.04, duration: 0.4 }}
-                key={idx}
-                className={`font-normal leading-relaxed tracking-wide text-gray-200 bg-white/5 rounded-xl border border-white/5 whitespace-pre-line antialiased ${
-                  insideFullscreen 
-                    ? 'p-3 md:p-4 text-sm md:text-base lg:text-lg font-normal' 
-                    : 'p-2.5 md:p-3 text-xs md:text-sm font-normal'
-                }`}
-              >
-                {line}
-              </motion.div>
+              <div key={idx} className="p-3 bg-emerald-950/10 border border-emerald-500/10 rounded-2xl flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center space-x-2 mb-2 pb-1.5 border-b border-emerald-500/10">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="text-xs md:text-sm font-bold text-emerald-300 uppercase">{title}</span>
+                  </div>
+                  <p className="text-xs md:text-sm text-white/85 leading-relaxed font-normal">
+                    {textContent || "Garantir inclusão digital, saúde célere preventiva e ética exemplar no Alto Tâmega."}
+                  </p>
+                </div>
+              </div>
             );
+          })}
+        </div>
+      );
+    }
+
+    // Slide 8 Layout (Index 7): Governance social stats & Shares (Forma Jurídica e Finanças)
+    if (cleanIndex === 7) {
+      let founderPct = 70;
+      let founderName = "David Cumbo (Fundador)";
+      let teamPct = 30;
+      let teamName = "Equipa & Consultores";
+      let capitalSocial = "10.000 €";
+      let sede = "Chaves, Portugal";
+      let formaJuridica = "Sociedade por Quotas (LDA)";
+      const aplFundos: string[] = [];
+
+      lines.forEach(line => {
+        const cleaned = line.replace(/^[•\-\s]+/, '').trim();
+        const colonIdx = cleaned.indexOf(':');
+        const key = colonIdx > -1 ? cleaned.substring(0, colonIdx).trim().toLowerCase() : cleaned.toLowerCase();
+        const val = colonIdx > -1 ? cleaned.substring(colonIdx + 1).trim() : '';
+
+        if (key.includes("david cumbo") || key.includes("societária") || key.includes("fundador")) {
+          const match = cleaned.match(/(\d+)%/);
+          if (match) {
+            founderPct = parseInt(match[1]);
+            teamPct = 100 - founderPct;
           }
+          if (colonIdx > -1) {
+            founderName = cleaned.substring(0, colonIdx).trim();
+          }
+        } else if (key.includes("equipa") || key.includes("parceiros") || key.includes("consultores")) {
+          const match = cleaned.match(/(\d+)%/);
+          if (match) {
+            teamPct = parseInt(match[1]);
+          }
+          if (colonIdx > -1) {
+            teamName = cleaned.substring(0, colonIdx).trim();
+          }
+        } else if (key.includes("capital")) {
+          capitalSocial = val || cleaned;
+        } else if (key.includes("forma")) {
+          formaJuridica = val || cleaned;
+        } else if (key.includes("sede")) {
+          sede = val || cleaned;
+        } else if (cleaned) {
+          aplFundos.push(cleaned);
+        }
+      });
+
+      const finalApl = aplFundos.length ? aplFundos.slice(0, 3) : ["Desenvolvimento técnico MVP", "Conformidade RGPD", "Marketing Territorial Alto Tâmega"];
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mt-1 h-full font-sans text-left">
+          {/* Shares visualization */}
+          <div className="p-3 bg-white/5 border border-white/5 rounded-2xl md:col-span-2 flex flex-col justify-between hover:bg-white/10 transition-all">
+            <div>
+              <span className="text-[9px] uppercase font-bold text-white/40 tracking-wider">Governação & Quotas</span>
+              <h4 className="text-xs md:text-sm font-bold text-white uppercase mt-1 mb-2">Estrutura Societária (LDA)</h4>
+              
+              <div className="space-y-2 mt-2">
+                <div>
+                  <div className="flex justify-between text-[11px] text-white/95 font-medium mb-1">
+                    <span className="truncate max-w-[130px]" title={founderName}>{founderName}</span>
+                    <span className="text-emerald-400 font-bold">{founderPct}%</span>
+                  </div>
+                  <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${founderPct}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-[11px] text-white/70 font-normal mb-1">
+                    <span className="truncate max-w-[130px]" title={teamName}>{teamName}</span>
+                    <span className="text-white/40">{teamPct}%</span>
+                  </div>
+                  <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+                    <div className="bg-slate-500 h-full rounded-full" style={{ width: `${teamPct}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-emerald-500/10 text-emerald-300 p-2 rounded-xl text-xs font-bold leading-relaxed font-mono flex items-center justify-between mt-4">
+              <span>Capital Social:</span>
+              <span className="font-extrabold text-white">{capitalSocial}</span>
+            </div>
+          </div>
+
+          {/* Finance info table */}
+          <div className="p-3 bg-[#111622] border border-white/5 rounded-2xl md:col-span-3 flex flex-col justify-start hover:bg-white/5 transition-all">
+            <span className="text-[9px] uppercase font-bold text-white/45 tracking-wider mb-2">Estrutura Financeira e Aplicação</span>
+            
+            <div className="divide-y divide-white/10 text-xs">
+              <div className="py-1.5 flex justify-between items-center">
+                <span className="text-white/40">Forma Jurídica</span>
+                <span className="text-white font-medium">{formaJuridica}</span>
+              </div>
+              <div className="py-1.5 flex justify-between items-center">
+                <span className="text-white/40">Sede Registal</span>
+                <span className="text-white font-medium">{sede}</span>
+              </div>
+              <div className="py-1.5 flex flex-col justify-start items-start">
+                <span className="text-white/40 mb-1">Aplicação de Fundos MVP</span>
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  {finalApl.map((f, i) => (
+                    <span key={i} className="bg-white/5 border border-white/10 text-[10px] text-white/80 px-2 py-0.5 rounded-lg font-normal">
+                      ✓ {f}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Default Fallback Layout for user created slides:
+    const isBulletList = lines.some(line => line.trim().startsWith('•') || line.trim().startsWith('-'));
+    if (isBulletList && lines.length > 1) {
+      const itemsToRender = lines.map(line => line.replace(/^[•\-\s]+/, '').trim());
+      const itemCount = itemsToRender.length;
+      
+      // Determine grid layout
+      let gridClass = "grid-cols-1";
+      if (itemCount === 2) gridClass = "grid-cols-1 md:grid-cols-2";
+      else if (itemCount >= 3) gridClass = "grid-cols-1 md:grid-cols-3";
+
+      return (
+        <div className={`grid ${gridClass} gap-3`}>
+          {itemsToRender.map((text, idx) => (
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.04 }}
+              key={idx}
+              className={`${cardPadding} bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 flex items-start space-x-2 transition-all`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${slideTheme.bulletLight}`} />
+              <p className={`${textBase} text-white/95 font-normal leading-relaxed`}>
+                {text}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      );
+    }
+
+    // Default basic text line-by-line fallback
+    return (
+      <div className={`space-y-2 md:space-y-3 ${insideFullscreen ? 'mt-3' : 'mt-2'}`}>
+        {lines.map((line, idx) => {
+          const textWithoutMarker = line.replace(/^[•\-\s]+/, '').trim();
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.04, duration: 0.3 }}
+              key={idx}
+              className={`font-normal leading-relaxed text-gray-200 bg-white/5 rounded-xl border border-white/5 whitespace-pre-line antialiased ${
+                insideFullscreen ? 'p-3 text-xs md:text-sm' : 'p-2.5 text-[11px] md:text-xs'
+              }`}
+            >
+              {textWithoutMarker}
+            </motion.div>
+          );
         })}
       </div>
     );
@@ -601,66 +1056,66 @@ export default function Pitch() {
                     Slide {currentSlideIndex + 1} • {currentSlide.category}
                   </span>
                   
-                  <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight uppercase leading-snug antialiased">
+                  <h1 className="text-base md:text-lg lg:text-xl font-bold tracking-tight uppercase leading-tight antialiased">
                     {currentSlide.title}
                   </h1>
 
                   {currentSlide.subtitle && (
-                    <p className={`text-xs md:text-sm lg:text-base font-normal ${slideTheme.subtitleText} leading-normal`}>
+                    <p className={`text-[11px] md:text-xs font-normal ${slideTheme.subtitleText} leading-normal opacity-90`}>
                       {currentSlide.subtitle}
                     </p>
                   )}
 
                   {/* High-contrast list body with auto height limits */}
-                  <div className="pt-2 flex-1 overflow-hidden">
+                  <div className="pt-1 flex-1 overflow-hidden">
                     {renderSlideRows(currentSlide.content, true)}
                   </div>
                 </motion.div>
               </AnimatePresence>
             </div>
 
-            {/* Fullscreen Progress Indicator & Footer navigation bars */}
-            <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center space-x-3">
+            {/* Fullscreen Progress Indicator & Footer navigation bars - reduced height by ~5x, thinner buttons, compact layout */}
+            <div className="border-t border-white/10 pt-2 md:pt-2.5 flex flex-row items-center justify-between gap-2.5">
+              <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className={`p-4 rounded-full text-white shadow-xl transition-all ${isPlaying ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                  className={`p-1.5 md:p-2 rounded-lg text-white shadow-sm transition-all border border-white/10 flex items-center justify-center ${isPlaying ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-700 hover:bg-emerald-800'}`}
                 >
-                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                 </button>
                 <div className="text-left">
-                  <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">Tempo Restante de Slide</p>
-                  <p className="text-sm font-bold text-white/90">{slideTimeLeft} Segundos</p>
+                  <p className="text-[9px] text-white/45 font-semibold uppercase tracking-widest leading-none">Tempo Restante</p>
+                  <p className="text-xs font-bold text-white/95 leading-none mt-0.5">{slideTimeLeft}s</p>
                 </div>
               </div>
 
-              {/* Huge visual navigation pads and exit button */}
-              <div className="flex items-center space-x-4">
+              {/* Thinner, elegant, non-fat visual navigation pads and exit button */}
+              <div className="flex items-center space-x-1.5">
                 <button
                   onClick={handlePrevSlide}
                   disabled={currentSlideIndex === 0}
-                  className="bg-white/10 hover:bg-white/20 text-white px-6 py-4 rounded-2xl transition-all disabled:opacity-20 flex items-center space-x-2"
+                  className="bg-white/5 hover:bg-white/10 border border-white/5 text-white/90 px-3 py-1.5 rounded-lg transition-all disabled:opacity-20 flex items-center space-x-1 hover:border-white/10"
                 >
-                  <ChevronLeft className="w-6 h-6" />
-                  <span className="text-xs font-black uppercase">Anterior</span>
+                  <ChevronLeft className="w-4 h-4 shrink-0" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Anterior</span>
                 </button>
                 
                 <button
                   onClick={handleNextSlide}
                   disabled={currentSlideIndex === slides.length - 1}
-                  className="bg-white/15 hover:bg-white/25 text-white px-6 py-4 rounded-2xl transition-all disabled:opacity-20 flex items-center space-x-2"
+                  className="bg-white/10 hover:bg-white/15 border border-white/10 text-white px-3 py-1.5 rounded-lg transition-all disabled:opacity-20 flex items-center space-x-1 hover:border-white/15"
                 >
-                  <span className="text-xs font-black uppercase text-emerald-300">Próximo</span>
-                  <ChevronRight className="w-6 h-6 text-emerald-300" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 hidden sm:inline">Próximo</span>
+                  <ChevronRight className="w-4 h-4 text-emerald-300 shrink-0" />
                 </button>
 
                 <button 
                   onClick={() => setIsFullscreen(false)}
-                  className="bg-red-500/10 hover:bg-red-500/25 border border-red-500/20 text-red-200 px-6 py-4 rounded-2xl transition-all flex items-center space-x-2"
+                  className="bg-red-500/10 hover:bg-red-500/15 border border-red-500/15 text-red-200 px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1"
                   title="Sair do Modo de Apresentação"
                 >
-                  <Minimize2 className="w-6 h-6" />
-                  <span className="text-xs font-black uppercase text-red-200">Sair</span>
+                  <Minimize2 className="w-4 h-4 shrink-0" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-100 hidden sm:inline">Sair</span>
                 </button>
               </div>
             </div>
@@ -737,7 +1192,7 @@ export default function Pitch() {
                   transition={{ duration: 0.25 }}
                   className="space-y-1.5 md:space-y-2"
                 >
-                  <h2 className="text-lg md:text-xl font-bold tracking-tight leading-tight uppercase font-sans text-white antialiased">
+                  <h2 className="text-sm md:text-base font-bold tracking-tight leading-tight uppercase font-sans text-white antialiased">
                     {currentSlide.title}
                   </h2>
                   
@@ -852,6 +1307,102 @@ export default function Pitch() {
               <p className="text-[10px] text-gray-400 mt-1 font-bold">
                 Transição de slide em: <span className="text-[#006747] font-black">{slideTimeLeft}s</span>
               </p>
+            </div>
+          </div>
+
+          {/* Editor Rápido de Tópicos e Conteúdo (Direct slide layout modifier) */}
+          <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl space-y-4 text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-3 gap-2">
+              <div className="flex items-center space-x-2 text-[#006747]">
+                <Edit className="w-4.5 h-4.5 text-[#006747] shrink-0" />
+                <span className="font-black text-xs uppercase tracking-widest">Painel de Tópicos e Edição Rápida (Slide {currentSlideIndex + 1})</span>
+              </div>
+              <span className="text-[10px] bg-emerald-50 text-emerald-800 px-3 py-0.5 rounded-full font-black uppercase w-fit">
+                Tema: {currentSlide.category}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest">Título do Slide</label>
+                <input
+                  type="text"
+                  value={currentSlide.title}
+                  onChange={(e) => {
+                    const updated = slides.map((s, idx) => idx === currentSlideIndex ? { ...s, title: e.target.value } : s);
+                    setSlides(updated);
+                    syncToSupabase(updated);
+                  }}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-800 focus:outline-[#006747] transition-all"
+                  placeholder="Título do Slide"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest">Subtítulo do Slide</label>
+                <input
+                  type="text"
+                  value={currentSlide.subtitle || ''}
+                  onChange={(e) => {
+                    const updated = slides.map((s, idx) => idx === currentSlideIndex ? { ...s, subtitle: e.target.value } : s);
+                    setSlides(updated);
+                    syncToSupabase(updated);
+                  }}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-800 focus:outline-[#006747] transition-all"
+                  placeholder="Subtítulo do slide"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest flex items-center justify-between">
+                <span>Escrever Tópicos do Slide</span>
+                <span className="text-[9px] font-mono text-gray-400 lowercase normal-case">Dica: Coloque cada tópico por linha com • para organizar em colunas/tabelas</span>
+              </label>
+              
+              <textarea
+                rows={5}
+                value={currentSlide.content}
+                onChange={(e) => {
+                  const updated = slides.map((s, idx) => idx === currentSlideIndex ? { ...s, content: e.target.value } : s);
+                  setSlides(updated);
+                  syncToSupabase(updated);
+                }}
+                className="w-full bg-gray-50 border border-gray-250 rounded-2xl p-4 text-xs font-bold text-gray-800 focus:outline-[#006747] leading-relaxed resize-none font-sans"
+                placeholder="• Tópico 1&#10;• Tópico 2&#10;• Titulo Coluna: Conteúdo do tópico..."
+              />
+            </div>
+
+            {/* Quick Helper Tools */}
+            <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-50 mt-1">
+              <button
+                onClick={() => {
+                  const hasContent = currentSlide.content.trim() !== "";
+                  const endsWithNewline = currentSlide.content.endsWith('\n');
+                  const newContent = currentSlide.content + (hasContent && !endsWithNewline ? '\n' : '') + '• ';
+                  const updated = slides.map((s, idx) => idx === currentSlideIndex ? { ...s, content: newContent } : s);
+                  setSlides(updated);
+                  syncToSupabase(updated);
+                }}
+                className="bg-emerald-50 hover:bg-emerald-100 text-[#006747] px-3.5 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center space-x-1.5 border border-emerald-100/50"
+              >
+                <Plus className="w-3.5 h-3.5 shrink-0" />
+                <span>+ Adicionar Novo Tópico</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const templateText = "• Título Principal: Descrição fidedigna do projeto\n• Detalhe Importante: Estatísticas ou informação\n• Próximo Passo: Marcos futuros no mercado";
+                  const updated = slides.map((s, idx) => idx === currentSlideIndex ? { ...s, content: templateText } : s);
+                  setSlides(updated);
+                  syncToSupabase(updated);
+                }}
+                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center space-x-1.5 border border-blue-100/30"
+                title="Carrega uma estrutura de tópicos em colunas"
+              >
+                <Table className="w-3.5 h-3.5 shrink-0" />
+                <span>Carregar Modelo Tabela/Colunas</span>
+              </button>
             </div>
           </div>
         </div>
