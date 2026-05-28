@@ -186,7 +186,17 @@ export default function Pitch() {
   const { user, profile } = useAuth();
   const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
 
-  const [slides, setSlides] = useState<Slide[]>(DEFAULT_SLIDES);
+  const [slides, setSlides] = useState<Slide[]>(() => {
+    try {
+      const cached = localStorage.getItem('viva_pitch_slides');
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.error('Failed to parse cached slides from localStorage:', e);
+    }
+    return DEFAULT_SLIDES;
+  });
   const [loading, setLoading] = useState(true);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   
@@ -264,7 +274,11 @@ export default function Pitch() {
 
   const fetchSlides = async () => {
     try {
-      setLoading(true);
+      const hasCache = localStorage.getItem('viva_pitch_slides') !== null;
+      if (!hasCache) {
+        setLoading(true);
+      }
+      
       const { data, error } = await supabase
         .from('pitch_slides')
         .select('*')
@@ -272,24 +286,44 @@ export default function Pitch() {
 
       if (!error && data && data.length > 0) {
         setSlides(data);
-        setSlideTimeLeft(data[0].duration_seconds);
+        localStorage.setItem('viva_pitch_slides', JSON.stringify(data));
+        if (!isPlaying) {
+          setSlideTimeLeft(data[currentSlideIndex]?.duration_seconds || data[0].duration_seconds);
+        }
       } else {
-        // Fallback or empty table load
-        setSlides(DEFAULT_SLIDES);
-        setSlideTimeLeft(DEFAULT_SLIDES[0].duration_seconds);
+        if (error) {
+          console.warn('[Pitch] Sync load error (using cache fallback):', error);
+        } else {
+          setSlides(DEFAULT_SLIDES);
+          localStorage.setItem('viva_pitch_slides', JSON.stringify(DEFAULT_SLIDES));
+          if (!isPlaying) {
+            setSlideTimeLeft(DEFAULT_SLIDES[currentSlideIndex]?.duration_seconds || DEFAULT_SLIDES[0].duration_seconds);
+          }
+        }
       }
     } catch (e: any) {
       console.error('[Pitch] Connect error:', e);
-      setSlides(DEFAULT_SLIDES);
     } finally {
       setLoading(false);
     }
   };
 
   const syncToSupabase = async (updatedSlidesList: Slide[]) => {
-    if (!isAdmin) return;
+    // 1. Instant Cache Update (No latency waiting)
     try {
-      // Clear existing records
+      localStorage.setItem('viva_pitch_slides', JSON.stringify(updatedSlidesList));
+    } catch (e) {
+      console.warn('Failed to commit local cache storage', e);
+    }
+
+    // 2. Admin Check
+    if (!isAdmin) {
+      showNotification('Modificado offline localmente com sucesso!');
+      return;
+    }
+
+    try {
+      // Clear existing records safely
       const { error: deleteError } = await supabase.from('pitch_slides').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       if (deleteError) throw deleteError;
 
@@ -307,10 +341,19 @@ export default function Pitch() {
       if (insertError) throw insertError;
 
       showNotification('Alterações guardadas e sincronizadas no Supabase!');
-      fetchSlides();
+      
+      // Refresh the state quietly in background
+      const { data } = await supabase
+        .from('pitch_slides')
+        .select('*')
+        .order('slide_order', { ascending: true });
+      if (data && data.length > 0) {
+        setSlides(data);
+        localStorage.setItem('viva_pitch_slides', JSON.stringify(data));
+      }
     } catch (e: any) {
       console.error('[Pitch] Sync table error:', e);
-      showNotification('Guardado localmente. Sem sincronia remota.', 'error');
+      showNotification('Guardado em cache offline. Sem sincronia de rede.', 'error');
     }
   };
 
