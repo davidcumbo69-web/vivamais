@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export function Navbar() {
   const { user, profile, signOut } = useAuth();
-  const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
+  const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com' || user?.email === 'viva@gmail.com' || profile?.email === 'viva@gmail.com' || profile?.is_admin === true || profile?.role === 'admin';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);

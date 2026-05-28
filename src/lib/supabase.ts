@@ -56,6 +56,8 @@ export type Profile = {
   is_verified: boolean;
   is_premium: boolean;
   xp_level: number;
+  is_admin?: boolean;
+  role?: string;
   created_at: string;
 };
 

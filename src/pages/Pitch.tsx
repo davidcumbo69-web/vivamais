@@ -184,7 +184,7 @@ export function serializeTopics(list: { title: string; desc: string }[]): string
 
 export default function Pitch() {
   const { user, profile } = useAuth();
-  const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
+  const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com' || user?.email === 'viva@gmail.com' || profile?.email === 'viva@gmail.com' || profile?.is_admin === true || profile?.role === 'admin';
 
   const [slides, setSlides] = useState<Slide[]>(() => {
     try {
@@ -662,7 +662,7 @@ export default function Pitch() {
           </div>
           <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">Acesso Restrito</h2>
           <p className="text-gray-500 text-sm leading-relaxed mb-6">
-            Apenas o administrador do ecossistema VIVA+ saúde (<strong className="text-emerald-800 font-bold">davidcumbo69@gmail.com</strong>) tem privilégios para visualizar ou editar a apresentação do pitch de negócios.
+            Apenas o administrador do ecossistema VIVA+ saúde (<strong className="text-emerald-800 font-bold">davidcumbo69@gmail.com</strong> ou <strong className="text-emerald-800 font-bold">viva@gmail.com</strong>) tem privilégios para visualizar ou editar a apresentação do pitch de negócios.
           </p>
           <button 
             onClick={() => window.history.back()}

@@ -25,7 +25,7 @@ export default function Settings() {
   const { signOut, profile } = useAuth();
   const [showProRules, setShowProRules] = useState(false);
 
-  const isAdmin = profile?.email === 'davidcumbo69@gmail.com';
+  const isAdmin = profile?.email === 'davidcumbo69@gmail.com' || profile?.email === 'viva@gmail.com' || profile?.is_admin === true || profile?.role === 'admin';
 
   const settingsGroups = [
     ...(isAdmin ? [{

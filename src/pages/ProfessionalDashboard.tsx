@@ -84,7 +84,7 @@ const TabButton = ({ active, onClick, icon, label }: { active: boolean, onClick:
 
 export default function ProfessionalDashboard() {
   const { user, profile } = useAuth();
-  const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
+  const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com' || user?.email === 'viva@gmail.com' || profile?.email === 'viva@gmail.com' || profile?.is_admin === true || profile?.role === 'admin';
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [services, setServices] = useState<WellnessService[]>([]);
   const [bookings, setBookings] = useState<(Booking & { service?: WellnessService, patient?: Profile })[]>([]);

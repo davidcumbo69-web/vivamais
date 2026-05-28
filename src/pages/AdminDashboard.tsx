@@ -111,7 +111,7 @@ export default function AdminDashboard() {
   };
 
   // Check if admin - Use both user.email and profile.email for reliability
-  const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com';
+  const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com' || user?.email === 'viva@gmail.com' || profile?.email === 'viva@gmail.com' || profile?.is_admin === true || profile?.role === 'admin';
 
   useEffect(() => {
     if (isAdmin) {
@@ -349,7 +349,7 @@ export default function AdminDashboard() {
   };
 
   const handlePharmacyAction = async (pharmacyId: string, action: 'approved' | 'rejected') => {
-    if (profile?.email !== 'davidcumbo69@gmail.com') {
+    if (profile?.email !== 'davidcumbo69@gmail.com' && profile?.email !== 'viva@gmail.com' && !profile?.is_admin && profile?.role !== 'admin') {
       showNotification('⚠️ Ação não permitida.', 'error');
       return;
     }
@@ -390,7 +390,7 @@ export default function AdminDashboard() {
   };
 
   const handleEstablishmentAction = async (estId: string, action: 'approved' | 'rejected') => {
-    if (profile?.email !== 'davidcumbo69@gmail.com') return;
+    if (profile?.email !== 'davidcumbo69@gmail.com' && profile?.email !== 'viva@gmail.com' && !profile?.is_admin && profile?.role !== 'admin') return;
 
     setProcessingId(estId);
     try {
@@ -410,8 +410,8 @@ export default function AdminDashboard() {
   };
 
   const handleAction = async (request: ProfessionalVerification, action: 'approved' | 'rejected', notes?: string) => {
-    // Security check: Only davidcumbo69@gmail.com can perform these actions
-    if (profile?.email !== 'davidcumbo69@gmail.com') {
+    // Security check: Only davidcumbo69@gmail.com or viva@gmail.com can perform these actions
+    if (profile?.email !== 'davidcumbo69@gmail.com' && profile?.email !== 'viva@gmail.com' && !profile?.is_admin && profile?.role !== 'admin') {
       showNotification('⚠️ Ação não permitida para a sua conta.', 'error');
       return;
     }
@@ -482,7 +482,7 @@ export default function AdminDashboard() {
   };
 
   const handleVideoAction = async (videoId: string, approved: boolean, youtubeUrl?: string) => {
-    if (profile?.email !== 'davidcumbo69@gmail.com') {
+    if (profile?.email !== 'davidcumbo69@gmail.com' && profile?.email !== 'viva@gmail.com' && !profile?.is_admin && profile?.role !== 'admin') {
       showNotification('⚠️ Ação não permitida para a sua conta.', 'error');
       return;
     }
@@ -521,8 +521,8 @@ export default function AdminDashboard() {
   };
 
   const handleReelAction = async (reelId: string, approved: boolean) => {
-    // Security check: Only davidcumbo69@gmail.com can perform these actions
-    if (profile?.email !== 'davidcumbo69@gmail.com') {
+    // Security check: Only davidcumbo69@gmail.com or viva@gmail.com can perform these actions
+    if (profile?.email !== 'davidcumbo69@gmail.com' && profile?.email !== 'viva@gmail.com' && !profile?.is_admin && profile?.role !== 'admin') {
       showNotification('⚠️ Ação não permitida para a sua conta.', 'error');
       return;
     }

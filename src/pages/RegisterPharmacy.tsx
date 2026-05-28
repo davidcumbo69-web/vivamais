@@ -52,7 +52,7 @@ export default function RegisterPharmacy() {
       if (error) throw error;
       if (data) {
         // Security check
-        if (data.owner_id !== user?.id && profile?.email !== 'davidcumbo69@gmail.com') {
+        if (data.owner_id !== user?.id && profile?.email !== 'davidcumbo69@gmail.com' && profile?.email !== 'viva@gmail.com' && !profile?.is_admin && profile?.role !== 'admin') {
           navigate('/settings/pharmacies');
           return;
         }
