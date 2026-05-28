@@ -54,16 +54,16 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'VIVA+ SAÚDE',
     subtitle: 'Ecossistema Inteligente de Saúde Digital e Bem-Estar',
     category: 'Identificação',
-    content: 'Uma plataforma digital de saúde inovadora que conecta pacientes, profissionais de saúde e farmácias num único ecossistema inteligente, moderno e seguro. Focada no bem-estar, na prevenção ativa e na saúde personalizada, revolucionando o acesso e a celeridade no interior de Portugal (Chaves e região do Alto Tâmega).',
+    content: '• Introdução: Uma plataforma digital de saúde inovadora que conecta pacientes, profissionais de saúde e farmácias num único ecossistema inteligente, moderno e seguro. Focada no bem-estar, na prevenção ativa e na saúde personalizada, revolucionando o acesso e a celeridade em Portugal, com expansão estratégica para o mercado europeu.\n• Pacientes: Inclusão digital avançada, acompanhamento inteligente e alertas de medicação em tempo real em Portugal e na Europa.\n• Médicos & SNS: Telemedicina ágil integrada, prescrições eletrónicas e interligação com clínicas e hospitais nacionais.\n• Farmácias: Integração inteligente de stocks e aviamento rápido de receitas de bem-estar com cobertura universal.',
     duration_seconds: 40
   },
   {
     id: 'default-2',
     slide_order: 2,
     title: 'A Oportunidade e o Problema',
-    subtitle: 'Rompendo a Inacessibilidade no Interior de Portugal',
+    subtitle: 'Rompendo a Inacessibilidade em Portugal e na Europa',
     category: 'Identificação',
-    content: '• Isolamento Geográfico: Necessidade urgente de combater o isolamento geográfico focado no interior rural.\n• Falta de Rastreamento: Ausência de rastreio inteligente e dinâmico de medicação pelos próprios pacientes.\n• Interação Desconectada: Lacunas severas na ligação digital célere entre pacientes, médicos e farmácias locais.\n• Desperdício de Deslocações: Horas perdidas em viagens cansativas por idosos e cuidadores informais.',
+    content: '• Cobertura Integrada: Combater a descentralização e otimizar o acesso à saúde célere em Portugal e em toda a Europa.\n• Falta de Rastreamento: Ausência de rastreio inteligente e dinâmico de medicação pelos próprios pacientes.\n• Interação Desconectada: Lacunas severas na ligação digital célere entre pacientes, médicos e farmácias locais.\n• Desperdício de Deslocações: Horas perdidas em viagens cansativas por pacientes e cuidadores de todo o país.',
     duration_seconds: 45
   },
   {
@@ -106,9 +106,9 @@ const DEFAULT_SLIDES: Slide[] = [
     id: 'default-7',
     slide_order: 7,
     title: 'Missão, Visão e Valores',
-    subtitle: 'Guiados pela ética, segurança e futuro',
+    subtitle: 'Guiados pela ética, segurança e escala europeia',
     category: 'Missão & Valores',
-    content: '• Missão: Transformar o acesso à saúde através de tecnologia digital, conectando pacientes, profissionais e farmácias numa rede segura, moderna e intuitiva.\n• Visão: Ser a plataforma líder nacional em saúde preventiva, bem-estar e reabilitação termal, aproximando o interior de Portugal do futuro digital.\n• Valores: Inovação, Segurança extrema de dados clínicos (RGPD), Ética profissional, Transparência, Inclusão de idosos/cuidadores e Responsabilidade Social ativa.',
+    content: '• Missão: Transformar o acesso à saúde através de tecnologia digital, conectando pacientes, profissionais e farmácias numa rede segura, moderna e intuitiva.\n• Visão: Ser a plataforma líder nacional em Portugal e de referência na Europa em saúde preventiva, bem-estar e reabilitação ativa.\n• Valores: Inovação continuada, Segurança de dados (RGPD), Ética profissional, Transparência, Inclusão de doentes rurais/urbanos e Responsabilidade Social ativa.',
     duration_seconds: 40
   },
   {
@@ -117,7 +117,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'Forma Jurídica e Finanças',
     subtitle: 'Prontos para escalar o negócio com governança',
     category: 'Forma Jurídica',
-    content: '• Promotores principais: David Cumbo e Equipa.\n• Forma Jurídica: Sociedade por Quotas (LDA) constituída legalmente em Portugal.\n• Capital Social Inicial: 10.000 € de capital social registado.\n• Estrutura Societária: David Cumbo (70% de quota-parte) e Co-promotores/Parceiros (30%).\n• Aplicação do capital: Desenvolvimento técnico do MVP, conformidade legal rígida do RGPD e ações de marketing territorial no Alto Tâmega.',
+    content: '• Promotores principais: David Cumbo e Equipa.\n• Forma Jurídica: Sociedade por Quotas (LDA) constituída legalmente em Portugal.\n• Capital Social Inicial: 10.000 € de capital social registado.\n• Estrutura Societária: David Cumbo (70% de quota-parte) e Co-promotores/Parceiros (30%).\n• Aplicação do capital: Desenvolvimento do MVP nacional, conformidade com o RGPD europeu e marketing estratégico de Portugal ao mercado europeu.',
     duration_seconds: 40
   },
   {
@@ -126,7 +126,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'Porquê Investir na VIVA+?',
     subtitle: 'Conclusão & Apelo de Negócio para Investidores',
     category: 'Investimento',
-    content: '• Oceano Azul no Interior: Primeira plataforma de saúde digital 100% dedicada a ligar pacientes, farmácias e médicos rurais na região do Tâmega, livre de concorrentes integrados.\n• Rentabilidade Recorrente SaaS: Modelo financeiro escalável baseado em subscrições clínicas mensais estáveis (SaaS) e taxas sobre consultas privadas e transações na loja digital.\n• Forte Impacto Social (ESG): Alinhamento rigoroso com os Objetivos de Desenvolvimento Sustentável, elegível para fundos de coesão locais, nacionais e de inovação europeus.',
+    content: '• Escalabilidade Europeia: Iniciando com piloto ágil em Chaves/Alto Tâmega, projetado para rápida expansão por todo o Portugal e escalabilidade subsequente na Europa.\n• Rentabilidade Recorrente SaaS: Modelo financeiro escalável baseado em subscrições clínicas mensais estáveis (SaaS) e comissões sobre consultas privadas e vendas digitais em toda a UE.\n• Forte Impacto Social (ESG): Alinhamento rigoroso com os Objetivos de Desenvolvimento Sustentável da UE, elegível para fundos de fomento nacional e de coesão europeus.',
     duration_seconds: 45
   },
   {
@@ -135,10 +135,52 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'Agradecimentos & Contactos',
     subtitle: 'O Futuro da Saúde Digital Começa Hoje',
     category: 'Encerramento',
-    content: '• David Cumbo: Fundador e Diretor do Ecossistema VIVA+\n• Contacto Directo: davidcumbo69@gmail.com\n• Sede Registral: Chaves, Alto Tâmega, Portugal\n• Visão Final: "Unindo inovação de excelência, segurança extrema de dados clínicos e empatia humana para garantir que ninguém seja deixado para trás no futuro da saúde digital em Portugal."',
+    content: '• David Cumbo: Fundador e Diretor do Ecossistema VIVA+\n• Contacto Directo: davidcumbo69@gmail.com\n• Sede Registral: Chaves, Alto Tâmega, Portugal (Hub para Europa)\n• Visão Final: "Unindo inovação de excelência, segurança extrema de dados clínicos e empatia humana para garantir que ninguém seja deixado para trás no futuro da saúde digital em Portugal e na Europa."',
     duration_seconds: 35
   }
 ];
+
+// Helper to parse content string to structured topics { title: string, desc: string }
+export function parseTopics(textContent: string): { title: string; desc: string }[] {
+  if (!textContent) return [];
+  const lines = textContent.split('\n').filter(line => line.trim());
+  const list: { title: string; desc: string }[] = [];
+  
+  for (const line of lines) {
+    // Remove leading bullets and spaces
+    const cleanLine = line.replace(/^[•\-\*\s]+/, '').trim();
+    if (!cleanLine) continue;
+    
+    const colonIdx = cleanLine.indexOf(':');
+    if (colonIdx > -1) {
+      list.push({
+        title: cleanLine.substring(0, colonIdx).trim(),
+        desc: cleanLine.substring(colonIdx + 1).trim()
+      });
+    } else {
+      list.push({
+        title: cleanLine,
+        desc: ''
+      });
+    }
+  }
+  return list;
+}
+
+// Helper to serialize structured topics to content string
+export function serializeTopics(list: { title: string; desc: string }[]): string {
+  return list
+    .map(t => {
+      const title = t.title.trim();
+      const desc = t.desc.trim();
+      if (title && desc) return `• ${title}: ${desc}`;
+      if (title) return `• ${title}`;
+      if (desc) return `• ${desc}`;
+      return '';
+    })
+    .filter(Boolean)
+    .join('\n');
+}
 
 export default function Pitch() {
   const { user, profile } = useAuth();
@@ -158,6 +200,7 @@ export default function Pitch() {
   // Editing States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingSlide, setEditingSlide] = useState<Partial<Slide> | null>(null);
+  const [isStructuredMode, setIsStructuredMode] = useState(true);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Load slides from Supabase
@@ -590,13 +633,43 @@ export default function Pitch() {
 
     // Slide 1 Layout (Index 0): Welcome & Stakeholder hub layout
     if (cleanIndex === 0) {
-      const defaultHub = [
-        { title: "Pacientes", desc: "Inclusão digital de idosos rurais, acompanhamento termal ativo e alertas de medicação em tempo real.", check: "✓ Foco no Utente" },
-        { title: "Médicos & SNS", desc: "Telemedicina ágil, prescrições eletrónicas diretas em PDF e redes saudáveis com verificação fidedigna.", check: "✓ Celeridade" },
-        { title: "Farmácias", desc: "Integração inteligente de stocks e aviamento rápido de receitas de bem-estar na região do Tâmega.", check: "✓ Logística Local" }
+      const parsed = parseTopics(content);
+      let introText = "Uma plataforma digital de saúde inovadora que conecta pacientes, profissionais de saúde e farmácias num único ecossistema inteligente, moderno e seguro.";
+      let hubs = [
+        { title: "Pacientes", desc: "Inclusão digital avançada, acompanhamento inteligente e alertas de medicação em tempo real em Portugal e na Europa.", check: "✓ Foco no Utente" },
+        { title: "Médicos & SNS", desc: "Telemedicina ágil integrada, prescrições eletrónicas e interligação com clínicas e hospitais nacionais.", check: "✓ Celeridade" },
+        { title: "Farmácias", desc: "Integração inteligente de stocks e aviamento rápido de receitas de bem-estar com cobertura universal.", check: "✓ Logística Ágil" }
       ];
 
-      const introText = content || "Uma plataforma digital de saúde inovadora que conecta pacientes, profissionais de saúde e farmácias num único ecossistema inteligente, moderno e seguro.";
+      if (parsed.length > 0) {
+        // Find if any topic acts as the introduction (matches 'introdução', 'ecossistema', 'plataforma', or is a long sentence)
+        const introTopic = parsed.find(t => 
+          t.title.toLowerCase() === 'introdução' || 
+          t.title.toLowerCase().includes('plataforma') || 
+          t.title.toLowerCase().includes('ecossistema') || 
+          t.title.length > 40
+        );
+
+        if (introTopic) {
+          introText = introTopic.desc || introTopic.title;
+          // Clean introText from duplicate bullet points if any
+          introText = introText.replace(/^[•\-\*\s]+/, '').trim();
+        }
+
+        // The remaining topics become the cards (hubs), filtered to not repeat the introTopic
+        const cardTopics = parsed.filter(t => t !== introTopic);
+
+        cardTopics.forEach((item, idx) => {
+          if (idx < 3) {
+            hubs[idx] = {
+              title: item.title,
+              desc: item.desc || "Acompanhamento e integração fidedigna do ecossistema de saúde.",
+              check: idx === 0 ? "✓ Foco no Utente" : idx === 1 ? "✓ Celeridade" : "✓ Logística Ágil"
+            };
+          }
+        });
+      }
+
       const icons = [Users, Activity, Layers];
 
       return (
@@ -611,7 +684,7 @@ export default function Pitch() {
           
           {/* Stakeholder cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3">
-            {defaultHub.map((item, idx) => {
+            {hubs.map((item, idx) => {
               const IconComp = icons[idx] || Users;
               return (
                 <div key={idx} className={`${cardPadding} bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all`}>
@@ -908,7 +981,7 @@ export default function Pitch() {
                     <span className="text-xs md:text-sm font-bold text-emerald-300 uppercase">{title}</span>
                   </div>
                   <p className="text-xs md:text-sm text-white/85 leading-relaxed font-normal">
-                    {textContent || "Garantir inclusão digital, saúde célere preventiva e ética exemplar no Alto Tâmega."}
+                    {textContent || "Garantir inclusão digital, saúde célere preventiva e ética exemplar em Portugal e na Europa."}
                   </p>
                 </div>
               </div>
@@ -963,7 +1036,7 @@ export default function Pitch() {
         }
       });
 
-      const finalApl = aplFundos.length ? aplFundos.slice(0, 3) : ["Desenvolvimento técnico MVP", "Conformidade RGPD", "Marketing Territorial Alto Tâmega"];
+      const finalApl = aplFundos.length ? aplFundos.slice(0, 3) : ["Desenvolvimento do MVP Nacional", "Conformidade do RGPD Europeu", "Ações de Expansão Nacional e UE"];
 
       return (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mt-1 h-full font-sans text-left">
@@ -1034,9 +1107,9 @@ export default function Pitch() {
     // Slide 9 Layout (Index 8): Investor Conviction & Pitch Conclusion
     if (cleanIndex === 8) {
       const defaultPillars = [
-        { title: "Oceano Azul no Interior", text: "Primeira plataforma e ecossistema de saúde digital 100% dedicada ao Alto Tâmega. Ausência total de concorrentes locais integrados.", badge: "Mercado Único" },
-        { title: "Previsibilidade SaaS", text: "Receita recorrente e estável baseada em licenciamentos de clínicas/médicos parceiros e taxas de encomendas farmacêuticas.", badge: "EBITDA Saudável" },
-        { title: "Alto Valor Social / ESG", text: "Combate ativo ao isolamento geográfico de idosos e doentes crónicos. Elegível para fundos europeus de fomento rural.", badge: "Sustentabilidade" }
+        { title: "Escalabilidade Europeia", text: "Iniciando com piloto ágil no Alto Tâmega, projetado para rápida expansão por todo o Portugal e escalabilidade subsequente na Europa.", badge: "Escala & Crescimento" },
+        { title: "Previsibilidade SaaS", text: "Modelo financeiro robusto baseado em subscrições clínicas (SaaS) e comissões sobre transações farmacêuticas e consultas particulares na UE.", badge: "EBITDA Saudável" },
+        { title: "Alto Valor Social / ESG", text: "Combate ativo à exclusão digital e isolamento geográfico na Europa. Totalmente elegível para fundos europeus de inovação e coesão.", badge: "Impacto Global" }
       ];
 
       const pillars = lines.length >= 3 ? lines.slice(0, 3).map((line, i) => {
@@ -1092,8 +1165,8 @@ export default function Pitch() {
       let fName = "David Cumbo";
       let fRole = "Fundador & Core Promotor";
       let fEmail = "davidcumbo69@gmail.com";
-      let fSede = "Chaves, Alto Tâmega, Portugal";
-      let fQuote = "Unindo inovação de excelência, segurança extrema de dados clínicos e empatia humana para garantir que ninguém seja deixado para trás.";
+      let fSede = "Chaves, Alto Tâmega, Portugal (Hub para Europa)";
+      let fQuote = "Unindo inovação de excelência, segurança extrema de dados clínicos e empatia humana para garantir que ninguém seja deixado para trás no futuro da saúde digital em Portugal e na Europa.";
 
       lines.forEach(line => {
         const cleaned = line.replace(/^[•\-\s]+/, '').trim();
@@ -1538,55 +1611,168 @@ export default function Pitch() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest flex items-center justify-between">
-                <span>Escrever Tópicos do Slide</span>
-                <span className="text-[9px] font-mono text-gray-400 lowercase normal-case">Dica: Coloque cada tópico por linha com • para organizar em colunas/tabelas</span>
-              </label>
-              
-              <textarea
-                rows={5}
-                value={currentSlide.content}
-                onChange={(e) => {
-                  const updated = slides.map((s, idx) => idx === currentSlideIndex ? { ...s, content: e.target.value } : s);
-                  setSlides(updated);
-                  syncToSupabase(updated);
-                }}
-                className="w-full bg-gray-50 border border-gray-250 rounded-2xl p-4 text-xs font-bold text-gray-800 focus:outline-[#006747] leading-relaxed resize-none font-sans"
-                placeholder="• Tópico 1&#10;• Tópico 2&#10;• Titulo Coluna: Conteúdo do tópico..."
-              />
+            <div className="border-t border-gray-100 pt-3 mt-1 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest">
+                  Tópicos / Conteúdo do Slide
+                </label>
+                <div className="flex bg-gray-100 p-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider self-start sm:self-auto border border-gray-200 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setIsStructuredMode(true)}
+                    className={`px-3 py-1 rounded-md transition-all ${isStructuredMode ? 'bg-[#006747] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                  >
+                    Estruturado (Recomendado)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsStructuredMode(false)}
+                    className={`px-3 py-1 rounded-md transition-all ${!isStructuredMode ? 'bg-[#006747] text-white shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                  >
+                    Texto Livre (Raw)
+                  </button>
+                </div>
+              </div>
+
+              {isStructuredMode ? (
+                <div className="space-y-2.5">
+                  {parseTopics(currentSlide.content).map((topic, idx, allTopics) => (
+                    <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-2xl relative hover:border-gray-300 transition-all shadow-sm">
+                      <div className="w-full sm:w-[150px] shrink-0">
+                        <label className="block text-[8px] font-black uppercase text-gray-400 mb-0.5 tracking-wider">Tópico</label>
+                        <input
+                          type="text"
+                          value={topic.title}
+                          onChange={(e) => {
+                            const updatedTopics = [...allTopics];
+                            updatedTopics[idx] = { ...topic, title: e.target.value };
+                            const newText = serializeTopics(updatedTopics);
+                            const updatedSlidesList = slides.map((s, sIdx) => sIdx === currentSlideIndex ? { ...s, content: newText } : s);
+                            setSlides(updatedSlidesList);
+                            syncToSupabase(updatedSlidesList);
+                          }}
+                          className="w-full bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-850 focus:outline-[#006747] focus:ring-1 focus:ring-[#006747]"
+                          placeholder="Ex: Pacientes"
+                        />
+                      </div>
+                      <div className="flex-1 w-full flex items-end sm:items-center gap-2">
+                        <div className="flex-1">
+                          <label className="block text-[8px] font-black uppercase text-gray-400 mb-0.5 tracking-wider">Conteúdo</label>
+                          <textarea
+                            rows={1}
+                            value={topic.desc}
+                            onChange={(e) => {
+                              const updatedTopics = [...allTopics];
+                              updatedTopics[idx] = { ...topic, desc: e.target.value };
+                              const newText = serializeTopics(updatedTopics);
+                              const updatedSlidesList = slides.map((s, sIdx) => sIdx === currentSlideIndex ? { ...s, content: newText } : s);
+                              setSlides(updatedSlidesList);
+                              syncToSupabase(updatedSlidesList);
+                            }}
+                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-gray-750 focus:outline-[#006747] focus:ring-1 focus:ring-[#006747] leading-normal resize-none"
+                            placeholder="Descrição d'este aspecto..."
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedTopics = allTopics.filter((_, i) => i !== idx);
+                            const newText = serializeTopics(updatedTopics);
+                            const updatedSlidesList = slides.map((s, sIdx) => sIdx === currentSlideIndex ? { ...s, content: newText } : s);
+                            setSlides(updatedSlidesList);
+                            syncToSupabase(updatedSlidesList);
+                          }}
+                          className="text-red-500 hover:text-red-700 hover:scale-105 p-2 bg-red-50 hover:bg-red-100 rounded-xl transition-all self-end mb-0.5"
+                          title="Apagar Tópico"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updatedTopics = [...parseTopics(currentSlide.content), { title: 'Novo Tópico', desc: '' }];
+                      const newText = serializeTopics(updatedTopics);
+                      const updatedSlidesList = slides.map((s, sIdx) => sIdx === currentSlideIndex ? { ...s, content: newText } : s);
+                      setSlides(updatedSlidesList);
+                      syncToSupabase(updatedSlidesList);
+                    }}
+                    className="w-full py-2.5 bg-[#006747]/5 hover:bg-[#006747]/10 text-[#006747] rounded-xl text-[10px] font-black uppercase transition-all flex items-center justify-center space-x-1 border border-[#006747]/15 shadow-sm hover:scale-[1.01]"
+                  >
+                    <Plus className="w-3.5 h-3.5 shrink-0 animate-pulse text-emerald-600" />
+                    <span>Adicionar Novo Tópico</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <textarea
+                    rows={6}
+                    value={currentSlide.content}
+                    onChange={(e) => {
+                      const updated = slides.map((s, idx) => idx === currentSlideIndex ? { ...s, content: e.target.value } : s);
+                      setSlides(updated);
+                      syncToSupabase(updated);
+                    }}
+                    className="w-full bg-gray-50 border border-gray-250 rounded-2xl p-4 text-xs font-bold text-gray-800 focus:outline-[#006747] leading-relaxed resize-none font-sans"
+                    placeholder="• Tópico 1&#10;• Tópico 2&#10;• Titulo Coluna: Conteúdo do tópico..."
+                  />
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const hasContent = currentSlide.content.trim() !== "";
+                        const endsWithNewline = currentSlide.content.endsWith('\n');
+                        const newContent = currentSlide.content + (hasContent && !endsWithNewline ? '\n' : '') + '• ';
+                        const updated = slides.map((s, idx) => idx === currentSlideIndex ? { ...s, content: newContent } : s);
+                        setSlides(updated);
+                        syncToSupabase(updated);
+                      }}
+                      className="bg-emerald-50 hover:bg-emerald-100 text-[#006747] px-3.5 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center space-x-1.5 border border-emerald-100/50"
+                    >
+                      <Plus className="w-3.5 h-3.5 shrink-0" />
+                      <span>+ Adicionar Novo Tópico (Raw)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const templateText = "• Título Principal: Descrição fidedigna do projeto\n• Detalhe Importante: Estatísticas ou informação\n• Próximo Passo: Marcos futuros no mercado";
+                        const updated = slides.map((s, idx) => idx === currentSlideIndex ? { ...s, content: templateText } : s);
+                        setSlides(updated);
+                        syncToSupabase(updated);
+                      }}
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center space-x-1.5 border border-blue-100/30"
+                      title="Carrega uma estrutura de tópicos em colunas"
+                    >
+                      <Table className="w-3.5 h-3.5 shrink-0" />
+                      <span>Carregar Modelo Tabela/Colunas</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Quick Helper Tools */}
-            <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-50 mt-1">
-              <button
-                onClick={() => {
-                  const hasContent = currentSlide.content.trim() !== "";
-                  const endsWithNewline = currentSlide.content.endsWith('\n');
-                  const newContent = currentSlide.content + (hasContent && !endsWithNewline ? '\n' : '') + '• ';
-                  const updated = slides.map((s, idx) => idx === currentSlideIndex ? { ...s, content: newContent } : s);
-                  setSlides(updated);
-                  syncToSupabase(updated);
-                }}
-                className="bg-emerald-50 hover:bg-emerald-100 text-[#006747] px-3.5 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center space-x-1.5 border border-emerald-100/50"
-              >
-                <Plus className="w-3.5 h-3.5 shrink-0" />
-                <span>+ Adicionar Novo Tópico</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  const templateText = "• Título Principal: Descrição fidedigna do projeto\n• Detalhe Importante: Estatísticas ou informação\n• Próximo Passo: Marcos futuros no mercado";
-                  const updated = slides.map((s, idx) => idx === currentSlideIndex ? { ...s, content: templateText } : s);
-                  setSlides(updated);
-                  syncToSupabase(updated);
-                }}
-                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center space-x-1.5 border border-blue-100/30"
-                title="Carrega uma estrutura de tópicos em colunas"
-              >
-                <Table className="w-3.5 h-3.5 shrink-0" />
-                <span>Carregar Modelo Tabela/Colunas</span>
-              </button>
+            {/* Quick Helper Tools - Admin Reset Only */}
+            <div className="flex flex-wrap gap-2 pt-1 mt-1 border-t border-gray-100">
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm("Pretende restaurar a apresentação oficial para os slides padrão (Portugal todo e Europa)? Isto irá substituir as modificações atuais no Supabase.")) {
+                      setSlides(DEFAULT_SLIDES);
+                      await syncToSupabase(DEFAULT_SLIDES);
+                      setCurrentSlideIndex(0);
+                    }
+                  }}
+                  className="bg-amber-50 hover:bg-amber-100 text-[#b45309] px-3.5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all flex items-center space-x-1.5 border border-amber-100/75 w-full justify-center shadow-sm"
+                  title="Restaura os slides originais do Pitch cobrindo Portugal e Europa"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                  <span>Restaurar Slides Padrão (Portugal & Europa)</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1674,101 +1860,269 @@ export default function Pitch() {
 
       {/* Slide Editing / Creation Modal */}
       <AnimatePresence>
-        {isEditModalOpen && editingSlide && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-[100]">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden p-8 border border-gray-100"
-            >
-              <div className="flex items-center space-x-2 text-[#006747] font-black text-xs uppercase tracking-widest mb-1">
-                <Edit className="w-4 h-4 text-emerald-500" />
-                <span>Gestão e Detalhes do Slide</span>
-              </div>
-              <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-6">
-                Editar Conteúdo do Slide
-              </h3>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest">Categoria</label>
-                    <select
-                      value={editingSlide.category || 'Geral'}
-                      onChange={(e) => setEditingSlide({ ...editingSlide, category: e.target.value })}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 focus:outline-[#006747]"
+        {isEditModalOpen && editingSlide && (() => {
+          const editingSlideTheme = getSlideTheme(currentSlideIndex);
+          return (
+            <div className="fixed inset-0 bg-gray-50 z-[100] flex flex-col overflow-hidden">
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 15 }}
+                className="flex-grow flex flex-col h-full w-full bg-gray-50 overflow-hidden"
+              >
+                {/* Header Navbar */}
+                <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0 shadow-xs">
+                  <div className="flex items-center space-x-3 text-left">
+                    <div className="p-2.5 bg-[#006747]/5 rounded-2xl">
+                      <Edit className="w-5 h-5 text-[#006747]" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-gray-950 uppercase tracking-tight leading-none">
+                        Editar Conteúdo do Slide
+                      </h3>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                        Modo Editor Interativo em Tela Cheia e Sincronizado
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditModalOpen(false)}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border border-gray-250 shadow-xs"
                     >
-                      <option value="Identificação">Identificação</option>
-                      <option value="Inovação">Inovação</option>
-                      <option value="Business Canvas">Business Canvas</option>
-                      <option value="Missão & Valores">Missão & Valores</option>
-                      <option value="Forma Jurídica">Forma Jurídica</option>
-                      <option value="Geral">Geral</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest">Duração (Segundos)</label>
-                    <input
-                      type="number"
-                      value={editingSlide.duration_seconds || 45}
-                      onChange={(e) => setEditingSlide({ ...editingSlide, duration_seconds: parseInt(e.target.value) || 30 })}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 focus:outline-[#006747]"
-                    />
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveSlideEdit}
+                      className="bg-[#006747] hover:bg-emerald-800 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md shadow-emerald-900/10 hover:shadow-lg hover:scale-[1.01]"
+                    >
+                      Guardar Slide
+                    </button>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest">Título do Slide</label>
-                  <input
-                    type="text"
-                    value={editingSlide.title || ''}
-                    onChange={(e) => setEditingSlide({ ...editingSlide, title: e.target.value })}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs font-bold text-gray-800 focus:outline-[#006747]"
-                    placeholder="Introduza o título"
-                  />
-                </div>
+                {/* Grid Split Content */}
+                <div className="flex-1 flex flex-col md:flex-row min-h-0 bg-gray-50">
+                  {/* Left Column: Real-time Slide Preview & Overall Slide Settings */}
+                  <div className="w-full md:w-1/2 p-6 overflow-y-auto bg-white border-r border-gray-200 space-y-6 flex flex-col text-left">
+                    <div>
+                      <h4 className="text-[10px] font-black uppercase text-gray-400 mb-3 tracking-widest leading-none">Antevisão em Tempo Real do Slide</h4>
+                      
+                      {/* Realistic themed slide preview container */}
+                      <div className={`relative bg-gradient-to-br ${editingSlideTheme.bg} text-white rounded-[2rem] p-5 md:p-6 shadow-xl border ${editingSlideTheme.borderColor} overflow-hidden flex flex-col justify-between min-h-[260px] md:min-h-[320px] transition-all`}>
+                        {/* Ambient Background glows */}
+                        <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest">Subtítulo ou Chamada</label>
-                  <input
-                    type="text"
-                    value={editingSlide.subtitle || ''}
-                    onChange={(e) => setEditingSlide({ ...editingSlide, subtitle: e.target.value })}
-                    className="w-full bg-gray-50 border border-[#eaeff2] rounded-xl px-4 py-3 text-xs font-bold text-gray-800 focus:outline-[#006747]"
-                    placeholder="Subtítulo informativo"
-                  />
-                </div>
+                        {/* Slide Header */}
+                        <div className="flex items-center justify-between border-b border-white/10 pb-2 z-10">
+                          <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${editingSlideTheme.badgeBg}`}>
+                            {editingSlide.category || 'Geral'}
+                          </span>
+                          <div className="flex items-center space-x-1.5 text-[9px] text-white/40 font-mono">
+                            <span>Slide {currentSlideIndex + 1} de {slides.length}</span>
+                            <span className="bg-white/10 text-white px-2 py-0.5 rounded-md text-[8px] font-bold">
+                              {editingSlide.duration_seconds || 40}s
+                            </span>
+                          </div>
+                        </div>
 
-                <div>
-                  <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest">Tópicos / Conteúdo</label>
-                  <textarea
-                    rows={5}
-                    value={editingSlide.content || ''}
-                    onChange={(e) => setEditingSlide({ ...editingSlide, content: e.target.value })}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-xs font-bold text-gray-800 focus:outline-[#006747] leading-relaxed resize-none"
-                    placeholder="• Primeiro tópico importante&#10;• Próximo aspecto relevante de saúde"
-                  />
-                </div>
-              </div>
+                        {/* Slide Body Custom Frame rendering edited state */}
+                        <div className="mt-4 mb-2 z-10 text-left overflow-y-auto max-h-[190px] pr-1 flex-1 flex flex-col justify-center">
+                          <h2 className="text-sm md:text-base font-bold tracking-tight leading-tight uppercase font-sans text-white mb-1">
+                            {editingSlide.title || ''}
+                          </h2>
+                          {editingSlide.subtitle && (
+                            <p className={`text-xs md:text-xs font-normal ${editingSlideTheme.subtitleText} leading-relaxed mb-3`}>
+                              {editingSlide.subtitle}
+                            </p>
+                          )}
+                          
+                          {/* Live render of topics inside edit modal */}
+                          <div className="pt-1.5 select-none">
+                            {renderSlideRows(editingSlide.content || '', true)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-              <div className="mt-8 flex items-center space-x-3">
-                <button
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSaveSlideEdit}
-                  className="flex-1 bg-[#006747] hover:bg-emerald-800 text-white py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg"
-                >
-                  Guardar Slide
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
+                    <div className="border-t border-gray-100 pt-5 space-y-4">
+                      <h4 className="text-[10px] font-black uppercase text-gray-400 tracking-widest leading-none">Configurações Gerais do Slide</h4>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest">Categoria</label>
+                          <select
+                            value={editingSlide.category || 'Geral'}
+                            onChange={(e) => setEditingSlide({ ...editingSlide, category: e.target.value })}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 focus:outline-[#006747] focus:ring-1 focus:ring-[#006747] focus:bg-white"
+                          >
+                            <option value="Identificação">Identificação</option>
+                            <option value="Inovação">Inovação</option>
+                            <option value="Business Canvas">Business Canvas</option>
+                            <option value="Missão & Valores">Missão & Valores</option>
+                            <option value="Forma Jurídica">Forma Jurídica</option>
+                            <option value="Geral">Geral</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest">Duração (Segundos)</label>
+                          <input
+                            type="number"
+                            value={editingSlide.duration_seconds || 45}
+                            onChange={(e) => setEditingSlide({ ...editingSlide, duration_seconds: parseInt(e.target.value) || 30 })}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 focus:outline-[#006747]"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest">Título do Slide</label>
+                        <input
+                          type="text"
+                          value={editingSlide.title || ''}
+                          onChange={(e) => setEditingSlide({ ...editingSlide, title: e.target.value })}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 focus:outline-[#006747]"
+                          placeholder="Ex: Introduza o título"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-gray-400 mb-1.5 tracking-widest">Subtítulo ou Chamada</label>
+                        <input
+                          type="text"
+                          value={editingSlide.subtitle || ''}
+                          onChange={(e) => setEditingSlide({ ...editingSlide, subtitle: e.target.value })}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-800 focus:outline-[#006747]"
+                          placeholder="Subtítulo ou descrição sumária"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Advanced Topic Editor - Extra Spacious */}
+                  <div className="w-full md:w-1/2 p-6 overflow-y-auto bg-gray-50 space-y-4 flex flex-col text-left">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-3 shrink-0">
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-gray-500 tracking-widest">
+                          Tópicos / Conteúdo do Slide
+                        </label>
+                        <p className="text-[9px] text-gray-400 font-medium mt-0.5">Organize os tópicos para serem exibidos em colunas, tabelas ou listas</p>
+                      </div>
+                      <div className="flex bg-gray-200 p-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border border-gray-300 shadow-sm shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setIsStructuredMode(true)}
+                          className={`px-3.5 py-1.5 rounded-md transition-all ${isStructuredMode ? 'bg-[#006747] text-white shadow-sm' : 'text-gray-500 hover:text-[#006747]'}`}
+                        >
+                          Estruturado
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsStructuredMode(false)}
+                          className={`px-3.5 py-1.5 rounded-md transition-all ${!isStructuredMode ? 'bg-[#006747] text-white shadow-sm' : 'text-gray-500 hover:text-[#006747]'}`}
+                        >
+                          Texto Livre (Raw)
+                        </button>
+                      </div>
+                    </div>
+
+                    {isStructuredMode ? (
+                      <div className="space-y-3 flex-1 overflow-y-auto pr-1">
+                        {parseTopics(editingSlide.content || '').map((topic, idx, allTopics) => (
+                          <div key={idx} className="flex flex-col lg:flex-row items-stretch gap-3 p-4 bg-white border border-gray-200 rounded-2xl hover:border-emerald-300/60 hover:shadow-xs transition-all relative">
+                            {/* Bullet order badge */}
+                            <div className="flex lg:flex-col items-center justify-between lg:justify-center border-b lg:border-b-0 lg:border-r border-gray-100 pb-1.5 lg:pb-0 lg:pr-3 shrink-0">
+                              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                                #{idx + 1}
+                              </span>
+                            </div>
+
+                            {/* Spacious Wide inputs */}
+                            <div className="flex-1 space-y-2 text-left">
+                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-2">
+                                <div className="lg:col-span-4">
+                                  <label className="block text-[8px] font-black uppercase text-gray-400 mb-0.5 tracking-wider">Tópico</label>
+                                  <input
+                                    type="text"
+                                    value={topic.title}
+                                    onChange={(e) => {
+                                      const updatedTopics = [...allTopics];
+                                      updatedTopics[idx] = { ...topic, title: e.target.value };
+                                      setEditingSlide({ ...editingSlide, content: serializeTopics(updatedTopics) });
+                                    }}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-gray-800 focus:bg-white focus:outline-[#006747]"
+                                    placeholder="Ex: Farmácias"
+                                  />
+                                </div>
+                                <div className="lg:col-span-8">
+                                  <label className="block text-[8px] font-black uppercase text-gray-400 mb-0.5 tracking-wider">Conteúdo descritivo</label>
+                                  <textarea
+                                    rows={1}
+                                    value={topic.desc}
+                                    onChange={(e) => {
+                                      const updatedTopics = [...allTopics];
+                                      updatedTopics[idx] = { ...topic, desc: e.target.value };
+                                      setEditingSlide({ ...editingSlide, content: serializeTopics(updatedTopics) });
+                                    }}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-gray-750 focus:bg-white focus:outline-[#006747] leading-relaxed resize-none"
+                                    placeholder="Explique este aspecto do ecossistema..."
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Deletion btn */}
+                            <div className="flex items-center justify-end justify-center shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedTopics = allTopics.filter((_, i) => i !== idx);
+                                  setEditingSlide({ ...editingSlide, content: serializeTopics(updatedTopics) });
+                                }}
+                                className="text-red-500 hover:text-red-700 p-2 bg-red-50 hover:bg-red-100 rounded-xl transition-all"
+                                title="Apagar Tópico"
+                              >
+                                <Trash2 className="w-4 h-4 shrink-0" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedTopics = [...parseTopics(editingSlide.content || ''), { title: 'Novo Tópico', desc: '' }];
+                            setEditingSlide({ ...editingSlide, content: serializeTopics(updatedTopics) });
+                          }}
+                          className="w-full py-3 bg-[#006747]/5 hover:bg-[#006747]/10 text-[#006747] rounded-xl text-[10px] font-black uppercase transition-all flex items-center justify-center space-x-1 border border-[#006747]/15 shadow-sm hover:scale-[1.005]"
+                        >
+                          <Plus className="w-4 h-4 shrink-0" />
+                          <span>Adicionar Novo Tópico</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col flex-1 space-y-2">
+                        <textarea
+                          rows={10}
+                          value={editingSlide.content || ''}
+                          onChange={(e) => setEditingSlide({ ...editingSlide, content: e.target.value })}
+                          className="w-full flex-grow bg-white border border-gray-200 rounded-2xl p-4 text-xs font-bold text-gray-800 focus:outline-[#006747] leading-relaxed resize-none font-sans min-h-[300px]"
+                          placeholder="• Tópico 1&#10;• Tópico 2&#10;• Titulo Coluna: Conteúdo do tópico..."
+                        />
+                        <p className="text-[10px] font-medium text-gray-400 text-left">
+                          Dica: Digite <span className="font-bold">"• Assunto: Descrição"</span> em cada linha para convertê-lo perfeitamente ao formato estruturado em colunas bento.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* Floating dynamic toast notification */}
