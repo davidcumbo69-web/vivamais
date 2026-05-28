@@ -522,7 +522,7 @@ export default function Pitch() {
   const renderSlideRows = (content: string, insideFullscreen: boolean = false) => {
     const lines = content.split('\n');
     return (
-      <div className={`space-y-3.5 md:space-y-4 lg:space-y-5 ${insideFullscreen ? 'mt-6' : 'mt-4'}`}>
+      <div className={`space-y-2 md:space-y-3 ${insideFullscreen ? 'mt-3' : 'mt-2'}`}>
         {lines.map((line, idx) => {
           const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
           const textWithoutMarker = line.replace(/^[•\-\s]+/, '').trim();
@@ -536,17 +536,17 @@ export default function Pitch() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.05, duration: 0.3 }}
                 key={idx}
-                className={`flex items-start space-x-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 transition-all duration-200 ${
-                  insideFullscreen ? 'p-4 lg:p-5' : 'p-3'
+                className={`flex items-start space-x-2.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 transition-all duration-200 ${
+                  insideFullscreen ? 'p-2.5 md:p-3.5' : 'p-2'
                 }`}
               >
                 {/* Visual bullet marker themed with slide aesthetic */}
-                <span className={`w-2 h-2 rounded-full mt-2 shrink-0 ${slideTheme.bulletLight} shadow-sm`} />
+                <span className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${slideTheme.bulletLight} shadow-sm`} />
                 
                 <div className={`font-normal tracking-wide text-white/95 leading-relaxed antialiased ${
                   insideFullscreen 
-                    ? 'text-base md:text-lg lg:text-xl xl:text-2xl font-normal' 
-                    : 'text-sm md:text-base font-normal'
+                    ? 'text-sm md:text-base lg:text-lg font-normal' 
+                    : 'text-xs md:text-sm font-normal'
                 }`}>
                   {textWithoutMarker}
                 </div>
@@ -559,10 +559,10 @@ export default function Pitch() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04, duration: 0.4 }}
                 key={idx}
-                className={`font-normal leading-relaxed tracking-wide text-gray-200 bg-white/5 rounded-2xl border border-white/5 whitespace-pre-line antialiased ${
+                className={`font-normal leading-relaxed tracking-wide text-gray-200 bg-white/5 rounded-xl border border-white/5 whitespace-pre-line antialiased ${
                   insideFullscreen 
-                    ? 'p-5 text-base md:text-lg lg:text-xl xl:text-2xl font-normal' 
-                    : 'p-4 text-sm md:text-base font-normal'
+                    ? 'p-3 md:p-4 text-sm md:text-base lg:text-lg font-normal' 
+                    : 'p-2.5 md:p-3 text-xs md:text-sm font-normal'
                 }`}
               >
                 {line}
@@ -584,39 +584,10 @@ export default function Pitch() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`fixed inset-0 z-[200] bg-gradient-to-br ${slideTheme.bg} text-white flex flex-col justify-between p-8 md:p-14 lg:p-20 overflow-y-auto`}
+            className={`fixed inset-0 z-[200] bg-gradient-to-br ${slideTheme.bg} text-white flex flex-col justify-between p-4 md:p-6 lg:p-10 h-screen overflow-hidden`}
           >
-            {/* Fullscreen Header */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-6">
-              <div className="flex items-center space-x-3">
-                <span className="text-[#00f79a] font-black tracking-widest text-xs uppercase bg-[#004d32] border border-[#00f79a]/20 px-4 py-1.5 rounded-full">
-                  VIVA+ Pitch Mode
-                </span>
-                <span className="text-white/45 text-xs font-semibold">
-                  {currentSlide.category}
-                </span>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <span className="bg-white/10 text-white font-mono px-4 py-1.5 rounded-xl text-xs font-bold">
-                  Cronómetro: {formatMinSec(timeLeft)}
-                </span>
-                <span className="bg-white/10 text-white font-mono px-4 py-1.5 rounded-xl text-xs font-bold">
-                  Slide {currentSlideIndex + 1} / {slides.length}
-                </span>
-                <button 
-                  onClick={() => setIsFullscreen(false)}
-                  className="bg-white/15 hover:bg-white/25 text-white px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wide flex items-center space-x-1 transition-all"
-                  title="Sair do Modo de Apresentação"
-                >
-                  <Minimize2 className="w-4 h-4" />
-                  <span>Sair</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Fullscreen Main Content Container (Engineered with massive legibility for eyes) */}
-            <div className="my-auto py-10 max-w-5xl mx-auto w-full">
+            {/* Fullscreen Main Content Container (Alinhado ao topo, extremamente compacto e responsivo) */}
+            <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col justify-start pt-1 md:pt-2 overflow-hidden">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentSlide.id}
@@ -624,24 +595,24 @@ export default function Pitch() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.25 }}
-                  className="space-y-6"
+                  className="space-y-2 md:space-y-3"
                 >
-                  <span className={`${slideTheme.accentText} uppercase tracking-widest text-sm font-black`}>
+                  <span className={`${slideTheme.accentText} uppercase tracking-widest text-[10px] md:text-xs font-bold`}>
                     Slide {currentSlideIndex + 1} • {currentSlide.category}
                   </span>
                   
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight uppercase leading-none antialiased">
+                  <h1 className="text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight uppercase leading-snug antialiased">
                     {currentSlide.title}
                   </h1>
 
                   {currentSlide.subtitle && (
-                    <p className={`text-lg md:text-xl lg:text-2xl font-medium ${slideTheme.subtitleText} leading-relaxed`}>
+                    <p className={`text-xs md:text-sm lg:text-base font-normal ${slideTheme.subtitleText} leading-normal`}>
                       {currentSlide.subtitle}
                     </p>
                   )}
 
-                  {/* Gigantic high-contrast readable list body */}
-                  <div className="pt-4">
+                  {/* High-contrast list body with auto height limits */}
+                  <div className="pt-2 flex-1 overflow-hidden">
                     {renderSlideRows(currentSlide.content, true)}
                   </div>
                 </motion.div>
@@ -663,7 +634,7 @@ export default function Pitch() {
                 </div>
               </div>
 
-              {/* Huge visual navigation pads */}
+              {/* Huge visual navigation pads and exit button */}
               <div className="flex items-center space-x-4">
                 <button
                   onClick={handlePrevSlide}
@@ -682,6 +653,15 @@ export default function Pitch() {
                   <span className="text-xs font-black uppercase text-emerald-300">Próximo</span>
                   <ChevronRight className="w-6 h-6 text-emerald-300" />
                 </button>
+
+                <button 
+                  onClick={() => setIsFullscreen(false)}
+                  className="bg-red-500/10 hover:bg-red-500/25 border border-red-500/20 text-red-200 px-6 py-4 rounded-2xl transition-all flex items-center space-x-2"
+                  title="Sair do Modo de Apresentação"
+                >
+                  <Minimize2 className="w-6 h-6" />
+                  <span className="text-xs font-black uppercase text-red-200">Sair</span>
+                </button>
               </div>
             </div>
           </motion.div>
@@ -691,14 +671,10 @@ export default function Pitch() {
       {/* Normal Dashboard Header */}
       <div className="max-w-6xl mx-auto mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <div className="flex items-center space-x-2 text-emerald-700 font-black text-xs uppercase tracking-widest mb-1">
-            <Sparkles className="w-4 h-4 text-emerald-500 animate-pulse" />
-            <span>Ferramenta de Expansão & Pitch de Alta Legibilidade</span>
-          </div>
-          <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight leading-none flex items-center space-x-2">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 uppercase tracking-tight leading-none flex items-center space-x-2">
             <span>Apresentação Profissional VIVA+</span>
           </h1>
-          <p className="text-gray-500 text-xs font-bold leading-relaxed mt-1">
+          <p className="text-gray-500 text-xs font-medium leading-relaxed mt-2">
             Painel interativo de controle de pitch de 5 minutos desenvolvido para o júri e investidores.
           </p>
         </div>
@@ -729,14 +705,14 @@ export default function Pitch() {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Main Slide Card themed with custom beautiful color palette, glowing rings, optimized for readability */}
-          <div className={`relative bg-gradient-to-br ${slideTheme.bg} text-white rounded-[3rem] p-8 lg:p-12 shadow-2xl border ${slideTheme.borderColor} overflow-hidden min-h-[460px] flex flex-col justify-between group transition-all duration-500`}>
+          <div className={`relative bg-gradient-to-br ${slideTheme.bg} text-white rounded-[2rem] p-5 lg:p-6 shadow-2xl border ${slideTheme.borderColor} overflow-hidden flex flex-col justify-between group transition-all duration-500`}>
             
             {/* Ambient Background glows to enrich premium look */}
             <div className="absolute -top-12 -right-12 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-16 -left-16 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
             {/* Slide Header */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-4 z-10">
+            <div className="flex items-center justify-between border-b border-white/10 pb-2 z-10">
               <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${slideTheme.badgeBg}`}>
                 {currentSlide.category || 'Geral'}
               </span>
@@ -751,7 +727,7 @@ export default function Pitch() {
             </div>
 
             {/* Slide Body - Large and readable eyes-guard text style */}
-            <div className="my-8 z-10 relative">
+            <div className="mt-3 mb-2 z-10 relative">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentSlide.id}
@@ -759,20 +735,20 @@ export default function Pitch() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.25 }}
-                  className="space-y-4"
+                  className="space-y-1.5 md:space-y-2"
                 >
-                  <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight leading-tight uppercase font-sans text-white antialiased">
+                  <h2 className="text-lg md:text-xl font-bold tracking-tight leading-tight uppercase font-sans text-white antialiased">
                     {currentSlide.title}
                   </h2>
                   
                   {currentSlide.subtitle && (
-                    <p className={`text-sm md:text-base font-medium ${slideTheme.subtitleText} leading-relaxed`}>
+                    <p className={`text-xs md:text-sm font-normal ${slideTheme.subtitleText} leading-relaxed`}>
                       {currentSlide.subtitle}
                     </p>
                   )}
 
                   {/* Render Bullets & Content with High-contrast layout */}
-                  <div className="pt-4">
+                  <div className="pt-1 md:pt-1.5">
                     {renderSlideRows(currentSlide.content)}
                   </div>
                 </motion.div>
