@@ -668,11 +668,21 @@ export default function Pitch() {
   const renderSlideRows = (content: string, insideFullscreen: boolean = false) => {
     const lines = content.split('\n').map(l => l.trim()).filter(l => l);
     const cleanIndex = currentSlideIndex % 10;
+    const isSlide2OrMore = currentSlideIndex >= 1;
 
-    // Helper for beautiful visually rich cards
-    const cardPadding = insideFullscreen ? 'p-3 md:p-4' : 'p-2.5 md:p-3';
-    const textBase = insideFullscreen ? 'text-xs md:text-sm lg:text-base' : 'text-[11px] md:text-xs lg:text-sm';
-    const titleBase = insideFullscreen ? 'text-sm md:text-base font-bold' : 'text-xs md:text-sm font-semibold';
+    // Helper for beautiful visually rich cards with dynamic padding that stretches
+    const cardPadding = isSlide2OrMore
+      ? (insideFullscreen ? 'p-5 md:p-6 lg:p-7' : 'p-4 md:p-5')
+      : (insideFullscreen ? 'p-3 md:p-4' : 'p-2.5 md:p-3');
+
+    // Dynamically increase font sizes for slide 2 through the last slide (currentSlideIndex >= 1)
+    const textBase = isSlide2OrMore
+      ? (insideFullscreen ? 'text-sm sm:text-base md:text-lg lg:text-xl' : 'text-xs sm:text-sm md:text-base lg:text-lg')
+      : (insideFullscreen ? 'text-xs md:text-sm lg:text-base' : 'text-[11px] md:text-xs lg:text-sm');
+
+    const titleBase = isSlide2OrMore
+      ? (insideFullscreen ? 'text-base sm:text-lg md:text-xl lg:text-2xl font-black' : 'text-xs sm:text-sm md:text-base lg:text-lg font-bold')
+      : (insideFullscreen ? 'text-sm md:text-base font-bold' : 'text-xs md:text-sm font-semibold');
 
     // Slide 1 Layout (Index 0): Welcome & Stakeholder hub layout
     if (cleanIndex === 0) {
@@ -770,7 +780,7 @@ export default function Pitch() {
       });
 
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-3.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 h-full items-stretch flex-1">
           {pItems.map((item, idx) => {
             const IconComponent = icons[idx] || Info;
             return (
@@ -779,16 +789,18 @@ export default function Pitch() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04 }}
                 key={idx}
-                className={`${cardPadding} bg-red-950/20 hover:bg-red-950/30 border border-red-500/10 rounded-2xl flex items-start space-x-2.5 transition-all`}
+                className={`${cardPadding} bg-red-950/20 hover:bg-red-950/30 border border-red-500/10 rounded-2xl flex flex-col justify-between transition-all h-full shadow-md`}
               >
-                <div className="p-1.5 bg-red-500/10 rounded-lg text-red-400 shrink-0">
-                  <IconComponent className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className={`text-red-350 font-bold ${insideFullscreen ? 'text-[11px] md:text-xs' : 'text-[10px] md:text-[11px]'} uppercase tracking-wide leading-none mb-1`}>{item.heading}</h4>
-                  <p className={`${textBase} text-white/80 font-normal leading-relaxed`}>
-                    {item.textContent}
-                  </p>
+                <div className="flex items-start space-x-3.5">
+                  <div className="p-2.5 bg-red-500/10 rounded-xl text-red-400 shrink-0">
+                    <IconComponent className="w-5 h-5 md:w-6 md:h-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-red-350 font-black text-xs sm:text-sm md:text-base lg:text-lg uppercase tracking-wider leading-snug mb-1.5">{item.heading}</h4>
+                    <p className={`${textBase} text-white/90 font-normal leading-relaxed`}>
+                      {item.textContent}
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             );
@@ -807,9 +819,12 @@ export default function Pitch() {
         const textContent = colonIdx > -1 ? cleaned.substring(colonIdx + 1).trim() : cleaned;
         return { title, textContent };
       });
+
+      const featTextBase = insideFullscreen ? 'text-xs sm:text-sm md:text-base' : 'text-[11px] sm:text-xs md:text-sm';
+      const featTitleBase = insideFullscreen ? 'text-[10px] sm:text-xs md:text-sm' : 'text-[8px] sm:text-[10px] md:text-xs';
       
       return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 md:gap-4.5 h-full items-stretch flex-1">
           {fItems.map((item, idx) => {
             return (
               <motion.div
@@ -817,17 +832,19 @@ export default function Pitch() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.03 }}
                 key={idx}
-                className={`${insideFullscreen ? 'p-2.5 md:p-3' : 'p-2 md:p-2.5'} bg-cyan-950/15 hover:bg-cyan-950/30 border border-cyan-500/10 rounded-xl transition-all`}
+                className="p-4 md:p-5 bg-cyan-950/15 hover:bg-cyan-950/30 border border-cyan-500/10 rounded-2xl transition-all flex flex-col justify-between h-full shadow-sm"
               >
-                <div className="flex items-center space-x-1.5 mb-1 bg-cyan-500/5 px-2 py-0.5 rounded-md w-fit">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
-                  <span className={`font-bold uppercase tracking-wider text-cyan-300 ${insideFullscreen ? 'text-[9px] md:text-[10px]' : 'text-[8px] md:text-[9px]'}`}>
-                    {item.title}
-                  </span>
+                <div>
+                  <div className="flex items-center space-x-2 mb-2.5 bg-cyan-500/5 px-2.5 py-1 rounded-lg w-fit">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 shrink-0 animate-pulse" />
+                    <span className={`font-black uppercase tracking-widest text-cyan-300 ${featTitleBase}`}>
+                      {item.title}
+                    </span>
+                  </div>
+                  <p className={`${featTextBase} text-white/90 leading-relaxed font-normal`}>
+                    {item.textContent}
+                  </p>
                 </div>
-                <p className={`${insideFullscreen ? 'text-xs md:text-sm' : 'text-[10px] md:text-xs'} text-white/85 leading-relaxed`}>
-                  {item.textContent}
-                </p>
               </motion.div>
             );
           })}
@@ -846,7 +863,7 @@ export default function Pitch() {
       const badgeColors = ["text-fuchsia-400 bg-fuchsia-500/15", "text-indigo-400 bg-indigo-500/15", "text-purple-400 bg-purple-500/15"];
 
       return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-4 font-sans text-left mt-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 h-full items-stretch flex-1">
           {lines.slice(0, 3).map((line, idx) => {
             const textContent = line.replace(/^[•\-\s]+/, '').trim();
             const parts = textContent.split(':');
@@ -859,25 +876,25 @@ export default function Pitch() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.05 }}
                 key={idx}
-                className={`p-3 md:p-4 rounded-2xl border ${colors[idx]} flex flex-col justify-between hover:scale-[1.01] transition-all`}
+                className={`p-4 md:p-5 lg:p-6 rounded-2xl border ${colors[idx]} flex flex-col justify-between hover:scale-[1.01] transition-all h-full shadow-md`}
               >
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full ${badgeColors[idx]}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`text-[10px] md:text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full ${badgeColors[idx]}`}>
                       Etapa 0{idx + 1}
                     </span>
-                    <Layers className="w-4 h-4 text-white/20" />
+                    <Layers className="w-5 h-5 text-white/20" />
                   </div>
-                  <h4 className={`${titleBase} text-white font-bold leading-tight mb-1.5 uppercase`}>
+                  <h4 className="text-white font-extrabold text-sm sm:text-base md:text-lg lg:text-xl uppercase tracking-tight leading-tight mb-2">
                     {mainTitle}
                   </h4>
-                  <p className={`${textBase} text-white/80 leading-relaxed font-normal`}>
+                  <p className={`${textBase} text-white/90 leading-relaxed font-normal`}>
                     {desc.trim()}
                   </p>
                 </div>
-                <div className="border-t border-white/5 pt-1.5 mt-3 text-[9px] font-mono text-white/30 flex items-center justify-between">
+                <div className="border-t border-white/5 pt-2 mt-4 text-[10px] md:text-xs font-mono text-white/30 flex items-center justify-between">
                   <span>VIVA+ Inovação</span>
-                  <ArrowRight className="w-3 h-3 text-white/25" />
+                  <ArrowRight className="w-4 h-4 text-white/25" />
                 </div>
               </motion.div>
             );
@@ -892,33 +909,33 @@ export default function Pitch() {
       const clientSegments = lines.filter(l => !l.toLowerCase().includes("proposta"));
 
       return (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 h-full">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-5 h-full items-stretch flex-1">
           {/* Proposta de Valor banner */}
-          <div className={`${cardPadding} md:col-span-2 bg-teal-950/15 border border-teal-500/15 rounded-2xl flex flex-col justify-between`}>
+          <div className="p-4 md:p-6 md:col-span-2 bg-teal-950/15 border border-teal-500/15 rounded-3xl flex flex-col justify-between hover:bg-teal-950/20 transition-all duration-300 shadow-md">
             <div>
-              <span className="text-[9px] uppercase font-bold text-teal-300 tracking-wider">Business Canvas</span>
-              <h4 className={`${titleBase} text-teal-150 font-bold uppercase mt-1 mb-2`}>Proposta de Valor</h4>
-              <p className={`${textBase} text-white/85 font-normal leading-relaxed`}>
+              <span className="text-[10px] md:text-xs uppercase font-extrabold text-teal-400 tracking-widest font-mono">Business Canvas</span>
+              <h4 className="text-teal-100 font-black text-sm sm:text-base md:text-lg lg:text-xl uppercase tracking-tight mt-1 mb-3">Proposta de Valor</h4>
+              <p className={`${textBase} text-white/95 font-medium leading-relaxed`}>
                 {proposta.replace(/^[•\-\s]+(Proposta de Valor:)?/i, '').trim()}
               </p>
             </div>
-            <div className="p-2 bg-teal-500/10 rounded-xl flex items-center space-x-2 mt-3">
-              <Shield className="w-4 h-4 text-teal-400 shrink-0" />
-              <span className="text-[10px] text-teal-300/90 font-mono">100% Protegido & RGPD</span>
+            <div className="p-3 bg-teal-500/10 rounded-xl flex items-center space-x-2 mt-4 border border-teal-500/20">
+              <Shield className="w-5 h-5 text-teal-400 shrink-0" />
+              <span className="text-xs text-teal-355 font-bold font-mono">100% Protegido & RGPD</span>
             </div>
           </div>
 
           {/* Segmentos de Clientes */}
-          <div className={`${cardPadding} md:col-span-3 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-start`}>
-            <span className="text-[9px] uppercase font-bold text-white/40 tracking-wider mb-2">Segmentos de Clientes</span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
+          <div className="p-4 md:p-6 md:col-span-3 bg-white/5 border border-white/5 rounded-3xl flex flex-col justify-start hover:bg-white/10 transition-all duration-300 shadow-md">
+            <span className="text-[10px] md:text-xs uppercase font-extrabold text-white/50 tracking-widest mb-3 font-mono">Segmentos de Clientes</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 flex-1 items-stretch">
               {clientSegments.map((segment, idx) => {
                 const text = segment.replace(/^[•\-\s]+(Segmentos de Clientes:)?/i, '').trim();
                 if (!text) return null;
                 return (
-                  <div key={idx} className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 flex items-start space-x-2 transition-all">
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400 mt-1.5 shrink-0" />
-                    <span className="text-xs text-white/95 font-normal leading-tight">{text}</span>
+                  <div key={idx} className="p-3.5 bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl border border-white/5 flex items-start space-x-3 transition-all h-full">
+                    <span className="w-2 rounded-full bg-teal-400 mt-1.5 shrink-0 animate-pulse" />
+                    <span className="text-xs sm:text-sm md:text-base text-white/95 font-medium leading-snug">{text}</span>
                   </div>
                 );
               })}
@@ -947,18 +964,18 @@ export default function Pitch() {
       const receitasItems = ["VIVA+ Pro Subscrições (Profissionais)", "Taxas de Transação Loja & Farmácia", "Publicidade ética verificada"];
 
       return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 h-full items-stretch flex-1">
           {/* Canais */}
-          <div className="p-3 bg-amber-950/10 border border-amber-500/10 rounded-2xl flex flex-col justify-between">
+          <div className="p-4 md:p-5 bg-amber-950/10 border border-amber-500/10 rounded-2xl flex flex-col justify-between hover:bg-amber-950/15 transition-all">
             <div>
-              <div className="flex items-center space-x-1.5 mb-2 border-b border-amber-500/10 pb-1.5">
-                <Target className="w-4 h-4 text-amber-400" />
-                <span className="text-[10px] md:text-xs font-bold text-amber-300 uppercase shrink-0">Canais de Distribuição</span>
+              <div className="flex items-center space-x-2.5 mb-3 border-b border-amber-500/15 pb-2">
+                <Target className="w-5 h-5 text-amber-400" />
+                <span className="text-xs sm:text-sm font-black text-amber-300 uppercase tracking-wider shrink-0">Canais de Distribuição</span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {canaisItems.map((item, id) => (
-                  <div key={id} className="text-xs text-white/80 font-normal leading-relaxed flex items-center space-x-1.5">
-                    <span className="w-1 h-1 rounded-full bg-amber-400" />
+                  <div key={id} className="text-xs sm:text-sm md:text-base text-white/85 font-normal leading-relaxed flex items-center space-x-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
                     <span>{item}</span>
                   </div>
                 ))}
@@ -967,16 +984,16 @@ export default function Pitch() {
           </div>
 
           {/* Relacionamento */}
-          <div className="p-3 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between">
+          <div className="p-4 md:p-5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all">
             <div>
-              <div className="flex items-center space-x-1.5 mb-2 border-b border-white/10 pb-1.5">
-                <Users className="w-4 h-4 text-amber-300" />
-                <span className="text-[10px] md:text-xs font-bold text-white/85 uppercase shrink-0">Relação Especial</span>
+              <div className="flex items-center space-x-2.5 mb-3 border-b border-white/10 pb-2">
+                <Users className="w-5 h-5 text-amber-300" />
+                <span className="text-xs sm:text-sm font-black text-white/90 uppercase tracking-wider shrink-0">Relação Especial</span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {relacaoItems.map((item, id) => (
-                  <div key={id} className="text-xs text-white/80 font-normal leading-relaxed flex items-center space-x-1.5">
-                    <span className="w-1 h-1 bg-amber-400 rounded-sm shrink-0" />
+                  <div key={id} className="text-xs sm:text-sm md:text-base text-white/85 font-normal leading-relaxed flex items-center space-x-2">
+                    <span className="w-1.5 h-1.5 bg-amber-400 rounded-sm shrink-0" />
                     <span>{item}</span>
                   </div>
                 ))}
@@ -985,17 +1002,17 @@ export default function Pitch() {
           </div>
 
           {/* Receitas */}
-          <div className="p-3 bg-amber-950/15 border border-amber-500/15 rounded-2xl flex flex-col justify-between">
+          <div className="p-4 md:p-5 bg-amber-950/15 border border-amber-500/15 rounded-2xl flex flex-col justify-between hover:bg-amber-950/20 transition-all">
             <div>
-              <div className="flex items-center space-x-1.5 mb-2 border-b border-amber-500/15 pb-1.5">
-                <Coins className="w-4 h-4 text-amber-400" />
-                <span className="text-[10px] md:text-xs font-bold text-amber-300 uppercase shrink-0">Fontes de Receita</span>
+              <div className="flex items-center space-x-2.5 mb-3 border-b border-amber-500/20 pb-2">
+                <Coins className="w-5 h-5 text-amber-400" />
+                <span className="text-xs sm:text-sm font-black text-amber-300 uppercase tracking-wider shrink-0">Fontes de Receita</span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {receitasItems.map((item, id) => (
-                  <div key={id} className="text-xs text-white/90 font-medium leading-relaxed flex items-center space-x-1.5">
-                    <span className="text-amber-400 font-bold shrink-0 text-[10px]">$</span>
-                    <span className="line-clamp-2">{item}</span>
+                  <div key={id} className="text-xs sm:text-sm md:text-base text-white/95 font-semibold leading-relaxed flex items-center space-x-2">
+                    <span className="text-amber-400 font-extrabold shrink-0 text-sm">$</span>
+                    <span>{item}</span>
                   </div>
                 ))}
               </div>
@@ -1011,19 +1028,19 @@ export default function Pitch() {
       const items = lines.slice(0, 3);
 
       return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 h-full items-stretch flex-1">
           {titles.map((title, idx) => {
             const line = items[idx] || "";
             const textContent = line.replace(/^[•\-\s]+(Missão:|Visão:|Valores:)?/gi, '').trim();
 
             return (
-              <div key={idx} className="p-3 bg-emerald-950/10 border border-emerald-500/10 rounded-2xl flex flex-col justify-between">
+              <div key={idx} className="p-4 md:p-6 bg-emerald-950/10 border border-emerald-500/10 rounded-2xl flex flex-col justify-between hover:bg-emerald-950/15 transition-all duration-300 shadow-md h-full">
                 <div>
-                  <div className="flex items-center space-x-2 mb-2 pb-1.5 border-b border-emerald-500/10">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    <span className="text-xs md:text-sm font-bold text-emerald-300 uppercase">{title}</span>
+                  <div className="flex items-center space-x-2.5 mb-3 pb-2 border-b border-emerald-500/10">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-xs sm:text-sm md:text-base font-black text-emerald-300 uppercase tracking-wider">{title}</span>
                   </div>
-                  <p className="text-xs md:text-sm text-white/85 leading-relaxed font-normal">
+                  <p className="text-xs sm:text-sm md:text-base text-white/95 leading-relaxed font-normal">
                     {textContent || "Garantir inclusão digital, saúde célere preventiva e ética exemplar em Portugal e na Europa."}
                   </p>
                 </div>
@@ -1113,23 +1130,23 @@ export default function Pitch() {
       const teamDash = (teamPct / 100) * circ;
 
       return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 mt-1 h-full font-sans text-left items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5 h-full items-stretch flex-1 text-left">
           {/* Card 1: Estudo Societário com Gráfico Real de Quotas */}
-          <div className="p-3.5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all shadow-lg backdrop-blur-md">
+          <div className="p-4 md:p-5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all shadow-lg backdrop-blur-md">
             <div>
-              <div className="flex items-center gap-1.5 mb-1 bg-white/[0.04] w-fit px-2 py-0.5 rounded-full border border-white/5">
+              <div className="flex items-center gap-1.5 mb-2 bg-white/[0.04] w-fit px-2 py-0.5 rounded-full border border-white/5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                 <span className="text-[9px] uppercase font-bold text-white/50 tracking-widest font-mono">Governação & Quotas</span>
               </div>
-              <h4 className="text-xs md:text-sm font-extrabold text-white tracking-tight uppercase mb-1">Estrutura Societária</h4>
+              <h4 className="text-xs md:text-sm font-extrabold text-white tracking-tight uppercase mb-2">Estrutura Societária</h4>
               
               {/* Gráfico Real Dividido SVG */}
-              <div className="flex justify-center items-center py-2.5 relative my-2">
-                <svg width="120" height="120" className="transform -rotate-90">
+              <div className="flex justify-center items-center py-2 relative my-2">
+                <svg width="110" height="110" className="transform -rotate-90">
                   {/* Background Track */}
                   <circle
-                    cx="60"
-                    cy="60"
+                    cx="55"
+                    cy="55"
                     r={r}
                     fill="transparent"
                     stroke="rgba(255, 255, 255, 0.05)"
@@ -1137,8 +1154,8 @@ export default function Pitch() {
                   />
                   {/* Founder Segment (Emerald) */}
                   <circle
-                    cx="60"
-                    cy="60"
+                    cx="55"
+                    cy="55"
                     r={r}
                     fill="transparent"
                     stroke="#10b981"
@@ -1150,8 +1167,8 @@ export default function Pitch() {
                   />
                   {/* Team Segment (Blue) */}
                   <circle
-                    cx="60"
-                    cy="60"
+                    cx="55"
+                    cy="55"
                     r={r}
                     fill="transparent"
                     stroke="#3b82f6"
@@ -1171,7 +1188,7 @@ export default function Pitch() {
               </div>
 
               {/* Legenda do Gráfico */}
-              <div className="space-y-2 mt-2">
+              <div className="space-y-1.5 mt-2">
                 <div className="bg-white/[0.02] p-2 rounded-xl border border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-2 max-w-[70%]">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
@@ -1197,13 +1214,13 @@ export default function Pitch() {
           </div>
 
           {/* Card 2: Detalhes Societários */}
-          <div className="p-3.5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all shadow-lg backdrop-blur-md">
+          <div className="p-4 md:p-5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all shadow-lg backdrop-blur-md">
             <div>
-              <div className="flex items-center gap-1.5 mb-1 bg-white/[0.04] w-fit px-2 py-0.5 rounded-full border border-white/5">
+              <div className="flex items-center gap-1.5 mb-2 bg-white/[0.04] w-fit px-2 py-0.5 rounded-full border border-white/5">
                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
                 <span className="text-[9px] uppercase font-bold text-white/50 tracking-widest font-mono">Enquadramento Legal</span>
               </div>
-              <h4 className="text-xs md:text-sm font-extrabold text-white tracking-tight uppercase mb-1">Dados da Sociedade</h4>
+              <h4 className="text-xs md:text-sm font-extrabold text-white tracking-tight uppercase mb-2">Dados da Sociedade</h4>
 
               <div className="space-y-2 mt-2 text-[11px]">
                 {/* Promotores */}
@@ -1241,13 +1258,13 @@ export default function Pitch() {
           </div>
 
           {/* Card 3: Aplicação Estratégica / Alocação */}
-          <div className="p-3.5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all shadow-lg backdrop-blur-md">
+          <div className="p-4 md:p-5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all shadow-lg backdrop-blur-md">
             <div>
-              <div className="flex items-center gap-1.5 mb-1 bg-white/[0.04] w-fit px-2 py-0.5 rounded-full border border-white/5">
+              <div className="flex items-center gap-1.5 mb-2 bg-white/[0.04] w-fit px-2 py-0.5 rounded-full border border-white/5">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
                 <span className="text-[9px] uppercase font-bold text-white/50 tracking-widest font-mono">Aplicação do Capital</span>
               </div>
-              <h4 className="text-xs md:text-sm font-extrabold text-white tracking-tight uppercase mb-1">Ativos do MVP</h4>
+              <h4 className="text-xs md:text-sm font-extrabold text-white tracking-tight uppercase mb-2">Ativos do MVP</h4>
 
               <div className="space-y-2 mt-2">
                 {finalApl.slice(0, 3).map((item, idx) => {
@@ -1259,11 +1276,11 @@ export default function Pitch() {
                   const scheme = colors[idx % colors.length];
 
                   return (
-                    <div key={idx} className={`p-2 bg-white/[0.02] border border-white/5 rounded-xl flex items-start gap-2 transition-all hover:bg-white/[0.04]`}>
+                    <div key={idx} className="p-2 bg-white/[0.02] border border-white/5 rounded-xl flex items-start gap-2 transition-all hover:bg-white/[0.04]">
                       <span className={`px-1 rounded text-[7px] font-black tracking-wider uppercase font-mono shrink-0 ${scheme.bg} ${scheme.border} ${scheme.text} border mt-0.5`}>
                         {scheme.label}
                       </span>
-                      <p className="text-[10px] text-white/90 leading-tight font-normal">
+                      <p className="text-[10px] sm:text-[11px] text-white/90 leading-tight font-normal">
                         {item}
                       </p>
                     </div>
@@ -1300,38 +1317,38 @@ export default function Pitch() {
       const icons = [Target, TrendingUp, Shield];
 
       return (
-        <div className="flex flex-col justify-between h-full space-y-3 font-sans text-left">
+        <div className="flex flex-col justify-between h-full space-y-4 font-sans text-left flex-1">
           {/* Top slogan */}
-          <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-2xl flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
-              <span className="text-xs md:text-sm font-black uppercase text-amber-300 tracking-wider">Porquê Investir Convosco Hoje?</span>
+          <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-center justify-between shadow-sm">
+            <div className="flex items-center space-x-2.5">
+              <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse shrink-0" />
+              <span className="text-xs sm:text-sm md:text-base font-black uppercase text-amber-300 tracking-widest font-mono">Porquê Investir Convosco Hoje?</span>
             </div>
-            <span className="text-[10px] bg-amber-500/25 text-white px-2.5 py-0.5 rounded-full font-mono font-bold">Retorno & Impacto</span>
+            <span className="text-[10px] sm:text-xs bg-amber-500/25 text-white px-3 py-1 rounded-full font-mono font-bold">Retorno & Impacto</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full items-stretch">
             {pillars.map((p, idx) => {
               const IconComp = icons[idx] || Target;
               return (
-                <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all">
+                <div key={idx} className="p-4 md:p-5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all h-full shadow-md">
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="p-1 px-1.5 bg-amber-500/10 rounded-lg text-amber-300">
-                        <IconComp className="w-4 h-4" />
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-1.5 bg-amber-500/10 rounded-lg text-amber-300">
+                        <IconComp className="w-4 h-4 md:w-5 md:h-5" />
                       </div>
-                      <span className="text-[9px] font-black uppercase tracking-wider text-amber-400/80 bg-amber-400/5 px-2 py-0.5 rounded-md">{p.badge}</span>
+                      <span className="text-[9px] md:text-[10px] font-black uppercase tracking-wider text-amber-400/80 bg-amber-400/5 px-2.5 py-1 rounded-md">{p.badge}</span>
                     </div>
-                    <h4 className="text-xs md:text-sm font-black text-white uppercase mb-1.5 leading-tight">{p.title}</h4>
-                    <p className="text-[11px] md:text-xs text-white/80 font-normal leading-relaxed">{p.text}</p>
+                    <h4 className="text-xs sm:text-sm md:text-base font-black text-white uppercase mb-2 leading-tight tracking-tight">{p.title}</h4>
+                    <p className="text-xs sm:text-sm text-white/85 font-normal leading-relaxed">{p.text}</p>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="text-center py-2 bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-transparent border border-white/5 rounded-2xl">
-            <span className="text-[10px] md:text-xs font-bold text-white tracking-wide">"Investir na VIVA+ é consolidar a saúde digital onde ela é mais valiosa e necessária."</span>
+          <div className="text-center py-3 bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-transparent border border-white/5 rounded-2xl">
+            <span className="text-xs sm:text-sm md:text-base font-semibold text-white tracking-wide">"Investir na VIVA+ é consolidar a saúde digital onde ela é mais valiosa e necessária."</span>
           </div>
         </div>
       );
@@ -1364,44 +1381,44 @@ export default function Pitch() {
       });
 
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full font-sans text-left">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 h-full font-sans text-left items-stretch flex-1">
           {/* Left Column: Thank statement & contact cards */}
-          <div className="p-4 bg-gradient-to-br from-[#012217] to-[#00140e] border border-emerald-500/10 rounded-3xl flex flex-col justify-between hover:bg-emerald-950/20 transition-all">
+          <div className="p-5 md:p-6 bg-gradient-to-br from-[#012217] to-[#00140e] border border-emerald-500/10 rounded-3xl flex flex-col justify-between hover:bg-emerald-950/20 transition-all shadow-lg h-full">
             <div>
-              <span className="text-[9px] uppercase font-black text-emerald-400 tracking-widest block mb-1">Contacto Oficial</span>
-              <h3 className="text-sm md:text-base font-black text-white uppercase tracking-tight mb-3">Agenda de Reuniões</h3>
+              <span className="text-[10px] md:text-xs uppercase font-black text-emerald-400 tracking-widest block mb-1">Contacto Oficial</span>
+              <h3 className="text-sm sm:text-base md:text-lg font-black text-white uppercase tracking-tight mb-4">Agenda de Reuniões</h3>
               
-              <div className="space-y-3 mt-4">
-                <div className="bg-white/5 p-3 rounded-2xl border border-white/5 hover:border-emerald-500/20 transition-all">
-                  <span className="text-[9px] font-black uppercase text-emerald-400 block tracking-widest">{fRole}</span>
-                  <span className="text-xs md:text-sm font-bold text-white block mt-0.5">{fName}</span>
-                  <span className="text-[11px] text-white/70 block mt-0.5 font-mono">{fEmail}</span>
+              <div className="space-y-3.5 mt-4">
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/5 hover:border-emerald-500/20 transition-all">
+                  <span className="text-[10px] font-black uppercase text-emerald-400 block tracking-widest leading-none mb-1">{fRole}</span>
+                  <span className="text-sm sm:text-base font-bold text-white block mt-0.5">{fName}</span>
+                  <span className="text-xs sm:text-sm text-white/80 block mt-1 font-mono">{fEmail}</span>
                 </div>
 
-                <div className="px-1 text-[11px] text-white/60 font-mono flex items-center space-x-2">
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                <div className="px-1 text-xs sm:text-sm text-white/70 font-mono flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full" />
                   <span>Sede: {fSede}</span>
                 </div>
               </div>
             </div>
 
-            <div className="text-[9px] text-white/40 mt-3 border-t border-white/5 pt-2">
+            <div className="text-[10px] text-white/40 mt-3 border-t border-white/5 pt-2">
               VIVA+ Saúde Digital LDA © 2026
             </div>
           </div>
 
           {/* Right Column: Thank core image & premium quote */}
-          <div className="p-4 bg-white/5 border border-white/5 rounded-3xl flex flex-col justify-between hover:bg-white/10 transition-all text-left">
+          <div className="p-5 md:p-6 bg-white/5 border border-white/5 rounded-3xl flex flex-col justify-between hover:bg-white/10 transition-all text-left shadow-lg h-full">
             <div>
               <span className="text-[9px] uppercase font-bold text-white/45 tracking-widest block mb-1 font-mono">Agradecimento</span>
-              <h4 className="text-lg md:text-xl font-black text-emerald-300 uppercase leading-none mt-1 mb-2">Muito Obrigado!</h4>
+              <h4 className="text-xl sm:text-2xl md:text-3xl font-black text-emerald-300 uppercase leading-none mt-1 mb-3">Muito Obrigado!</h4>
               
-              <p className="text-[11px] md:text-xs text-white/90 italic leading-relaxed mt-3 border-l-2 border-emerald-400 pl-3 py-1 bg-white/5 rounded-r-xl">
+              <p className="text-xs sm:text-sm md:text-base text-white/95 italic leading-relaxed mt-4 border-l-3 border-emerald-400 pl-4 py-1.5 bg-white/5 rounded-r-xl">
                 {fQuote}
               </p>
             </div>
 
-            <div className="bg-emerald-500 text-neutral-950 p-2 md:p-2.5 rounded-2xl font-bold text-[10px] md:text-xs uppercase tracking-widest text-center mt-3 hover:scale-101 active:scale-99 transition-all cursor-pointer">
+            <div className="bg-emerald-500 text-neutral-950 p-3 md:p-3.5 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest text-center mt-4 hover:scale-101 active:scale-99 transition-all cursor-pointer">
               <span>Unir Vidas, Cuidar do Futuro</span>
             </div>
           </div>
@@ -1421,16 +1438,16 @@ export default function Pitch() {
       else if (itemCount >= 3) gridClass = "grid-cols-1 md:grid-cols-3";
 
       return (
-        <div className={`grid ${gridClass} gap-3`}>
+        <div className={`grid ${gridClass} gap-4 h-full items-stretch flex-1`}>
           {itemsToRender.map((text, idx) => (
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.04 }}
               key={idx}
-              className={`${cardPadding} bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 flex items-start space-x-2 transition-all`}
+              className="p-4 md:p-6 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 flex items-start space-x-3 transition-all h-full shadow-sm"
             >
-              <span className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${slideTheme.bulletLight}`} />
+              <span className={`w-2 h-2 rounded-full mt-2 shrink-0 ${slideTheme.bulletLight}`} />
               <p className={`${textBase} text-white/95 font-normal leading-relaxed`}>
                 {text}
               </p>
@@ -1441,8 +1458,10 @@ export default function Pitch() {
     }
 
     // Default basic text line-by-line fallback
+    const fallbackPlainBase = insideFullscreen ? 'text-sm sm:text-base md:text-lg lg:text-xl p-4' : 'text-xs sm:text-sm md:text-base lg:text-lg p-3.5';
+
     return (
-      <div className={`space-y-2 md:space-y-3 ${insideFullscreen ? 'mt-3' : 'mt-2'}`}>
+      <div className={`space-y-3.5 md:space-y-4 ${insideFullscreen ? 'mt-4' : 'mt-3'} h-full flex flex-col justify-start flex-1`}>
         {lines.map((line, idx) => {
           const textWithoutMarker = line.replace(/^[•\-\s]+/, '').trim();
           return (
@@ -1451,9 +1470,7 @@ export default function Pitch() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.04, duration: 0.3 }}
               key={idx}
-              className={`font-normal leading-relaxed text-gray-200 bg-white/5 rounded-xl border border-white/5 whitespace-pre-line antialiased ${
-                insideFullscreen ? 'p-3 text-xs md:text-sm' : 'p-2.5 text-[11px] md:text-xs'
-              }`}
+              className={`font-normal leading-relaxed text-gray-200 bg-white/5 rounded-2xl border border-white/5 whitespace-pre-line antialiased h-full ${fallbackPlainBase}`}
             >
               {textWithoutMarker}
             </motion.div>
