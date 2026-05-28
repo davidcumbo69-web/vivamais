@@ -15,6 +15,9 @@ export function Navbar() {
   const isChatOpenOnMobile = location.pathname === '/mensagens' && searchParams.has('userId');
   
   const navItems = [
+    ...(isAdmin ? [
+      { icon: Presentation, label: 'Pitch', path: '/pitch' }
+    ] : []),
     { icon: Microscope, label: 'Explorar', path: '/explorar' },
     { icon: Pill, label: 'Farmácias', path: '/farmacias' },
     { icon: Hospital, label: 'Estabelecimentos', path: '/estabelecimentos' },
@@ -29,9 +32,6 @@ export function Navbar() {
     ] : [
       { icon: Apple, label: 'Saúde', path: '/conquistas' }
     ]),
-    ...(isAdmin ? [
-      { icon: Presentation, label: 'Pitch', path: '/pitch' }
-    ] : []),
     { icon: UserIcon, label: 'Perfil', path: '/perfil' },
   ];
 
