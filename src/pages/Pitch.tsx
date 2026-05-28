@@ -190,7 +190,11 @@ export default function Pitch() {
     try {
       const cached = localStorage.getItem('viva_pitch_slides');
       if (cached) {
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        const allText = parsed.map((s: any) => (s.title + ' ' + (s.subtitle || '') + ' ' + s.content).toLowerCase()).join(' ');
+        if (allText.includes('cronograma assistido') || allText.includes('influenciadores')) {
+          return parsed;
+        }
       }
     } catch (e) {
       console.error('Failed to parse cached slides from localStorage:', e);
@@ -285,10 +289,23 @@ export default function Pitch() {
         .order('slide_order', { ascending: true });
 
       if (!error && data && data.length > 0) {
-        setSlides(data);
-        localStorage.setItem('viva_pitch_slides', JSON.stringify(data));
-        if (!isPlaying) {
-          setSlideTimeLeft(data[currentSlideIndex]?.duration_seconds || data[0].duration_seconds);
+        const allText = data.map((s: any) => (s.title + ' ' + (s.subtitle || '') + ' ' + s.content).toLowerCase()).join(' ');
+        const isOutdated = !allText.includes('cronograma') || !allText.includes('influenciadores');
+        
+        if (isOutdated) {
+          console.log('[Pitch] Database slides are outdated. Force-resetting to default slides...');
+          setSlides(DEFAULT_SLIDES);
+          localStorage.setItem('viva_pitch_slides', JSON.stringify(DEFAULT_SLIDES));
+          if (isAdmin) {
+            // Self-healing migration
+            await syncToSupabase(DEFAULT_SLIDES);
+          }
+        } else {
+          setSlides(data);
+          localStorage.setItem('viva_pitch_slides', JSON.stringify(data));
+          if (!isPlaying) {
+            setSlideTimeLeft(data[currentSlideIndex]?.duration_seconds || data[0].duration_seconds);
+          }
         }
       } else {
         if (error) {
