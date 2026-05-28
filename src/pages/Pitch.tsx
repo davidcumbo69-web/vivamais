@@ -63,7 +63,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'A Oportunidade e o Problema',
     subtitle: 'Rompendo a Inacessibilidade no Interior de Portugal',
     category: 'Identificação',
-    content: '• Necessidade real de melhorar o acesso à informação médica fidedigna e combater o isolamento geográfico.\n• Falta de controlo na toma e rastreamento inteligente da medicação pelos utentes.\n• Urgência em facilitar a interação digital entre pacientes, clínicas, farmácias e médicos da rede privada ou do SNS.\n• Desperdiço de tempo de deslocações que afeta de forma desproporcional populações envelhecidas e rurais.',
+    content: '• Isolamento Geográfico: Necessidade urgente de combater o isolamento geográfico focado no interior rural.\n• Falta de Rastreamento: Ausência de rastreio inteligente e dinâmico de medicação pelos próprios pacientes.\n• Interação Desconectada: Lacunas severas na ligação digital célere entre pacientes, médicos e farmácias locais.\n• Desperdício de Deslocações: Horas perdidas em viagens cansativas por idosos e cuidadores informais.',
     duration_seconds: 45
   },
   {
@@ -72,7 +72,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'O Produto e Serviço VIVA+',
     subtitle: 'O que oferecemos no ecossistema e plataforma?',
     category: 'Identificação',
-    content: '• Acompanhamento inteligente de medicação com alertas de toma automáticos.\n• Consultas de telemedicina e agendamento ágil presencial de especialidades.\n• Acesso a conteúdos e publicações médicas certificadas (Artigos e Dicas).\n• Prescrição desmaterializada e envio de receitas de forma 100% digital.\n• Redes de apoio, partilha de conhecimento (Feeds, Reels e Grupos de Doentes).\n• Integração de stocks com as farmácias locais para encomendas instantâneas.',
+    content: '• Alertas Inteligentes: Acompanhamento de medicação com notificações e avisos automáticos em tempo real.\n• Telemedicina Ágil: Consultas digitais integradas e agendamento de cuidados de saúde privados e públicos.\n• Saúde Certificada: Artigos científicos oficiais de médicos parceiros credenciados na nossa rede.\n• Receitas Digitais: Prescrições desmaterializadas em PDF enviadas diretamente ao smartphone do utente.\n• Redes & Comunidade: Fóruns moderados, Reels educativos e comunidades ativas de apoio familiar.\n• Sincronia Farmácias: Encomendas instantâneas integradas ao stock de receitas nas farmácias aderentes.',
     duration_seconds: 45
   },
   {
@@ -117,8 +117,26 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'Forma Jurídica e Finanças',
     subtitle: 'Prontos para escalar o negócio com governança',
     category: 'Forma Jurídica',
-    content: '• Promotores principais: David Cumbo e Equipa.\n• Forma Jurídica: Sociedade por Quotas (LDA) constituída legalmente em Portugal.\n• Capital Social Inicial: 10.000€ integralmente subscritos.\n• Estrutura Societária: David Cumbo (70% de quota-parte) e Co-promotores/Parceiros (30%).\n• Aplicação do capital: Desenvolvimento técnico do MVP, conformidade legal rígida e ações de marketing territorial no Alto Tâmega.',
+    content: '• Promotores principais: David Cumbo e Equipa.\n• Forma Jurídica: Sociedade por Quotas (LDA) constituída legalmente em Portugal.\n• Capital Social Inicial: 10.000 € de capital social registado.\n• Estrutura Societária: David Cumbo (70% de quota-parte) e Co-promotores/Parceiros (30%).\n• Aplicação do capital: Desenvolvimento técnico do MVP, conformidade legal rígida do RGPD e ações de marketing territorial no Alto Tâmega.',
     duration_seconds: 40
+  },
+  {
+    id: 'default-9',
+    slide_order: 9,
+    title: 'Porquê Investir na VIVA+?',
+    subtitle: 'Conclusão & Apelo de Negócio para Investidores',
+    category: 'Investimento',
+    content: '• Oceano Azul no Interior: Primeira plataforma de saúde digital 100% dedicada a ligar pacientes, farmácias e médicos rurais na região do Tâmega, livre de concorrentes integrados.\n• Rentabilidade Recorrente SaaS: Modelo financeiro escalável baseado em subscrições clínicas mensais estáveis (SaaS) e taxas sobre consultas privadas e transações na loja digital.\n• Forte Impacto Social (ESG): Alinhamento rigoroso com os Objetivos de Desenvolvimento Sustentável, elegível para fundos de coesão locais, nacionais e de inovação europeus.',
+    duration_seconds: 45
+  },
+  {
+    id: 'default-10',
+    slide_order: 10,
+    title: 'Agradecimentos & Contactos',
+    subtitle: 'O Futuro da Saúde Digital Começa Hoje',
+    category: 'Encerramento',
+    content: '• David Cumbo: Fundador e Diretor do Ecossistema VIVA+\n• Contacto Directo: davidcumbo69@gmail.com\n• Sede Registral: Chaves, Alto Tâmega, Portugal\n• Visão Final: "Unindo inovação de excelência, segurança extrema de dados clínicos e empatia humana para garantir que ninguém seja deixado para trás no futuro da saúde digital em Portugal."',
+    duration_seconds: 35
   }
 ];
 
@@ -349,7 +367,7 @@ export default function Pitch() {
 
   // Spectacular, personalized themes per slide to make it distinct & incredibly high-contrast
   const getSlideTheme = (index: number) => {
-    const cleanIndex = index % 8;
+    const cleanIndex = index % 10;
     switch(cleanIndex) {
       case 0: // Slide 1 - VIVA+ SAÚDE (Apresentação Principal) - Dark Luxury Emerald
         return {
@@ -423,6 +441,24 @@ export default function Pitch() {
           bulletLight: 'bg-[#cbd5e1]',
           borderColor: 'border-slate-800'
         };
+      case 8: // Slide 9 - Conclusão / Investimento - Elegant Dark Gold Forest
+        return {
+          bg: 'from-[#1a1c0d] via-[#0b0c05] to-[#000000]',
+          accentText: 'text-[#f59e0b]', // Vibrant Amber Gold
+          subtitleText: 'text-amber-100/90',
+          badgeBg: 'bg-[#451a03] border border-[#f59e0b]/20 text-[#f59e0b]',
+          bulletLight: 'bg-[#f59e0b]',
+          borderColor: 'border-amber-900'
+        };
+      case 9: // Slide 10 - Agradecimento & Contactos - Modern Emerald Jade
+        return {
+          bg: 'from-[#012217] via-[#00140e] to-[#000000]',
+          accentText: 'text-[#34d399]', // Soft emerald mint
+          subtitleText: 'text-emerald-100/95',
+          badgeBg: 'bg-[#042f1a] border border-[#34d399]/20 text-[#34d399]',
+          bulletLight: 'bg-[#34d399]',
+          borderColor: 'border-emerald-950'
+        };
       default:
         return {
           bg: 'from-[#0f172a] via-[#020617] to-[#000000]',
@@ -493,7 +529,23 @@ export default function Pitch() {
         points: [
           "Apresente que a VIVA+ já nasce legalmente saudável como uma LDA de 10.000€ de capital social inicial.",
           "A maioria de 70% sob controle de coordenação do e-mail de David Cumbo garante celeridade decisória.",
-          "Finalize agradecendo e convide a integrar o amanhã da saúde."
+          "Prepare o terreno para o apelo do investimento final."
+        ]
+      },
+      {
+        title: "⚡ DICA 9: Conclusão e Investimento",
+        points: [
+          "Explique que o Tâmega é um oceano azul livre de concorrentes estruturados.",
+          "Destaque as margens de lucro elevadas e a receita recorrente do modelo SaaS.",
+          "Foque no forte valor ESG que facilita a captação de subsídios de fomento europeus."
+        ]
+      },
+      {
+        title: "🤝 DICA 10: Encerramento & Agradecimento",
+        points: [
+          "Faça os agradecimentos formais em nome de David Cumbo.",
+          "Apresente os contactos para reuniões pós-pitch e atração de novos investidores.",
+          "Encerre com paixão: 'Unindo inovação e proximidade para cuidar da nossa população! Muito obrigado!'"
         ]
       }
     ];
@@ -529,7 +581,7 @@ export default function Pitch() {
   // Dynamic slide content renderer designed to fit without forcing scrolling, with clean weight and high legibility
   const renderSlideRows = (content: string, insideFullscreen: boolean = false) => {
     const lines = content.split('\n').map(l => l.trim()).filter(l => l);
-    const cleanIndex = currentSlideIndex % 8;
+    const cleanIndex = currentSlideIndex % 10;
 
     // Helper for beautiful visually rich cards
     const cardPadding = insideFullscreen ? 'p-3 md:p-4' : 'p-2.5 md:p-3';
@@ -544,37 +596,41 @@ export default function Pitch() {
         { title: "Farmácias", desc: "Integração inteligente de stocks e aviamento rápido de receitas de bem-estar na região do Tâmega.", check: "✓ Logística Local" }
       ];
 
-      const hubItems = lines.length >= 3 ? lines.slice(0, 3).map((line, i) => {
-        const cleaned = line.replace(/^[•\-\s]+/, '').trim();
-        const colonIdx = cleaned.indexOf(':');
-        const title = colonIdx > -1 ? cleaned.substring(0, colonIdx).trim() : (defaultHub[i]?.title || "Tópico");
-        const desc = colonIdx > -1 ? cleaned.substring(colonIdx + 1).trim() : cleaned;
-        return { title, desc, check: defaultHub[i]?.check || "✓ Ativo" };
-      }) : defaultHub;
-
+      const introText = content || "Uma plataforma digital de saúde inovadora que conecta pacientes, profissionais de saúde e farmácias num único ecossistema inteligente, moderno e seguro.";
       const icons = [Users, Activity, Layers];
 
       return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 h-full">
-          {hubItems.map((item, idx) => {
-            const IconComp = icons[idx] || Users;
-            return (
-              <div key={idx} className={`${cardPadding} bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all`}>
-                <div>
-                  <div className="flex items-center space-x-2 mb-1.5">
-                    <div className={`p-1.5 rounded-lg ${slideTheme.badgeBg}`}>
-                      <IconComp className="w-4 h-4" />
+        <div className="flex flex-col justify-between h-full space-y-2.5 antialiased text-left">
+          {/* Top Hero introductory text */}
+          <div className="bg-gradient-to-r from-[#012216] to-[#00100a] border border-emerald-500/10 rounded-2xl p-3 md:p-4">
+            <span className="text-[9px] font-black uppercase text-emerald-400 tracking-widest block mb-0.5">Ecossistema VIVA+</span>
+            <p className={`${insideFullscreen ? 'text-xs md:text-sm lg:text-base' : 'text-[11px] md:text-xs lg:text-sm'} text-emerald-50/95 font-medium leading-relaxed`}>
+              {introText}
+            </p>
+          </div>
+          
+          {/* Stakeholder cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3">
+            {defaultHub.map((item, idx) => {
+              const IconComp = icons[idx] || Users;
+              return (
+                <div key={idx} className={`${cardPadding} bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all`}>
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1.5">
+                      <div className={`p-1.5 rounded-lg ${slideTheme.badgeBg}`}>
+                        <IconComp className="w-4 h-4" />
+                      </div>
+                      <h3 className={`${titleBase} text-white`}>{item.title}</h3>
                     </div>
-                    <h3 className={`${titleBase} text-white`}>{item.title}</h3>
+                    <p className={`${textBase} text-white/70 font-normal leading-relaxed`}>
+                      {item.desc}
+                    </p>
                   </div>
-                  <p className={`${textBase} text-white/70 font-normal leading-relaxed`}>
-                    {item.desc}
-                  </p>
+                  <span className="text-[9px] font-mono text-white/35 mt-1">{item.check}</span>
                 </div>
-                <span className="text-[10px] font-mono text-white/35 mt-2">{item.check}</span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       );
     }
@@ -969,6 +1025,134 @@ export default function Pitch() {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Slide 9 Layout (Index 8): Investor Conviction & Pitch Conclusion
+    if (cleanIndex === 8) {
+      const defaultPillars = [
+        { title: "Oceano Azul no Interior", text: "Primeira plataforma e ecossistema de saúde digital 100% dedicada ao Alto Tâmega. Ausência total de concorrentes locais integrados.", badge: "Mercado Único" },
+        { title: "Previsibilidade SaaS", text: "Receita recorrente e estável baseada em licenciamentos de clínicas/médicos parceiros e taxas de encomendas farmacêuticas.", badge: "EBITDA Saudável" },
+        { title: "Alto Valor Social / ESG", text: "Combate ativo ao isolamento geográfico de idosos e doentes crónicos. Elegível para fundos europeus de fomento rural.", badge: "Sustentabilidade" }
+      ];
+
+      const pillars = lines.length >= 3 ? lines.slice(0, 3).map((line, i) => {
+        const cleaned = line.replace(/^[•\-\s]+/, '').trim();
+        const colonIdx = cleaned.indexOf(':');
+        const title = colonIdx > -1 ? cleaned.substring(0, colonIdx).trim() : (defaultPillars[i]?.title || "Pilar");
+        const text = colonIdx > -1 ? cleaned.substring(colonIdx + 1).trim() : cleaned;
+        return { title, text, badge: defaultPillars[i]?.badge || "VIVA+ Ativo" };
+      }) : defaultPillars;
+
+      const icons = [Target, TrendingUp, Shield];
+
+      return (
+        <div className="flex flex-col justify-between h-full space-y-3 font-sans text-left">
+          {/* Top slogan */}
+          <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-2xl flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+              <span className="text-xs md:text-sm font-black uppercase text-amber-300 tracking-wider">Porquê Investir Convosco Hoje?</span>
+            </div>
+            <span className="text-[10px] bg-amber-500/25 text-white px-2.5 py-0.5 rounded-full font-mono font-bold">Retorno & Impacto</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {pillars.map((p, idx) => {
+              const IconComp = icons[idx] || Target;
+              return (
+                <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between hover:bg-white/10 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="p-1 px-1.5 bg-amber-500/10 rounded-lg text-amber-300">
+                        <IconComp className="w-4 h-4" />
+                      </div>
+                      <span className="text-[9px] font-black uppercase tracking-wider text-amber-400/80 bg-amber-400/5 px-2 py-0.5 rounded-md">{p.badge}</span>
+                    </div>
+                    <h4 className="text-xs md:text-sm font-black text-white uppercase mb-1.5 leading-tight">{p.title}</h4>
+                    <p className="text-[11px] md:text-xs text-white/80 font-normal leading-relaxed">{p.text}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="text-center py-2 bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-transparent border border-white/5 rounded-2xl">
+            <span className="text-[10px] md:text-xs font-bold text-white tracking-wide">"Investir na VIVA+ é consolidar a saúde digital onde ela é mais valiosa e necessária."</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Slide 10 Layout (Index 9): Encerramento & Agradecimentos
+    if (cleanIndex === 9) {
+      let fName = "David Cumbo";
+      let fRole = "Fundador & Core Promotor";
+      let fEmail = "davidcumbo69@gmail.com";
+      let fSede = "Chaves, Alto Tâmega, Portugal";
+      let fQuote = "Unindo inovação de excelência, segurança extrema de dados clínicos e empatia humana para garantir que ninguém seja deixado para trás.";
+
+      lines.forEach(line => {
+        const cleaned = line.replace(/^[•\-\s]+/, '').trim();
+        const colonIdx = cleaned.indexOf(':');
+        const key = colonIdx > -1 ? cleaned.substring(0, colonIdx).trim().toLowerCase() : cleaned.toLowerCase();
+        const val = colonIdx > -1 ? cleaned.substring(colonIdx + 1).trim() : '';
+
+        if (key.includes("david cumbo") || key.includes("fundador")) {
+          fName = colonIdx > -1 ? key.replace(/([•\-\s]*david cumbo[•\-\s]*)/gi, '').trim() || "David Cumbo" : "David Cumbo";
+          if (val) fRole = val;
+        } else if (key.includes("contacto") || key.includes("directo") || key.includes("email") || key.includes("@")) {
+          fEmail = val || cleaned;
+        } else if (key.includes("sede") || key.includes("registal")) {
+          fSede = val || cleaned;
+        } else if (key.includes("visão final") || key.includes("quote") || key.includes("viva+") || key.includes("unindo") || cleaned.startsWith('"')) {
+          fQuote = val || cleaned;
+        }
+      });
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full font-sans text-left">
+          {/* Left Column: Thank statement & contact cards */}
+          <div className="p-4 bg-gradient-to-br from-[#012217] to-[#00140e] border border-emerald-500/10 rounded-3xl flex flex-col justify-between hover:bg-emerald-950/20 transition-all">
+            <div>
+              <span className="text-[9px] uppercase font-black text-emerald-400 tracking-widest block mb-1">Contacto Oficial</span>
+              <h3 className="text-sm md:text-base font-black text-white uppercase tracking-tight mb-3">Agenda de Reuniões</h3>
+              
+              <div className="space-y-3 mt-4">
+                <div className="bg-white/5 p-3 rounded-2xl border border-white/5 hover:border-emerald-500/20 transition-all">
+                  <span className="text-[9px] font-black uppercase text-emerald-400 block tracking-widest">{fRole}</span>
+                  <span className="text-xs md:text-sm font-bold text-white block mt-0.5">{fName}</span>
+                  <span className="text-[11px] text-white/70 block mt-0.5 font-mono">{fEmail}</span>
+                </div>
+
+                <div className="px-1 text-[11px] text-white/60 font-mono flex items-center space-x-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                  <span>Sede: {fSede}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[9px] text-white/40 mt-3 border-t border-white/5 pt-2">
+              VIVA+ Saúde Digital LDA © 2026
+            </div>
+          </div>
+
+          {/* Right Column: Thank core image & premium quote */}
+          <div className="p-4 bg-white/5 border border-white/5 rounded-3xl flex flex-col justify-between hover:bg-white/10 transition-all text-left">
+            <div>
+              <span className="text-[9px] uppercase font-bold text-white/45 tracking-widest block mb-1 font-mono">Agradecimento</span>
+              <h4 className="text-lg md:text-xl font-black text-emerald-300 uppercase leading-none mt-1 mb-2">Muito Obrigado!</h4>
+              
+              <p className="text-[11px] md:text-xs text-white/90 italic leading-relaxed mt-3 border-l-2 border-emerald-400 pl-3 py-1 bg-white/5 rounded-r-xl">
+                {fQuote}
+              </p>
+            </div>
+
+            <div className="bg-emerald-500 text-neutral-950 p-2 md:p-2.5 rounded-2xl font-bold text-[10px] md:text-xs uppercase tracking-widest text-center mt-3 hover:scale-101 active:scale-99 transition-all cursor-pointer">
+              <span>Unir Vidas, Cuidar do Futuro</span>
             </div>
           </div>
         </div>
