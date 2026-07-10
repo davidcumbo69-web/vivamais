@@ -15,9 +15,7 @@ export function Navbar() {
   const isChatOpenOnMobile = location.pathname === '/mensagens' && searchParams.has('userId');
   
   const navItems = [
-    ...(isAdmin ? [
-      { icon: Presentation, label: 'Pitch', path: '/pitch' }
-    ] : []),
+    { icon: Presentation, label: 'Sobre', path: '/sobre' },
     { icon: Microscope, label: 'Explorar', path: '/explorar' },
     { icon: Pill, label: 'Farmácias', path: '/farmacias' },
     { icon: Hospital, label: 'Estabelecimentos', path: '/estabelecimentos' },

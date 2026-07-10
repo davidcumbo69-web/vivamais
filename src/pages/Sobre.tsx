@@ -182,7 +182,7 @@ export function serializeTopics(list: { title: string; desc: string }[]): string
     .join('\n');
 }
 
-export default function Pitch() {
+export default function Sobre() {
   const { user, profile } = useAuth();
   const isAdmin = user?.email === 'davidcumbo69@gmail.com' || profile?.email === 'davidcumbo69@gmail.com' || user?.email === 'viva@gmail.com' || profile?.email === 'viva@gmail.com' || profile?.is_admin === true || profile?.role === 'admin';
 
@@ -397,6 +397,7 @@ export default function Pitch() {
   };
 
   const openEditModal = (slide: Slide) => {
+    if (!isAdmin) return;
     setEditingSlide({ ...slide });
     setIsEditModalOpen(true);
   };
@@ -420,6 +421,7 @@ export default function Pitch() {
   };
 
   const handleAddSlide = async () => {
+    if (!isAdmin) return;
     const newSlide: Slide = {
       id: 'new-' + Date.now(),
       slide_order: slides.length + 1,
@@ -438,6 +440,7 @@ export default function Pitch() {
   };
 
   const handleDeleteSlide = async (id: string) => {
+    if (!isAdmin) return;
     if (slides.length <= 1) {
       showNotification('Não pode apagar todos os slides!', 'error');
       return;
@@ -652,28 +655,6 @@ export default function Pitch() {
     ];
     return notesList[index % notesList.length] || { title: "Dicas Gerais", points: ["Fale de forma natural.", "Mantenha o tempo controlado."] };
   };
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#eaeff2] p-6">
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-6">
-            <Lock className="w-8 h-8" />
-          </div>
-          <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">Acesso Restrito</h2>
-          <p className="text-gray-500 text-sm leading-relaxed mb-6">
-            Apenas o administrador do ecossistema VIVA+ saúde (<strong className="text-emerald-800 font-bold">davidcumbo69@gmail.com</strong> ou <strong className="text-emerald-800 font-bold">viva@gmail.com</strong>) tem privilégios para visualizar ou editar a apresentação do pitch de negócios.
-          </p>
-          <button 
-            onClick={() => window.history.back()}
-            className="w-full bg-[#006747] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg"
-          >
-            Voltar
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   const currentSlide = slides[currentSlideIndex] || DEFAULT_SLIDES[0];
   const slideTheme = getSlideTheme(currentSlideIndex);
@@ -1585,6 +1566,16 @@ export default function Pitch() {
                 </button>
               </div>
             </div>
+
+            {/* Time progress line inside fullscreen */}
+            <div className="absolute bottom-0 left-0 h-1.5 bg-white/10 w-full overflow-hidden">
+              <motion.div 
+                className={`h-full ${slideTheme.bulletLight}`}
+                initial={{ width: '0%' }}
+                animate={{ width: `${((currentSlide.duration_seconds - slideTimeLeft) / currentSlide.duration_seconds) * 100}%` }}
+                transition={{ duration: 1, ease: 'linear' }}
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1592,8 +1583,13 @@ export default function Pitch() {
       {/* Normal Dashboard Header */}
       <div className="max-w-6xl mx-auto mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900 uppercase tracking-tight leading-none flex items-center space-x-2">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 uppercase tracking-tight leading-none flex items-center gap-2">
             <span>Apresentação Profissional VIVA+</span>
+            {!isAdmin && (
+              <span className="text-[10px] bg-sky-50 text-sky-800 border border-sky-100 px-2.5 py-1 rounded-full font-black uppercase tracking-wider shadow-xs transform scale-95 origin-left">
+                Apenas Leitura
+              </span>
+            )}
           </h1>
           <p className="text-gray-500 text-xs font-medium leading-relaxed mt-2">
             Painel interativo de controle de pitch de 5 minutos desenvolvido para o júri e investidores.
@@ -1610,13 +1606,15 @@ export default function Pitch() {
             <span>Modo Apresentação (Tela Cheia)</span>
           </button>
 
-          <button
-            onClick={handleAddSlide}
-            className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center space-x-1.5 shadow-sm"
-          >
-            <Plus className="w-4 h-4 text-emerald-600" />
-            <span>Adicionar Slide</span>
-          </button>
+          {isAdmin && (
+            <button
+              onClick={handleAddSlide}
+              className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center space-x-1.5 shadow-sm"
+            >
+              <Plus className="w-4 h-4 text-emerald-600" />
+              <span>Adicionar Slide</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1689,20 +1687,24 @@ export default function Pitch() {
             {/* Slide footer controls */}
             <div className="flex items-center justify-between pt-6 border-t border-white/10 z-10">
               <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => openEditModal(currentSlide)}
-                  className="bg-white/10 hover:bg-white/25 text-white p-2.5 rounded-xl transition-all"
-                  title="Editar este Slide"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDeleteSlide(currentSlide.id)}
-                  className="bg-red-500/20 hover:bg-red-500 text-red-100 p-2.5 rounded-xl transition-all"
-                  title="Eliminar este Slide"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={() => openEditModal(currentSlide)}
+                      className="bg-white/10 hover:bg-white/25 text-white p-2.5 rounded-xl transition-all"
+                      title="Editar este Slide"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSlide(currentSlide.id)}
+                      className="bg-red-500/20 hover:bg-red-500 text-red-100 p-2.5 rounded-xl transition-all"
+                      title="Eliminar este Slide"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
 
               <div className="flex items-center space-x-2">
@@ -1777,7 +1779,8 @@ export default function Pitch() {
           </div>
 
           {/* Editor Rápido de Tópicos e Conteúdo (Direct slide layout modifier) */}
-          <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl space-y-4 text-left">
+          {isAdmin && (
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl space-y-4 text-left">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-3 gap-2">
               <div className="flex items-center space-x-2 text-[#006747]">
                 <Edit className="w-4.5 h-4.5 text-[#006747] shrink-0" />
@@ -1984,6 +1987,7 @@ export default function Pitch() {
               )}
             </div>
           </div>
+          )}
         </div>
 
         {/* Slide Sequencer & Dynamic Speaker Notes */}
