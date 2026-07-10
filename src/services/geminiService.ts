@@ -237,20 +237,51 @@ export const geminiService = {
   },
 
   /**
-   * Compares multiple clinical histories to identify patterns, medications and exams.
+   * Compares multiple clinical histories, patient profiles, prescriptions, taken doses history, and clinical notes to identify trends, compliance patterns, and recommend next clinical steps.
    */
-  async analyzePatientEvolution(histories: any[]): Promise<AIEvolutionResult> {
+  async analyzePatientEvolution(
+    histories: any[],
+    patientData?: {
+      profile?: any;
+      prescriptions?: any[];
+      privateNotes?: string;
+    }
+  ): Promise<AIEvolutionResult> {
     const ai = getAI();
+    
+    let analysisPayload = `Dados do Histórico Clínico (Consultas):\n${JSON.stringify(histories, null, 2)}\n\n`;
+    
+    if (patientData) {
+      if (patientData.profile) {
+        analysisPayload += `Perfil do Paciente:\n${JSON.stringify(patientData.profile, null, 2)}\n\n`;
+      }
+      if (patientData.prescriptions) {
+        analysisPayload += `Receitas e Acompanhamento de Doses Tomadas:\n${JSON.stringify(patientData.prescriptions, null, 2)}\n\n`;
+      }
+      if (patientData.privateNotes) {
+        analysisPayload += `Notas Clínicas Privadas do Profissional:\n${patientData.privateNotes}\n\n`;
+      }
+    }
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [
         {
-          text: `Analise a evolução deste paciente com base no histórico de consultas:
-          ${JSON.stringify(histories, null, 2)}`
+          text: `Analise de forma aprofundada a evolução clínica, o perfil, as receitas, o histórico de adesão medicamentosa e as notas de evolução deste paciente.
+
+${analysisPayload}
+
+Por favor, faça uma correlação precisa entre:
+1. Perfil do paciente (idade, sexo, etc.) e as queixas.
+2. O histórico de consultas e suas datas (timeline do progresso ou piora).
+3. As receitas médicas emitidas, as datas em que foram criadas e as medicações prescritas.
+4. O histórico de tomadas efetivas (doses tomadas vs planejadas, dias, horários e taxa de adesão).
+5. As notas clínicas privadas (ex: se o paciente não apresenta melhoras mesmo após concluir a medicação, etc.).
+6. Recomende modificações terapêuticas (quais medicações mudar, se necessário), novos exames ou condutas apropriadas.`
         }
       ],
       config: {
-        systemInstruction: "Você é um analista médico de IA. Identifique padrões, recorrências e tendências na saúde do paciente. Extraia também as últimas medicações em curso, últimos exames realizados e sugira uma lista de condutas recomendadas.",
+        systemInstruction: "Você é um analista médico e especialista em farmacologia clínica de IA avançada. Avalie a timeline completa do paciente: perfil demográfico, consultas, receitas prescritas, o registro real de tomadas do paciente (dias e horas em que tomou os remédios e taxa de conformidade) e notas clínicas de evolução do médico. Identifique padrões de não-resposta ao tratamento, baixa adesão, efeitos ou falhas terapêuticas, e faça sugestões extremamente precisas e fundamentadas de mudança ou ajuste de medicação, solicitação de exames diagnósticos e recomendações de conduta.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,

@@ -14,6 +14,7 @@ import {
   Euro,
   MapPin,
   ChevronRight,
+  ChevronLeft,
   Bell,
   Search,
   Filter,
@@ -29,6 +30,7 @@ import {
   PieChart as PieChartIcon,
   BarChart3,
   LineChart as LineChartIcon,
+  HeartPulse,
   HeartPulse as HeartPulseIcon,
   CircleUser,
   FileText,
@@ -41,7 +43,12 @@ import {
   History,
   AlertCircle,
   ArrowUpRight,
-  Activity
+  Activity,
+  Check,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  ClipboardList
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -117,7 +124,7 @@ export default function ProfessionalDashboard() {
   
   // Patient details state
   const [selectedPatient, setSelectedPatient] = useState<Profile | null>(null);
-  const [patientTab, setPatientTab] = useState<'history' | 'ai' | 'prescriptions' | 'notes'>('history');
+  const [patientTab, setPatientTab] = useState<'history' | 'ai' | 'prescriptions' | 'notes' | 'medications'>('history');
   const [patientHistories, setPatientHistories] = useState<any[]>([]);
   const [patientPrescriptions, setPatientPrescriptions] = useState<any[]>([]);
   const [historiesLoading, setHistoriesLoading] = useState(false);
@@ -126,6 +133,19 @@ export default function ProfessionalDashboard() {
   const [patientAiResult, setPatientAiResult] = useState<AIEvolutionResult | null>(null);
   const [privateNotes, setPrivateNotes] = useState<string>('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [expandedHistories, setExpandedHistories] = useState<Record<string, boolean>>({});
+
+  const parseDurationDays = (durationStr: string) => {
+    if (!durationStr) return 1;
+    const d = durationStr.toString().toLowerCase();
+    const numMatch = d.match(/(\d+)/);
+    if (!numMatch) return 1;
+    
+    const num = parseInt(numMatch[1]);
+    if (d.includes('semana') || d.includes('week')) return num * 7;
+    if (d.includes('mês') || d.includes('mes') || d.includes('month')) return num * 30;
+    return num;
+  };
 
   // Fetch patient details on select
   useEffect(() => {
@@ -183,7 +203,11 @@ export default function ProfessionalDashboard() {
         setAiAnalyzing(false);
         return;
       }
-      const result = await geminiService.analyzePatientEvolution(patientHistories);
+      const result = await geminiService.analyzePatientEvolution(patientHistories, {
+        profile: selectedPatient,
+        prescriptions: patientPrescriptions,
+        privateNotes: privateNotes
+      });
       setPatientAiResult(result);
     } catch (error: any) {
       console.error('Error analyzing evolution:', error);
@@ -1600,52 +1624,811 @@ export default function ProfessionalDashboard() {
                     </div>
                 )}
                 {activeTab === 'patients' && (
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Meus Pacientes</h3>
-                            <div className="flex items-center space-x-3">
-                                <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-3 py-1.5 rounded-xl uppercase tracking-widest">Total: {patients.length}</span>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {patients.map(patient => (
-                                <div 
-                                    key={patient.id} 
-                                    onClick={() => setSelectedPatient(patient)}
-                                    className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col items-center text-center transition-all hover:border-[#006747]/20 hover:shadow-md hover:scale-[1.01] cursor-pointer group"
-                                >
-                                    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center overflow-hidden mb-4 border-4 border-white shadow-md relative group-hover:scale-105 transition-transform">
-                                        {sanitizeAvatarUrl(patient.avatar_url) ? (
-                                            <img src={sanitizeAvatarUrl(patient.avatar_url)!} className="w-full h-full object-cover" alt="" />
+                    selectedPatient ? (
+                        <div className="space-y-6">
+                            {/* Header */}
+                            <div className="p-8 bg-white border border-gray-100 rounded-[2.5rem] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="flex items-center space-x-4">
+                                    <Link to={`/perfil/${selectedPatient.id}`} className="w-16 h-16 bg-gray-100 rounded-3xl overflow-hidden shadow-md border-2 border-white relative hover:scale-105 transition-transform block">
+                                        {sanitizeAvatarUrl(selectedPatient.avatar_url) ? (
+                                            <img src={sanitizeAvatarUrl(selectedPatient.avatar_url)!} className="w-full h-full object-cover" alt="" />
                                         ) : (
-                                            <CircleUser className="w-full h-full text-black stroke-[1px] p-4" />
+                                            <CircleUser className="w-full h-full text-black stroke-[1.5px] p-3" />
+                                        )}
+                                    </Link>
+                                    <div>
+                                        <Link to={`/perfil/${selectedPatient.id}`} className="hover:text-[#006747] transition-colors block">
+                                            <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">
+                                                {selectedPatient.full_name || selectedPatient.username}
+                                            </h3>
+                                        </Link>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                            @{selectedPatient.username} • Paciente desde {new Date(selectedPatient.created_at || Date.now()).toLocaleDateString('pt-PT')}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-3 self-end md:self-auto">
+                                    <button 
+                                        onClick={() => {
+                                            setSelectedPatient(null);
+                                            setActiveTab('patients');
+                                        }} 
+                                        className="flex items-center space-x-2 px-5 py-3 bg-white hover:bg-gray-50 text-gray-700 hover:text-black rounded-2xl border border-gray-100 shadow-sm transition-all cursor-pointer font-black text-[10px] uppercase tracking-widest"
+                                    >
+                                        <ChevronLeft className="w-4 h-4 text-[#006747]" />
+                                        <span>Voltar aos Meus Pacientes</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Subtabs Navigation */}
+                            <div className="bg-white/40 backdrop-blur-sm p-1.5 rounded-2xl border border-gray-100 flex items-center space-x-1 overflow-x-auto no-scrollbar w-fit">
+                                <button
+                                    onClick={() => setPatientTab('history')}
+                                    className={cn(
+                                        "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
+                                        patientTab === 'history' 
+                                            ? "bg-[#006747] text-white shadow-md shadow-emerald-900/10" 
+                                            : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+                                    )}
+                                >
+                                    <History className="w-4 h-4" />
+                                    <span>Histórico Clínico</span>
+                                    {patientHistories.length > 0 && (
+                                        <span className={cn(
+                                            "ml-1.5 px-2 py-0.5 rounded-md text-[8px]",
+                                            patientTab === 'history' ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                                        )}>
+                                            {patientHistories.length}
+                                        </span>
+                                    )}
+                                </button>
+                                
+                                <button
+                                    onClick={() => setPatientTab('ai')}
+                                    className={cn(
+                                        "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
+                                        patientTab === 'ai' 
+                                            ? "bg-purple-600 text-white shadow-md shadow-purple-900/10" 
+                                            : "text-gray-400 hover:text-purple-600 hover:bg-purple-50/50"
+                                    )}
+                                >
+                                    <Brain className="w-4 h-4" />
+                                    <span>Análise IA</span>
+                                    <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+                                </button>
+
+                                <button
+                                    onClick={() => setPatientTab('medications')}
+                                    className={cn(
+                                        "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
+                                        patientTab === 'medications' 
+                                            ? "bg-rose-600 text-white shadow-md shadow-rose-900/10" 
+                                            : "text-gray-400 hover:text-rose-600 hover:bg-rose-50/50"
+                                    )}
+                                >
+                                    <Activity className="w-4 h-4" />
+                                    <span>Medicações</span>
+                                </button>
+
+                                <button
+                                    onClick={() => setPatientTab('prescriptions')}
+                                    className={cn(
+                                        "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
+                                        patientTab === 'prescriptions' 
+                                            ? "bg-blue-600 text-white shadow-md shadow-blue-900/10" 
+                                             : "text-gray-400 hover:text-blue-600 hover:bg-blue-50/50"
+                                    )}
+                                >
+                                    <Pill className="w-4 h-4" />
+                                    <span>Receitas (e mais)</span>
+                                    {patientPrescriptions.length > 0 && (
+                                         <span className={cn(
+                                             "ml-1.5 px-2 py-0.5 rounded-md text-[8px]",
+                                             patientTab === 'prescriptions' ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                                         )}>
+                                             {patientPrescriptions.length}
+                                         </span>
+                                    )}
+                                </button>
+
+                                <button
+                                    onClick={() => setPatientTab('notes')}
+                                    className={cn(
+                                        "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
+                                        patientTab === 'notes' 
+                                            ? "bg-amber-600 text-white shadow-md shadow-amber-900/10" 
+                                            : "text-gray-400 hover:text-amber-600 hover:bg-amber-50/50"
+                                    )}
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    <span>Notas Clínicas</span>
+                                </button>
+                            </div>
+
+                            {/* Subtabs Body */}
+                            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                                {patientTab === 'history' && (
+                                    <div className="space-y-6">
+                                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                                            <div>
+                                                <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Consultas e Historial Médico</h4>
+                                                <p className="text-xs text-gray-400 mt-1">Registos de consultas e anamneses anteriores</p>
+                                            </div>
+                                            <Link
+                                                to={`/professional/clinical-history/${selectedPatient.id}`}
+                                                className="flex items-center justify-center space-x-2 bg-[#006747] text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-md shadow-emerald-900/10 cursor-pointer"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                <span>Nova Consulta</span>
+                                            </Link>
+                                        </div>
+
+                                        {historiesLoading ? (
+                                            <div className="space-y-4">
+                                                {[1, 2].map(i => (
+                                                    <div key={i} className="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+                                                        <Skeleton className="h-5 w-1/4" />
+                                                        <Skeleton className="h-4 w-1/2" />
+                                                        <Skeleton className="h-12 w-full" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : patientHistories.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {patientHistories.map((history) => {
+                                                    const isExpanded = !!expandedHistories[history.id];
+                                                    return (
+                                                        <div 
+                                                            key={history.id} 
+                                                            className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm hover:border-[#006747]/20 transition-all group"
+                                                        >
+                                                            <div className="flex items-start justify-between mb-6">
+                                                                <div className="flex items-center space-x-4">
+                                                                    <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-[#006747] group-hover:scale-110 transition-all">
+                                                                        <ClipboardList className="w-6 h-6" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <h4 className="font-black text-gray-900 text-base leading-none mb-1.5">{history.primary_diagnosis || 'Diagnóstico Geral'}</h4>
+                                                                        
+                                                                        {history.prescription_code && (
+                                                                            <div className="flex items-center space-x-2 mb-2">
+                                                                                <Pill className="w-3 h-3 text-[#FF4500]" />
+                                                                                <span className="text-[10px] font-black text-[#FF4500] uppercase tracking-widest bg-[#FF4500]/5 px-2 py-0.5 rounded-full">
+                                                                                    Receita: {history.prescription_code}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+
+                                                                        <div className="flex items-center space-x-3 text-gray-400">
+                                                                            <p className="text-[10px] font-black uppercase tracking-widest flex items-center">
+                                                                                <Calendar className="w-3 h-3 mr-1.5" />
+                                                                                {new Date(history.created_at).toLocaleDateString('pt-PT')}
+                                                                            </p>
+                                                                            <span className="text-[8px] opacity-20">•</span>
+                                                                            <p className="text-[10px] font-black uppercase tracking-widest flex items-center italic">
+                                                                                Por: {history.professional_name || 'Profissional'}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center space-x-2">
+                                                                    <div className={cn(
+                                                                        "px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest",
+                                                                        (history.referral === 'Sem referenciação' || !history.referral) ? "bg-gray-100 text-gray-500" : "bg-amber-100 text-amber-700"
+                                                                    )}>
+                                                                        {history.referral || 'Geral'}
+                                                                    </div>
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            setExpandedHistories(prev => ({
+                                                                                ...prev,
+                                                                                [history.id]: !prev[history.id]
+                                                                            }));
+                                                                        }}
+                                                                        className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 hover:text-black"
+                                                                    >
+                                                                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                                                <div className="p-3 bg-gray-50 rounded-2xl">
+                                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">IMC</p>
+                                                                    <p className="text-xs font-black text-[#006747]">{history.calculated_imc || history.imc || '-'}</p>
+                                                                </div>
+                                                                <div className="p-3 bg-gray-50 rounded-2xl">
+                                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Temp</p>
+                                                                    <p className="text-xs font-black text-gray-900">{history.temperature ? `${history.temperature}°C` : '-'}</p>
+                                                                </div>
+                                                                <div className="p-3 bg-gray-50 rounded-2xl">
+                                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">T. Arterial</p>
+                                                                    <p className="text-xs font-black text-gray-900">{history.bloodPressure || history.blood_pressure || '-'}</p>
+                                                                </div>
+                                                                <div className="p-3 bg-gray-50 rounded-2xl">
+                                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">SpO2</p>
+                                                                    <p className="text-xs font-black text-[#006747]">{history.spo2 ? `${history.spo2}%` : '-'}</p>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="space-y-3">
+                                                                <div>
+                                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Queixa Principal</p>
+                                                                    <p className="text-xs text-gray-600 line-clamp-2">{history.mainComplaint || history.main_complaint || 'Nenhuma queixa descrita'}</p>
+                                                                </div>
+                                                                
+                                                                {isExpanded && (
+                                                                    <div className="pt-6 space-y-6 border-t border-gray-100 mt-6 animate-in fade-in slide-in-from-top-4 duration-300">
+                                                                        {/* Section 1: Detailed Physical Exam */}
+                                                                        <div>
+                                                                            <h5 className="text-[8px] font-black text-[#006747] uppercase tracking-[0.2em] mb-4">Exame Físico Detalhado</h5>
+                                                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                                                                <div className="p-3 bg-emerald-50/30 rounded-2xl border border-emerald-50">
+                                                                                    <p className="text-[8px] font-black text-emerald-600/70 uppercase mb-1">Peso / Altura</p>
+                                                                                    <p className="text-[11px] font-bold text-gray-700">{history.weight ? `${history.weight}kg` : '-'} / {history.height ? `${history.height}m` : '-'}</p>
+                                                                                </div>
+                                                                                <div className="p-3 bg-emerald-50/30 rounded-2xl border border-emerald-50">
+                                                                                    <p className="text-[8px] font-black text-emerald-600/70 uppercase mb-1">Frequência</p>
+                                                                                    <p className="text-[11px] font-bold text-gray-700">{(history.heart_rate || history.heartRate) ? `${history.heart_rate || history.heartRate} bpm` : '-'} / {(history.respiratory_rate || history.respiratoryRate) ? `${history.respiratory_rate || history.respiratoryRate} rpm` : '-'}</p>
+                                                                                </div>
+                                                                                <div className="p-3 bg-emerald-50/30 rounded-2xl border border-emerald-50 col-span-2 md:col-span-1">
+                                                                                    <p className="text-[8px] font-black text-emerald-600/70 uppercase mb-1">Duração Sintomas</p>
+                                                                                    <p className="text-[11px] font-bold text-gray-700">{history.duration || '-'}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            {history.physical_exam_observations && (
+                                                                                <div className="mt-3 p-4 bg-gray-50 rounded-2xl">
+                                                                                    <p className="text-[8px] font-black text-gray-400 uppercase mb-1.5 ml-1">Observações do Exame</p>
+                                                                                    <p className="text-[11px] text-gray-600 leading-relaxed">{history.physical_exam_observations}</p>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* Section 2: Clinical Details */}
+                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                                            <div className="space-y-4">
+                                                                                <h5 className="text-[8px] font-black text-[#006747] uppercase tracking-[0.2em]">Antecedentes & Hábitos</h5>
+                                                                                <div className="space-y-3">
+                                                                                    {[
+                                                                                        { label: 'Doenças Prévias', val: history.previous_diseases },
+                                                                                        { label: 'Cirurgias', val: history.surgeries_history },
+                                                                                        { label: 'Alergias', val: history.allergies },
+                                                                                        { label: 'Medicação Habitual', val: history.habitual_medication },
+                                                                                        { label: 'Histórico Familiar', val: history.hereditary_diseases }
+                                                                                    ].map((item, idx) => item.val && (
+                                                                                        <div key={idx} className="bg-gray-50 p-3 rounded-xl">
+                                                                                            <p className="text-[7px] font-black text-gray-400 uppercase mb-1">{item.label}</p>
+                                                                                            <p className="text-[10px] text-gray-700 leading-tight">{item.val}</p>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                                <div className="flex space-x-2">
+                                                                                    {history.smoking_habits && (
+                                                                                        <span className="px-2 py-1 bg-amber-50 text-amber-700 text-[8px] font-black uppercase rounded-lg border border-amber-100">Fumador: {history.smoking_habits}</span>
+                                                                                    )}
+                                                                                    {history.alcohol_consumption && (
+                                                                                        <span className="px-2 py-1 bg-blue-50 text-blue-700 text-[8px] font-black uppercase rounded-lg border border-blue-100">Álcool: {history.alcohol_consumption}</span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="space-y-4">
+                                                                                <h5 className="text-[8px] font-black text-[#006747] uppercase tracking-[0.2em]">Diagnóstico & Plano</h5>
+                                                                                <div className="space-y-3">
+                                                                                    {history.secondary_diagnosis && (
+                                                                                        <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                                                                                            <p className="text-[7px] font-black text-emerald-600 uppercase mb-1">Diagnóstico Secundário</p>
+                                                                                            <p className="text-[10px] text-gray-700 font-medium">{history.secondary_diagnosis}</p>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {history.requested_exams && (
+                                                                                        <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                                                                                            <p className="text-[7px] font-black text-blue-600 uppercase mb-1">Exames Solicitados</p>
+                                                                                            <p className="text-[10px] text-gray-700 whitespace-pre-wrap">{history.requested_exams}</p>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {history.next_appointment_date && (
+                                                                                        <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                                                                                            <p className="text-[7px] font-black text-indigo-600 uppercase mb-1">Próxima Consulta</p>
+                                                                                            <p className="text-[10px] text-gray-700 font-black">{new Date(history.next_appointment_date).toLocaleDateString('pt-PT')}</p>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Section 3: Notes */}
+                                                                        <div>
+                                                                            <p className="text-[8px] font-black text-[#006747] uppercase tracking-[0.2em] mb-2">Descrição Detalhada & Conduta</p>
+                                                                            <div className="bg-gray-50 p-5 rounded-[2rem] border border-gray-100">
+                                                                                <p className="text-[11px] text-gray-600 whitespace-pre-wrap leading-relaxed">
+                                                                                    {history.clinicalNotes || history.clinical_notes || 'Sem observações clínicas.'}
+                                                                                </p>
+                                                                                {(history.detailedDescription || history.detailed_description) && (
+                                                                                    <div className="mt-4 pt-4 border-t border-gray-200/50">
+                                                                                        <p className="text-[7px] font-black text-gray-400 uppercase mb-2">Desenvolvimento do Caso</p>
+                                                                                        <p className="text-[11px] text-gray-600 leading-relaxed italic">
+                                                                                            {history.detailedDescription || history.detailed_description}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="py-16 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200 p-8">
+                                                <History className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                                <p className="font-black text-gray-500 uppercase text-xs tracking-widest">Sem Histórico Clínico</p>
+                                                <p className="text-sm text-gray-400 mt-2 max-w-xs mx-auto mb-6">Este paciente ainda não possui anamneses ou registos de consultas clínicas.</p>
+                                                <Link
+                                                    to={`/professional/clinical-history/${selectedPatient.id}`}
+                                                    className="inline-flex items-center space-x-2 bg-[#006747] text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-md cursor-pointer"
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                    <span>Iniciar Primeiro Registo</span>
+                                                </Link>
+                                            </div>
                                         )}
                                     </div>
-                                    <h4 className="font-black text-lg text-gray-900 mb-1">{patient.full_name || patient.username}</h4>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6">Paciente desde {new Date(patient.created_at || Date.now()).toLocaleDateString('pt-PT')}</p>
-                                    
-                                    <div className="flex items-center justify-center space-x-3 w-full animate-fade-in" onClick={(e) => e.stopPropagation()}>
-                                        <Link 
-                                            to={`/mensagens?userId=${patient.id}`}
-                                            className="flex-1 bg-emerald-50 text-[#006747] px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#006747] hover:text-white transition-all shadow-sm"
-                                        >
-                                            Mensagem
-                                        </Link>
-                                        <button className="flex items-center justify-center w-12 h-12 bg-gray-50 text-gray-400 rounded-2xl hover:text-gray-900 transition-all border border-gray-100">
-                                            <MoreVertical className="w-5 h-5" />
-                                        </button>
+                                )}
+
+                                {patientTab === 'ai' && (
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <h4 className="text-sm font-black text-purple-900 uppercase tracking-widest flex items-center gap-2">
+                                                    <Brain className="w-5 h-5 text-purple-600 animate-pulse" />
+                                                    <span>Análise de Evolução Clínica IA</span>
+                                                </h4>
+                                                <p className="text-xs text-gray-400 mt-1">Evolução preditiva e mapeamento de padrões com Inteligência Artificial</p>
+                                            </div>
+                                        </div>
+
+                                        {patientHistories.length === 0 ? (
+                                            <div className="py-16 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200 p-8">
+                                                <AlertCircle className="w-12 h-12 text-purple-300 mx-auto mb-4" />
+                                                <p className="font-black text-purple-900 uppercase text-xs tracking-widest">Registos Insuficientes</p>
+                                                <p className="text-sm text-gray-400 mt-2 max-w-xs mx-auto mb-6">
+                                                    São necessários registos clínicos anteriores para que a Inteligência Artificial possa cruzar os dados de evolução do paciente.
+                                                </p>
+                                                <Link
+                                                    to={`/professional/clinical-history/${selectedPatient.id}`}
+                                                    className="inline-flex items-center space-x-2 bg-[#006747] text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-md cursor-pointer"
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                    <span>Criar Registo Clínico</span>
+                                                </Link>
+                                            </div>
+                                        ) : aiAnalyzing ? (
+                                            <div className="py-20 text-center bg-gray-50 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center">
+                                                <div className="relative w-20 h-20 mb-6">
+                                                    <div className="absolute inset-0 border-4 border-purple-100 rounded-full" />
+                                                    <div className="absolute inset-0 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                                                    <Brain className="absolute inset-0 m-auto w-8 h-8 text-purple-600 animate-pulse" />
+                                                </div>
+                                                <h4 className="text-lg font-black text-purple-900 uppercase mb-2">Processamento de Inteligência Artificial</h4>
+                                                <p className="text-sm text-gray-400 max-w-xs mx-auto animate-pulse">
+                                                    A extrair padrões, tendências de sinais vitais e sugerindo recomendações personalizadas...
+                                                </p>
+                                            </div>
+                                        ) : patientAiResult ? (
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="space-y-6"
+                                            >
+                                                {/* Summary Box */}
+                                                <div className="bg-purple-50/50 p-6 rounded-3xl border border-purple-100/60 shadow-sm relative overflow-hidden">
+                                                    <div className="absolute -right-8 -top-8 w-24 h-24 bg-purple-100/20 rounded-full blur-xl" />
+                                                    <div className="flex items-center space-x-2 text-purple-900 font-black uppercase text-[10px] tracking-wider mb-3">
+                                                        <Sparkles className="w-4 h-4 text-purple-600" />
+                                                        <span>Sumário de Evolução e Prognóstico</span>
+                                                    </div>
+                                                    <p className="text-xs font-semibold leading-relaxed text-purple-950">{patientAiResult.summary}</p>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    {/* Left column: Patterns & Trends */}
+                                                    <div className="space-y-6">
+                                                        <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 shadow-sm">
+                                                            <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-200/50 pb-2">Padrões Identificados</h5>
+                                                            <ul className="space-y-3">
+                                                                {patientAiResult.patterns?.map((pattern: string, i: number) => (
+                                                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
+                                                                        <span className="w-1.5 h-1.5 bg-purple-500 rounded-full shrink-0 mt-1.5" />
+                                                                        <span className="leading-relaxed font-medium">{pattern}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                        <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 shadow-sm">
+                                                            <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-200/50 pb-2">Tendências de Parâmetros</h5>
+                                                            <ul className="space-y-3">
+                                                                {patientAiResult.trends?.map((trend: string, i: number) => (
+                                                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
+                                                                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0 mt-1.5" />
+                                                                        <span className="leading-relaxed font-medium">{trend}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Right column: Meds & Exams */}
+                                                    <div className="space-y-6">
+                                                        <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 shadow-sm">
+                                                            <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-200/50 pb-2">Últimas Medicações em Curso</h5>
+                                                            <ul className="space-y-3">
+                                                                {patientAiResult.lastMedications?.map((med: string, i: number) => (
+                                                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
+                                                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 mt-1.5" />
+                                                                        <span className="leading-relaxed font-medium">{med}</span>
+                                                                    </li>
+                                                                ))}
+                                                                {(!patientAiResult.lastMedications || patientAiResult.lastMedications.length === 0) && (
+                                                                    <p className="text-xs text-gray-400 italic">Nenhuma medicação identificada.</p>
+                                                                )}
+                                                            </ul>
+                                                        </div>
+                                                        <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 shadow-sm">
+                                                            <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-200/50 pb-2">Últimos Exames Analisados</h5>
+                                                            <ul className="space-y-3">
+                                                                {patientAiResult.lastExams?.map((exam: string, i: number) => (
+                                                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
+                                                                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full shrink-0 mt-1.5" />
+                                                                        <span className="leading-relaxed font-medium">{exam}</span>
+                                                                    </li>
+                                                                ))}
+                                                                {(!patientAiResult.lastExams || patientAiResult.lastExams.length === 0) && (
+                                                                    <p className="text-xs text-gray-400 italic">Nenhum exame identificado.</p>
+                                                                )}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Recommendations */}
+                                                <div className="bg-gray-50 p-6 rounded-3xl border border-purple-100 shadow-sm">
+                                                    <h5 className="font-black text-purple-900 text-xs uppercase tracking-wider mb-4 border-b border-purple-100/50 pb-2 flex items-center gap-1.5">
+                                                        <Sparkles className="w-4 h-4 text-purple-600" />
+                                                        <span>Recomendações Médicas IA sugeridas</span>
+                                                    </h5>
+                                                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {patientAiResult.recommendations?.map((rec: string, i: number) => (
+                                                            <li key={i} className="flex items-start space-x-3 bg-white p-3 rounded-xl border border-purple-100/30 text-xs text-gray-700 leading-relaxed font-medium shadow-sm">
+                                                                <span className="flex items-center justify-center w-5 h-5 bg-purple-100 text-purple-700 rounded-md text-[10px] font-black shrink-0 mt-0.5">{i+1}</span>
+                                                                <span>{rec}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+
+                                                {/* Recalculate AI Button */}
+                                                <button
+                                                    onClick={handleAnalyzeEvolution}
+                                                    className="w-full bg-purple-600 text-white py-4 rounded-[2rem] font-black uppercase tracking-widest hover:bg-purple-700 active:scale-[0.99] transition-all flex items-center justify-center space-x-2 shadow-lg shadow-purple-500/20 cursor-pointer"
+                                                >
+                                                    <Brain className="w-4 h-4" />
+                                                    <span>Recalcular Análise IA</span>
+                                                </button>
+                                            </motion.div>
+                                        ) : (
+                                            <div className="bg-gray-50 rounded-3xl border border-gray-100 shadow-sm p-8 text-center flex flex-col items-center justify-center py-16">
+                                                <Brain className="w-16 h-16 text-purple-200 mb-4 animate-pulse" />
+                                                <h5 className="font-black text-purple-900 text-sm uppercase tracking-widest mb-2">Pronto para Analisar</h5>
+                                                <p className="text-sm text-gray-400 max-w-sm mx-auto mb-6">
+                                                    Clique abaixo para que a nossa Inteligência Artificial examine todas as {patientHistories.length} anamneses e determine o progresso do paciente, detetando padrões silenciosos.
+                                                </p>
+                                                <button
+                                                    onClick={handleAnalyzeEvolution}
+                                                    className="bg-purple-600 text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 active:scale-[0.98] transition-all flex items-center space-x-2 shadow-lg shadow-purple-200 cursor-pointer"
+                                                >
+                                                    <Sparkles className="w-4 h-4 text-purple-200 animate-pulse" />
+                                                    <span>Iniciar Análise Clínica IA</span>
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            ))}
-                            {patients.length === 0 && (
-                                <div className="col-span-full py-24 text-center bg-white/50 rounded-[3rem] border border-dashed border-gray-200">
-                                    <Users className="w-16 h-16 text-gray-200 mx-auto mb-6 opacity-30" />
-                                    <p className="text-lg font-bold text-gray-400">Você ainda não tem pacientes registados.</p>
-                                    <p className="text-sm text-gray-400 mt-2 px-12">Pacientes aparecerão aqui assim que agendarem consultas com você.</p>
-                                </div>
-                            )}
+                                )}
+
+                                {patientTab === 'prescriptions' && (
+                                    <div className="space-y-6">
+                                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                                            <div>
+                                                <h4 className="text-sm font-black text-blue-900 uppercase tracking-widest">Receitas Emitidas</h4>
+                                                <p className="text-xs text-gray-400 mt-1">Lista de todas as prescrições médicas passadas</p>
+                                            </div>
+                                            <Link
+                                                to={`/prescrever/${selectedPatient.id}`}
+                                                className="flex items-center justify-center space-x-2 bg-blue-600 text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-md shadow-blue-900/10 cursor-pointer"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                <span>Nova Prescrição</span>
+                                            </Link>
+                                        </div>
+
+                                        {prescriptionsLoading ? (
+                                            <div className="space-y-4">
+                                                {[1, 2].map(i => (
+                                                    <div key={i} className="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+                                                        <Skeleton className="h-5 w-1/4" />
+                                                        <Skeleton className="h-4 w-1/2" />
+                                                        <Skeleton className="h-12 w-full" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : patientPrescriptions.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {patientPrescriptions.map(prescription => (
+                                                    <div key={prescription.id} className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                                                        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-200 pb-4 mb-4 gap-2">
+                                                            <div className="flex items-center space-x-3">
+                                                                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                                                                    <Pill className="w-5 h-5" />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <p className="text-xs font-black text-gray-900 uppercase">Receita Médica</p>
+                                                                        <span className="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-black uppercase font-mono tracking-wider">{prescription.signature_code}</span>
+                                                                    </div>
+                                                                    <p className="text-[10px] text-gray-400 mt-0.5">Emitida em {new Date(prescription.created_at).toLocaleDateString('pt-PT')} por {prescription.professional_name || 'Profissional'}</p>
+                                                                </div>
+                                                            </div>
+                                                            <Link
+                                                                to={`/verificar-receita/${prescription.id}`}
+                                                                className="self-start md:self-auto flex items-center space-x-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[9px] font-black uppercase tracking-widest rounded-xl transition-colors border border-blue-100 cursor-pointer"
+                                                            >
+                                                                <span>Visualizar Receita</span>
+                                                                <ArrowUpRight className="w-3.5 h-3.5" />
+                                                            </Link>
+                                                        </div>
+
+                                                        <div className="space-y-3">
+                                                            {prescription.diagnosis && (
+                                                                <div>
+                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Diagnóstico Declarado</p>
+                                                                    <p className="text-xs font-semibold text-gray-800">{prescription.diagnosis}</p>
+                                                                </div>
+                                                            )}
+                                                            
+                                                            <div>
+                                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Medicamentos Prescritos</p>
+                                                                <div className="space-y-2">
+                                                                    {prescription.items?.map((item: any, idx: number) => (
+                                                                        <div key={item.id || idx} className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-gray-100">
+                                                                            <div>
+                                                                                <p className="text-xs font-black text-gray-900">{item.medication}</p>
+                                                                                <p className="text-[10px] text-gray-400 mt-0.5">{item.dosage} • {item.frequency} • {item.duration}</p>
+                                                                            </div>
+                                                                            {item.special_instructions && (
+                                                                                <p className="text-[10px] text-gray-500 italic max-w-xs text-right line-clamp-1">"{item.special_instructions}"</p>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                    {(!prescription.items || prescription.items.length === 0) && (
+                                                                        <p className="text-xs text-gray-400 italic">Nenhum item adicionado a esta receita.</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="py-16 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200 p-8">
+                                                <Pill className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                                <p className="font-black text-gray-500 uppercase text-xs tracking-widest">Sem Receitas</p>
+                                                <p className="text-sm text-gray-400 mt-2 max-w-xs mx-auto mb-6">Não existem receitas médicas emitidas para este paciente ainda.</p>
+                                                <Link
+                                                    to={`/prescrever/${selectedPatient.id}`}
+                                                    className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-md cursor-pointer"
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                    <span>Emitir Nova Receita</span>
+                                                </Link>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {patientTab === 'notes' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h4 className="text-sm font-black text-amber-900 uppercase tracking-widest">Bloco de Notas Clínicas Privadas</h4>
+                                            <p className="text-xs text-gray-400 mt-1">Notas pessoais e rascunhos sobre o paciente (apenas visível para si)</p>
+                                        </div>
+
+                                        <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+                                            <textarea
+                                                rows={8}
+                                                value={privateNotes}
+                                                onChange={(e) => setPrivateNotes(e.target.value)}
+                                                placeholder="Escreva notas clínicas privadas sobre o paciente aqui (por exemplo, comportamentos, rascunho de sintomas, histórico familiar relevante, etc.). Estas notas são totalmente seguras."
+                                                className="w-full bg-white border border-gray-100 rounded-2xl p-4 text-xs font-semibold leading-relaxed focus:ring-2 focus:ring-amber-500/20 focus:bg-white transition-all outline-none resize-none"
+                                            />
+                                            <div className="flex justify-end">
+                                                <button
+                                                    disabled={isSavingNotes}
+                                                    onClick={handleSavePrivateNotes}
+                                                    className="bg-amber-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 active:scale-[0.98] transition-all shadow-md shadow-amber-900/10 cursor-pointer"
+                                                >
+                                                    {isSavingNotes ? 'A Guardar...' : 'Guardar Notas'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {patientTab === 'medications' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h4 className="text-sm font-black text-rose-900 uppercase tracking-widest">Acompanhamento de Medicações do Paciente</h4>
+                                            <p className="text-xs text-gray-400 mt-1">Histórico detalhado e taxa de cumprimento/adesão da medicação prescrita</p>
+                                        </div>
+
+                                        {patientPrescriptions.length > 0 ? (
+                                            <div className="space-y-6">
+                                                {patientPrescriptions.map((presc) => (
+                                                    <div key={presc.id} className="bg-gray-50 rounded-3xl p-6 border border-gray-100">
+                                                        <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200/50">
+                                                            <div className="flex items-center space-x-2">
+                                                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                                                <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Receita #{presc.id.slice(0, 6)}</span>
+                                                            </div>
+                                                            <span className="text-[10px] font-bold text-gray-400">{new Date(presc.created_at).toLocaleDateString('pt-PT')}</span>
+                                                        </div>
+
+                                                        <div className="space-y-4">
+                                                            {(() => {
+                                                                const items = Array.isArray(presc.items) ? presc.items : [];
+                                                                if (items.length === 0) {
+                                                                    return <p className="text-xs text-gray-400 italic">Sem medicações associadas.</p>;
+                                                                }
+                                                                return items.map((item: any, iIdx: number) => {
+                                                                    const history = Object.entries(presc.taken_doses || {})
+                                                                        .filter(([key, val]) => key.startsWith(`${iIdx}-`) && typeof val === 'string')
+                                                                        .map(([key, val]) => {
+                                                                            const parts = key.split('-');
+                                                                            const dayIdx = parseInt(parts[1]);
+                                                                            const scheduledHour = parseInt(parts[2]);
+                                                                            
+                                                                            const startDate = new Date(presc.start_date || presc.created_at);
+                                                                            const scheduledTime = new Date(startDate);
+                                                                            scheduledTime.setDate(scheduledTime.getDate() + dayIdx);
+                                                                            scheduledTime.setHours(scheduledHour, 0, 0, 0);
+                                                                            
+                                                                            const actualTime = new Date(val as string);
+                                                                            const diffMs = Math.abs(actualTime.getTime() - scheduledTime.getTime());
+                                                                            const diffHours = diffMs / (1000 * 60 * 60);
+                                                                            const isWrong = diffHours > 1 || actualTime.toLocaleDateString() !== scheduledTime.toLocaleDateString();
+
+                                                                            return {
+                                                                                timestamp: val as string,
+                                                                                isWrong
+                                                                            };
+                                                                        })
+                                                                        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+                                                                    const takenCount = history.length;
+                                                                    const totalPlanned = parseDurationDays(item.duration) * (parseInt(item.frequency) || (item.frequency?.match(/(\d+)/)?.[1]) || 3);
+                                                                    const perc = totalPlanned > 0 ? (takenCount / totalPlanned) * 100 : 0;
+
+                                                                    return (
+                                                                        <div key={iIdx} className="bg-white p-5 rounded-[2rem] border border-gray-100 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                                                <div className="flex items-center space-x-3">
+                                                                                    <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-[#006747]">
+                                                                                        <Pill className="w-5 h-5" />
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <p className="text-sm font-black text-gray-800 leading-none">{item.medication}</p>
+                                                                                        <p className="text-[10px] text-gray-400 font-bold mt-1.5 uppercase">{item.dosage} • {item.frequency} • {item.duration}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center space-x-3 self-end sm:self-auto">
+                                                                                    <div className="flex flex-col items-end">
+                                                                                        <p className="text-xs font-black text-gray-900">{takenCount}/{totalPlanned} doses</p>
+                                                                                        <p className="text-[9px] font-black text-emerald-500 uppercase">Adesão: {perc.toFixed(0)}%</p>
+                                                                                    </div>
+                                                                                    <div className="w-10 h-10 rounded-full border-2 border-emerald-50 flex items-center justify-center relative overflow-hidden shrink-0">
+                                                                                        <div className="absolute inset-0 bg-emerald-500 transition-all duration-1000" style={{ height: `${perc}%`, bottom: 0, top: 'auto', opacity: 0.1 }} />
+                                                                                        <Check className="w-4 h-4 text-emerald-500" />
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {history.length > 0 && (
+                                                                                <div className="pt-3 border-t border-gray-100">
+                                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2.5 flex items-center">
+                                                                                        <Clock className="w-3.5 h-3.5 mr-1" /> Registro de Tomadas Realizadas
+                                                                                    </p>
+                                                                                    <div className="flex flex-wrap gap-2">
+                                                                                        {history.map((entry, tIdx) => {
+                                                                                            const date = new Date(entry.timestamp);
+                                                                                            return (
+                                                                                                <div key={tIdx} className={`${entry.isWrong ? 'bg-red-50 border-red-100/50 text-red-700' : 'bg-emerald-50/50 border-emerald-100/50 text-emerald-700'} px-2.5 py-1 rounded-xl border font-bold text-[9px] flex items-center`}>
+                                                                                                    {date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' })} às {date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                                                                                                    {entry.isWrong && <AlertCircle className="w-2.5 h-2.5 ml-1 opacity-70" />}
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                });
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="py-16 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                                                <Pill className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                                <p className="font-black text-gray-500 uppercase text-xs tracking-widest">Sem Medicações</p>
+                                                <p className="text-sm text-gray-400 mt-2">Não existem medicações ou receitas ativas registradas para este paciente.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Meus Pacientes</h3>
+                                <div className="flex items-center space-x-3">
+                                    <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-3 py-1.5 rounded-xl uppercase tracking-widest">Total: {patients.length}</span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {patients.map(patient => (
+                                    <div 
+                                        key={patient.id} 
+                                        onClick={() => setSelectedPatient(patient)}
+                                        className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col items-center text-center transition-all hover:border-[#006747]/20 hover:shadow-md hover:scale-[1.01] cursor-pointer group"
+                                    >
+                                        <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center overflow-hidden mb-4 border-4 border-white shadow-md relative group-hover:scale-105 transition-transform">
+                                            {sanitizeAvatarUrl(patient.avatar_url) ? (
+                                                <img src={sanitizeAvatarUrl(patient.avatar_url)!} className="w-full h-full object-cover" alt="" />
+                                            ) : (
+                                                <CircleUser className="w-full h-full text-black stroke-[1px] p-4" />
+                                            )}
+                                        </div>
+                                        <h4 className="font-black text-lg text-gray-900 mb-1">{patient.full_name || patient.username}</h4>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6">Paciente desde {new Date(patient.created_at || Date.now()).toLocaleDateString('pt-PT')}</p>
+                                        
+                                        <div className="flex items-center justify-center space-x-3 w-full animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                                            <Link 
+                                                to={`/mensagens?userId=${patient.id}`}
+                                                className="flex-1 bg-emerald-50 text-[#006747] px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#006747] hover:text-white transition-all shadow-sm"
+                                            >
+                                                Mensagem
+                                            </Link>
+                                            <button className="flex items-center justify-center w-12 h-12 bg-gray-50 text-gray-400 rounded-2xl hover:text-gray-900 transition-all border border-gray-100">
+                                                <MoreVertical className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {patients.length === 0 && (
+                                    <div className="col-span-full py-24 text-center bg-white/50 rounded-[3rem] border border-dashed border-gray-200">
+                                        <Users className="w-16 h-16 text-gray-200 mx-auto mb-6 opacity-30" />
+                                        <p className="text-lg font-bold text-gray-400">Você ainda não tem pacientes registados.</p>
+                                        <p className="text-sm text-gray-400 mt-2 px-12">Pacientes aparecerão aqui assim que agendarem consultas com você.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )
                 )}
             </div>
         )}
@@ -2044,538 +2827,6 @@ export default function ProfessionalDashboard() {
                      </div>
                   </div>
                </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
-        {/* Selected Patient Details Modal */}
-        <AnimatePresence>
-          {selectedPatient && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setSelectedPatient(null)}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              />
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden max-h-[90vh]"
-              >
-                {/* Header */}
-                <div className="p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-gray-100 rounded-3xl overflow-hidden shadow-md border-2 border-white relative">
-                      {sanitizeAvatarUrl(selectedPatient.avatar_url) ? (
-                        <img src={sanitizeAvatarUrl(selectedPatient.avatar_url)!} className="w-full h-full object-cover" alt="" />
-                      ) : (
-                        <CircleUser className="w-full h-full text-black stroke-[1.5px] p-3" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">
-                        {selectedPatient.full_name || selectedPatient.username}
-                      </h3>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                        @{selectedPatient.username} • Paciente desde {new Date(selectedPatient.created_at || Date.now()).toLocaleDateString('pt-PT')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3 self-end md:self-auto">
-                    <button 
-                      onClick={() => setSelectedPatient(null)} 
-                      className="p-3 bg-white text-gray-400 hover:text-gray-600 rounded-2xl border border-gray-100 shadow-sm transition-all cursor-pointer"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Subtabs Navigation */}
-                <div className="border-b border-gray-100 px-8 py-3 bg-white flex items-center space-x-1 overflow-x-auto no-scrollbar">
-                  <button
-                    onClick={() => setPatientTab('history')}
-                    className={cn(
-                      "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
-                      patientTab === 'history' 
-                        ? "bg-[#006747] text-white shadow-md shadow-emerald-900/10" 
-                        : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <History className="w-4 h-4" />
-                    <span>Histórico Clínico</span>
-                    {patientHistories.length > 0 && (
-                      <span className={cn(
-                        "ml-1.5 px-2 py-0.5 rounded-md text-[8px]",
-                        patientTab === 'history' ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
-                      )}>
-                        {patientHistories.length}
-                      </span>
-                    )}
-                  </button>
-                  
-                  <button
-                    onClick={() => setPatientTab('ai')}
-                    className={cn(
-                      "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
-                      patientTab === 'ai' 
-                        ? "bg-purple-600 text-white shadow-md shadow-purple-900/10" 
-                        : "text-gray-400 hover:text-purple-600 hover:bg-purple-50/50"
-                    )}
-                  >
-                    <Brain className="w-4 h-4" />
-                    <span>Análise IA</span>
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
-                  </button>
-
-                  <button
-                    onClick={() => setPatientTab('prescriptions')}
-                    className={cn(
-                      "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
-                      patientTab === 'prescriptions' 
-                        ? "bg-blue-600 text-white shadow-md shadow-blue-900/10" 
-                        : "text-gray-400 hover:text-blue-600 hover:bg-blue-50/50"
-                    )}
-                  >
-                    <Pill className="w-4 h-4" />
-                    <span>Receitas (e mais)</span>
-                    {patientPrescriptions.length > 0 && (
-                      <span className={cn(
-                        "ml-1.5 px-2 py-0.5 rounded-md text-[8px]",
-                        patientTab === 'prescriptions' ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
-                      )}>
-                        {patientPrescriptions.length}
-                      </span>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => setPatientTab('notes')}
-                    className={cn(
-                      "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
-                      patientTab === 'notes' 
-                        ? "bg-amber-600 text-white shadow-md shadow-amber-900/10" 
-                        : "text-gray-400 hover:text-amber-600 hover:bg-amber-50/50"
-                    )}
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>Notas Clínicas</span>
-                  </button>
-                </div>
-
-                {/* Subtabs Body */}
-                <div className="flex-1 overflow-y-auto p-8 bg-gray-50/30 max-h-[55vh]">
-                  {patientTab === 'history' && (
-                    <div className="space-y-6">
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                        <div>
-                          <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Consultas e Historial Médico</h4>
-                          <p className="text-xs text-gray-400 mt-1">Registos de consultas e anamneses anteriores</p>
-                        </div>
-                        <Link
-                          to={`/professional/clinical-history/${selectedPatient.id}`}
-                          className="flex items-center justify-center space-x-2 bg-[#006747] text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-md shadow-emerald-900/10 cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>Nova Consulta</span>
-                        </Link>
-                      </div>
-
-                      {historiesLoading ? (
-                        <div className="space-y-4">
-                          {[1, 2].map(i => (
-                            <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-                              <Skeleton className="h-5 w-1/4" />
-                              <Skeleton className="h-4 w-1/2" />
-                              <Skeleton className="h-12 w-full" />
-                            </div>
-                          ))}
-                        </div>
-                      ) : patientHistories.length > 0 ? (
-                        <div className="space-y-4">
-                          {patientHistories.map((history, idx) => (
-                            <div key={history.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-50 pb-4 mb-4 gap-2">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-10 h-10 bg-emerald-50 text-[#006747] rounded-xl flex items-center justify-center">
-                                    <Stethoscope className="w-5 h-5" />
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-black text-gray-900 uppercase">Anamnese / Consulta Clínica</p>
-                                    <p className="text-[10px] text-gray-400 mt-0.5">Realizada em {new Date(history.created_at).toLocaleDateString('pt-PT')} • {history.professional_name || 'Profissional'}</p>
-                                  </div>
-                                </div>
-                                <span className="self-start md:self-auto px-3 py-1 bg-emerald-50 text-[#006747] text-[9px] font-black uppercase tracking-widest rounded-full">
-                                  {history.primary_diagnosis || 'Diagnóstico Geral'}
-                                </span>
-                              </div>
-
-                              {/* Vital Signs / Quick Indicators */}
-                              {(history.weight || history.height || history.blood_pressure || history.heart_rate || history.temperature) && (
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6 bg-gray-50/50 p-4 rounded-2xl border border-gray-100/50">
-                                  {history.weight && (
-                                    <div className="text-center p-2">
-                                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Peso</p>
-                                      <p className="text-xs font-bold text-gray-900">{history.weight} kg</p>
-                                    </div>
-                                  )}
-                                  {history.height && (
-                                    <div className="text-center p-2">
-                                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Altura</p>
-                                      <p className="text-xs font-bold text-gray-900">{history.height} m</p>
-                                    </div>
-                                  )}
-                                  {history.blood_pressure && (
-                                    <div className="text-center p-2">
-                                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">P. Arterial</p>
-                                      <p className="text-xs font-bold text-gray-900">{history.blood_pressure}</p>
-                                    </div>
-                                  )}
-                                  {history.heart_rate && (
-                                    <div className="text-center p-2">
-                                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">BPM</p>
-                                      <p className="text-xs font-bold text-gray-900">{history.heart_rate} bpm</p>
-                                    </div>
-                                  )}
-                                  {history.temperature && (
-                                    <div className="text-center p-2">
-                                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Temp.</p>
-                                      <p className="text-xs font-bold text-gray-900">{history.temperature} ºC</p>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Main Complaint */}
-                              <div className="space-y-4 text-xs">
-                                <div>
-                                  <p className="font-black text-gray-400 uppercase text-[9px] tracking-wider mb-1">Queixa Principal & Sintomas</p>
-                                  <p className="text-gray-700 bg-gray-50/30 p-3 rounded-xl border border-gray-100 leading-relaxed font-semibold">{history.main_complaint || 'Nenhuma queixa descrita'}</p>
-                                </div>
-                                {history.detailed_description && (
-                                  <div>
-                                    <p className="font-black text-gray-400 uppercase text-[9px] tracking-wider mb-1">História da Doença Atual</p>
-                                    <p className="text-gray-600 leading-relaxed">{history.detailed_description}</p>
-                                  </div>
-                                )}
-                                {history.clinical_notes && (
-                                  <div>
-                                    <p className="font-black text-gray-400 uppercase text-[9px] tracking-wider mb-1">Notas Clínicas & Conduta</p>
-                                    <p className="text-gray-600 bg-amber-50/30 p-3 rounded-xl border border-amber-100/50 leading-relaxed">{history.clinical_notes}</p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200 p-8">
-                          <History className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                          <p className="font-black text-gray-500 uppercase text-xs tracking-widest">Sem Histórico Clínico</p>
-                          <p className="text-sm text-gray-400 mt-2 max-w-xs mx-auto mb-6">Este paciente ainda não possui anamneses ou registos de consultas clínicas.</p>
-                          <Link
-                            to={`/professional/clinical-history/${selectedPatient.id}`}
-                            className="inline-flex items-center space-x-2 bg-[#006747] text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-md cursor-pointer"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>Iniciar Primeiro Registo</span>
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {patientTab === 'ai' && (
-                    <div className="space-y-6">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="text-sm font-black text-purple-900 uppercase tracking-widest flex items-center gap-2">
-                            <Brain className="w-5 h-5 text-purple-600 animate-pulse" />
-                            <span>Análise de Evolução Clínica IA</span>
-                          </h4>
-                          <p className="text-xs text-gray-400 mt-1">Evolução preditiva e mapeamento de padrões com Inteligência Artificial</p>
-                        </div>
-                      </div>
-
-                      {patientHistories.length === 0 ? (
-                        <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200 p-8">
-                          <AlertCircle className="w-12 h-12 text-purple-300 mx-auto mb-4" />
-                          <p className="font-black text-purple-900 uppercase text-xs tracking-widest">Registos Insuficientes</p>
-                          <p className="text-sm text-gray-400 mt-2 max-w-xs mx-auto mb-6">
-                            São necessários registos clínicos anteriores para que a Inteligência Artificial possa cruzar os dados de evolução do paciente.
-                          </p>
-                          <Link
-                            to={`/professional/clinical-history/${selectedPatient.id}`}
-                            className="inline-flex items-center space-x-2 bg-[#006747] text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-md cursor-pointer"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>Criar Registo Clínico</span>
-                          </Link>
-                        </div>
-                      ) : aiAnalyzing ? (
-                        <div className="py-20 text-center bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center">
-                          <div className="relative w-20 h-20 mb-6">
-                            <div className="absolute inset-0 border-4 border-purple-100 rounded-full" />
-                            <div className="absolute inset-0 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
-                            <Brain className="absolute inset-0 m-auto w-8 h-8 text-purple-600 animate-pulse" />
-                          </div>
-                          <h4 className="text-lg font-black text-purple-900 uppercase mb-2">Processamento de Inteligência Artificial</h4>
-                          <p className="text-sm text-gray-400 max-w-xs mx-auto animate-pulse">
-                            A extrair padrões, tendências de sinais vitais e sugerindo recomendações personalizadas...
-                          </p>
-                        </div>
-                      ) : patientAiResult ? (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="space-y-6"
-                        >
-                          {/* Summary Box */}
-                          <div className="bg-purple-50/50 p-6 rounded-3xl border border-purple-100/60 shadow-sm relative overflow-hidden">
-                            <div className="absolute -right-8 -top-8 w-24 h-24 bg-purple-100/20 rounded-full blur-xl" />
-                            <div className="flex items-center space-x-2 text-purple-900 font-black uppercase text-[10px] tracking-wider mb-3">
-                              <Sparkles className="w-4 h-4 text-purple-600" />
-                              <span>Sumário de Evolução e Prognóstico</span>
-                            </div>
-                            <p className="text-xs font-semibold leading-relaxed text-purple-950">{patientAiResult.summary}</p>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Left column: Patterns & Trends */}
-                            <div className="space-y-6">
-                              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                                <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-50 pb-2">Padrões Identificados</h5>
-                                <ul className="space-y-3">
-                                  {patientAiResult.patterns?.map((pattern: string, i: number) => (
-                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
-                                      <span className="w-1.5 h-1.5 bg-purple-500 rounded-full shrink-0 mt-1.5" />
-                                      <span className="leading-relaxed font-medium">{pattern}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                                <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-50 pb-2">Tendências de Parâmetros</h5>
-                                <ul className="space-y-3">
-                                  {patientAiResult.trends?.map((trend: string, i: number) => (
-                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
-                                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0 mt-1.5" />
-                                      <span className="leading-relaxed font-medium">{trend}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-
-                            {/* Right column: Meds & Exams */}
-                            <div className="space-y-6">
-                              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                                <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-50 pb-2">Últimas Medicações em Curso</h5>
-                                <ul className="space-y-3">
-                                  {patientAiResult.lastMedications?.map((med: string, i: number) => (
-                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
-                                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 mt-1.5" />
-                                      <span className="leading-relaxed font-medium">{med}</span>
-                                    </li>
-                                  ))}
-                                  {(!patientAiResult.lastMedications || patientAiResult.lastMedications.length === 0) && (
-                                    <p className="text-xs text-gray-400 italic">Nenhuma medicação identificada.</p>
-                                  )}
-                                </ul>
-                              </div>
-                              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                                <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-50 pb-2">Últimos Exames Analisados</h5>
-                                <ul className="space-y-3">
-                                  {patientAiResult.lastExams?.map((exam: string, i: number) => (
-                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
-                                      <span className="w-1.5 h-1.5 bg-amber-500 rounded-full shrink-0 mt-1.5" />
-                                      <span className="leading-relaxed font-medium">{exam}</span>
-                                    </li>
-                                  ))}
-                                  {(!patientAiResult.lastExams || patientAiResult.lastExams.length === 0) && (
-                                    <p className="text-xs text-gray-400 italic">Nenhum exame identificado.</p>
-                                  )}
-                                </ul>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Recommendations */}
-                          <div className="bg-white p-6 rounded-3xl border border-purple-100 shadow-sm">
-                            <h5 className="font-black text-purple-900 text-xs uppercase tracking-wider mb-4 border-b border-purple-50 pb-2 flex items-center gap-1.5">
-                              <Sparkles className="w-4 h-4 text-purple-600" />
-                              <span>Recomendações Médicas IA sugeridas</span>
-                            </h5>
-                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {patientAiResult.recommendations?.map((rec: string, i: number) => (
-                                <li key={i} className="flex items-start space-x-3 bg-purple-50/10 p-3 rounded-xl border border-purple-100/30 text-xs text-gray-700 leading-relaxed font-medium">
-                                  <span className="flex items-center justify-center w-5 h-5 bg-purple-100 text-purple-700 rounded-md text-[10px] font-black shrink-0 mt-0.5">{i+1}</span>
-                                  <span>{rec}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          {/* Recalculate AI Button */}
-                          <button
-                            onClick={handleAnalyzeEvolution}
-                            className="w-full bg-purple-600 text-white py-4 rounded-[2rem] font-black uppercase tracking-widest hover:bg-purple-700 active:scale-[0.99] transition-all flex items-center justify-center space-x-2 shadow-lg shadow-purple-500/20 cursor-pointer"
-                          >
-                            <Brain className="w-4 h-4" />
-                            <span>Recalcular Análise IA</span>
-                          </button>
-                        </motion.div>
-                      ) : (
-                        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 text-center flex flex-col items-center justify-center py-16">
-                          <Brain className="w-16 h-16 text-purple-200 mb-4 animate-pulse" />
-                          <h5 className="font-black text-purple-900 text-sm uppercase tracking-widest mb-2">Pronto para Analisar</h5>
-                          <p className="text-sm text-gray-400 max-w-sm mx-auto mb-6">
-                            Clique abaixo para que a nossa Inteligência Artificial examine todas as {patientHistories.length} anamneses e determine o progresso do paciente, detetando padrões silenciosos.
-                          </p>
-                          <button
-                            onClick={handleAnalyzeEvolution}
-                            className="bg-purple-600 text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 active:scale-[0.98] transition-all flex items-center space-x-2 shadow-lg shadow-purple-200 cursor-pointer"
-                          >
-                            <Sparkles className="w-4 h-4 text-purple-200 animate-pulse" />
-                            <span>Iniciar Análise Clínica IA</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {patientTab === 'prescriptions' && (
-                    <div className="space-y-6">
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                        <div>
-                          <h4 className="text-sm font-black text-blue-900 uppercase tracking-widest">Receitas Emitidas</h4>
-                          <p className="text-xs text-gray-400 mt-1">Lista de todas as prescrições médicas passadas</p>
-                        </div>
-                        <Link
-                          to={`/prescrever/${selectedPatient.id}`}
-                          className="flex items-center justify-center space-x-2 bg-blue-600 text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-md shadow-blue-900/10 cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>Nova Prescrição</span>
-                        </Link>
-                      </div>
-
-                      {prescriptionsLoading ? (
-                        <div className="space-y-4">
-                          {[1, 2].map(i => (
-                            <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-                              <Skeleton className="h-5 w-1/4" />
-                              <Skeleton className="h-4 w-1/2" />
-                              <Skeleton className="h-12 w-full" />
-                            </div>
-                          ))}
-                        </div>
-                      ) : patientPrescriptions.length > 0 ? (
-                        <div className="space-y-4">
-                          {patientPrescriptions.map(prescription => (
-                            <div key={prescription.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-50 pb-4 mb-4 gap-2">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
-                                    <Pill className="w-5 h-5" />
-                                  </div>
-                                  <div>
-                                    <div className="flex items-center space-x-2">
-                                      <p className="text-xs font-black text-gray-900 uppercase">Receita Médica</p>
-                                      <span className="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-black uppercase font-mono tracking-wider">{prescription.signature_code}</span>
-                                    </div>
-                                    <p className="text-[10px] text-gray-400 mt-0.5">Emitida em {new Date(prescription.created_at).toLocaleDateString('pt-PT')} por {prescription.professional_name || 'Profissional'}</p>
-                                  </div>
-                                </div>
-                                <Link
-                                  to={`/verificar-receita/${prescription.id}`}
-                                  className="self-start md:self-auto flex items-center space-x-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[9px] font-black uppercase tracking-widest rounded-xl transition-colors border border-blue-100 cursor-pointer"
-                                >
-                                  <span>Visualizar Receita</span>
-                                  <ArrowUpRight className="w-3.5 h-3.5" />
-                                </Link>
-                              </div>
-
-                              <div className="space-y-3">
-                                {prescription.diagnosis && (
-                                  <div>
-                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Diagnóstico Declarado</p>
-                                    <p className="text-xs font-semibold text-gray-800">{prescription.diagnosis}</p>
-                                  </div>
-                                )}
-                                
-                                <div>
-                                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Medicamentos Prescritos</p>
-                                  <div className="space-y-2">
-                                    {prescription.items?.map((item: any, idx: number) => (
-                                      <div key={item.id || idx} className="flex justify-between items-center bg-gray-50/50 p-3.5 rounded-xl border border-gray-100/50">
-                                        <div>
-                                          <p className="text-xs font-black text-gray-900">{item.medication}</p>
-                                          <p className="text-[10px] text-gray-400 mt-0.5">{item.dosage} • {item.frequency} • {item.duration}</p>
-                                        </div>
-                                        {item.special_instructions && (
-                                          <p className="text-[10px] text-gray-500 italic max-w-xs text-right line-clamp-1">"{item.special_instructions}"</p>
-                                        )}
-                                      </div>
-                                    ))}
-                                    {(!prescription.items || prescription.items.length === 0) && (
-                                      <p className="text-xs text-gray-400 italic">Nenhum item adicionado a esta receita.</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200 p-8">
-                          <Pill className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                          <p className="font-black text-gray-500 uppercase text-xs tracking-widest">Sem Receitas</p>
-                          <p className="text-sm text-gray-400 mt-2 max-w-xs mx-auto mb-6">Não existem receitas médicas emitidas para este paciente ainda.</p>
-                          <Link
-                            to={`/prescrever/${selectedPatient.id}`}
-                            className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-md cursor-pointer"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>Emitir Nova Receita</span>
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {patientTab === 'notes' && (
-                    <div className="space-y-6">
-                      <div>
-                        <h4 className="text-sm font-black text-amber-900 uppercase tracking-widest">Bloco de Notas Clínicas Privadas</h4>
-                        <p className="text-xs text-gray-400 mt-1">Notas pessoais e rascunhos sobre o paciente (apenas visível para si)</p>
-                      </div>
-
-                      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                        <textarea
-                          rows={8}
-                          value={privateNotes}
-                          onChange={(e) => setPrivateNotes(e.target.value)}
-                          placeholder="Escreva notas clínicas privadas sobre o paciente aqui (por exemplo, comportamentos, rascunho de sintomas, histórico familiar relevante, etc.). Estas notas são totalmente seguras."
-                          className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl p-4 text-xs font-semibold leading-relaxed focus:ring-2 focus:ring-amber-500/20 focus:bg-white transition-all outline-none resize-none"
-                        />
-                        <div className="flex justify-end">
-                          <button
-                            disabled={isSavingNotes}
-                            onClick={handleSavePrivateNotes}
-                            className="bg-amber-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 active:scale-[0.98] transition-all shadow-md shadow-amber-900/10 cursor-pointer"
-                          >
-                            {isSavingNotes ? 'A Guardar...' : 'Guardar Notas'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
             </div>
           )}
         </AnimatePresence>
