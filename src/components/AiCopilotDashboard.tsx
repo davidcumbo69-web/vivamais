@@ -80,6 +80,113 @@ interface SavedExam {
   imageInterpretation?: AIImageExamResult;
 }
 
+function getDefaultMockExams(patientId: string): SavedExam[] {
+  return [
+    {
+      id: `mock-cbc-old-${patientId}`,
+      date: '10/06/2026',
+      type: 'laboratory',
+      subType: 'Hemograma Completo',
+      source: 'text',
+      rawContent: 'Hemoglobina: 11.2 g/dL (Referência: 12-16)\nLeucócitos: 11.500/uL (Referência: 4.000-11.000)\nPlaquetas: 145.000/uL (Referência: 150.000-450.000)',
+      interpretation: {
+        summary: "Hemograma de 10/06/2026 revelando anemia microcítica leve e leucocitose discreta.",
+        mainAlterations: ["Hemoglobina baixa (Anemia leve)", "Leucocitose discreta", "Plaquetopenia limítrofe"],
+        alteredValues: [
+          { parameter: "Hemoglobina", value: "11.2 g/dL", referenceRange: "12.0 - 16.0 g/dL", level: "altered" },
+          { parameter: "Leucócitos", value: "11.500 /uL", referenceRange: "4.000 - 11.000 /uL", level: "altered" },
+          { parameter: "Plaquetas", value: "145.000 /uL", referenceRange: "150.000 - 450.000 /uL", level: "altered" }
+        ],
+        clinicalInterpretation: "Anemia discreta a esclarecer, possivelmente ferropénica ou associada a doença crónica, acompanhada de discreta reação inflamatória/infeciosa secundária.",
+        hypotheses: ["Anemia Ferropénica", "Anemia de Doença Crónica", "Processo inflamatório agudo/subagudo"],
+        differentialDiagnoses: ["Anemia por carência de ferro", "Anemia secundária a infeção/inflamação"],
+        complementaryExams: ["Cinética do ferro", "PCR", "Ferritina sérica"],
+        recommendations: ["Avaliar cinética do ferro", "Repetir hemograma em 30 dias para monitorização"],
+        urgency: "low",
+        limitations: "Sem outras séries bioquímicas associadas.",
+        confidence: 95
+      }
+    },
+    {
+      id: `mock-cbc-new-${patientId}`,
+      date: '10/07/2026',
+      type: 'laboratory',
+      subType: 'Hemograma Completo',
+      source: 'text',
+      rawContent: 'Hemoglobina: 13.5 g/dL (Referência: 12-16)\nLeucócitos: 7.200/uL (Referência: 4.000-11.000)\nPlaquetas: 210.000/uL (Referência: 150.000-450.000)',
+      interpretation: {
+        summary: "Hemograma de 10/07/2026 demonstrando recuperação completa e normalização de todas as séries hematológicas.",
+        mainAlterations: [],
+        alteredValues: [
+          { parameter: "Hemoglobina", value: "13.5 g/dL", referenceRange: "12.0 - 16.0 g/dL", level: "normal" },
+          { parameter: "Leucócitos", value: "7.200 /uL", referenceRange: "4.000 - 11.000 /uL", level: "normal" },
+          { parameter: "Plaquetas", value: "210.000 /uL", referenceRange: "150.000 - 450.000 /uL", level: "normal" }
+        ],
+        clinicalInterpretation: "Quadro hematológico atual perfeitamente normalizado, sem sinais de anemia, infeção ou plaquetopenia.",
+        hypotheses: ["Resolução de quadro anterior"],
+        differentialDiagnoses: [],
+        complementaryExams: [],
+        recommendations: ["Manter vigilância clínica habitual"],
+        urgency: "low",
+        limitations: "Nenhuma limitação identificada.",
+        confidence: 98
+      }
+    },
+    {
+      id: `mock-lipid-old-${patientId}`,
+      date: '10/06/2026',
+      type: 'laboratory',
+      subType: 'Perfil Lipídico',
+      source: 'text',
+      rawContent: 'Colesterol Total: 245 mg/dL (Referência: < 200)\nLDL: 165 mg/dL (Referência: < 100)\nTriglicerídeos: 210 mg/dL (Referência: < 150)\nHDL: 38 mg/dL (Referência: > 40)',
+      interpretation: {
+        summary: "Perfil lipídico indicando dislipidemia mista marcada por hipercolesterolemia e hipertrigliceridemia com HDL baixo.",
+        mainAlterations: ["Colesterol Total elevado", "LDL elevado", "Triglicerídeos elevados", "HDL baixo"],
+        alteredValues: [
+          { parameter: "Colesterol Total", value: "245 mg/dL", referenceRange: "< 200 mg/dL", level: "altered" },
+          { parameter: "LDL (Mau Colesterol)", value: "165 mg/dL", referenceRange: "< 100 mg/dL", level: "altered" },
+          { parameter: "Triglicerídeos", value: "210 mg/dL", referenceRange: "< 150 mg/dL", level: "altered" },
+          { parameter: "HDL (Bom Colesterol)", value: "38 mg/dL", referenceRange: "> 40 mg/dL", level: "altered" }
+        ],
+        clinicalInterpretation: "Dislipidemia mista com risco cardiovascular aumentado. Necessidade de intervenção dietética e higiénica.",
+        hypotheses: ["Dislipidemia Mista", "Risco Cardiovascular Moderado"],
+        differentialDiagnoses: ["Hipercolesterolemia familiar", "Dislipidemia secundária a hábitos alimentares"],
+        complementaryExams: ["Glicémia em jejum", "TSH", "Função hepática"],
+        recommendations: ["Iniciar plano alimentar de baixo teor de gordura saturada", "Estimular atividade física regular"],
+        urgency: "medium",
+        limitations: "Sem dados de risco cardiovascular global.",
+        confidence: 96
+      }
+    },
+    {
+      id: `mock-lipid-new-${patientId}`,
+      date: '10/07/2026',
+      type: 'laboratory',
+      subType: 'Perfil Lipídico',
+      source: 'text',
+      rawContent: 'Colesterol Total: 195 mg/dL (Referência: < 200)\nLDL: 110 mg/dL (Referência: < 100)\nTriglicerídeos: 145 mg/dL (Referência: < 150)\nHDL: 45 mg/dL (Referência: > 40)',
+      interpretation: {
+        summary: "Melhoria acentuada do perfil lipídico após medidas de intervenção, aproximando-se dos valores ótimos.",
+        mainAlterations: ["LDL ligeiramente elevado"],
+        alteredValues: [
+          { parameter: "Colesterol Total", value: "195 mg/dL", referenceRange: "< 200 mg/dL", level: "normal" },
+          { parameter: "LDL (Mau Colesterol)", value: "110 mg/dL", referenceRange: "< 100 mg/dL", level: "altered" },
+          { parameter: "Triglicerídeos", value: "145 mg/dL", referenceRange: "< 150 mg/dL", level: "normal" },
+          { parameter: "HDL (Bom Colesterol)", value: "45 mg/dL", referenceRange: "> 40 mg/dL", level: "normal" }
+        ],
+        clinicalInterpretation: "Excelente evolução lipídica com redução de colesterol total, LDL e triglicerídeos para níveis seguros.",
+        hypotheses: ["Melhoria dietética contínua"],
+        differentialDiagnoses: [],
+        complementaryExams: [],
+        recommendations: ["Manter dieta equilibrada e atividade física", "Reavaliar em 6 meses"],
+        urgency: "low",
+        limitations: "Nenhuma.",
+        confidence: 97
+      }
+    }
+  ];
+}
+
 export default function AiCopilotDashboard({
   selectedPatient,
   patientHistories,
@@ -143,26 +250,77 @@ export default function AiCopilotDashboard({
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Load saved exams from LocalStorage on mount
+  // Load saved exams and cached AI results from LocalStorage on mount/patient change
   useEffect(() => {
     if (selectedPatient) {
       const saved = localStorage.getItem(`patient_exams_${selectedPatient.id}`);
+      let loadedExams: SavedExam[] = [];
       if (saved) {
         try {
-          setExamsList(JSON.parse(saved));
+          loadedExams = JSON.parse(saved);
         } catch (e) {
           console.error("Error loading exams", e);
         }
-      } else {
-        setExamsList([]);
       }
       
-      // Reset modules and chat
-      setClinicalSummary(null);
+      // If no exams exist for this patient, initialize them with default mock exams
+      if (loadedExams.length === 0) {
+        loadedExams = getDefaultMockExams(selectedPatient.id);
+        localStorage.setItem(`patient_exams_${selectedPatient.id}`, JSON.stringify(loadedExams));
+      }
+      
+      setExamsList(loadedExams);
+      
+      // Load previous cached AI analyses if they exist
+      const cachedSummary = localStorage.getItem(`patient_ai_summary_${selectedPatient.id}`);
+      if (cachedSummary) {
+        try {
+          setClinicalSummary(JSON.parse(cachedSummary));
+        } catch (e) {
+          setClinicalSummary(null);
+        }
+      } else {
+        setClinicalSummary(null);
+      }
+
+      const cachedMeds = localStorage.getItem(`patient_ai_meds_${selectedPatient.id}`);
+      if (cachedMeds) {
+        try {
+          setMedsEvaluation(JSON.parse(cachedMeds));
+        } catch (e) {
+          setMedsEvaluation(null);
+        }
+      } else {
+        setMedsEvaluation(null);
+      }
+
+      const cachedDiff = localStorage.getItem(`patient_ai_diff_${selectedPatient.id}`);
+      if (cachedDiff) {
+        try {
+          setDiffDiagnosis(JSON.parse(cachedDiff));
+        } catch (e) {
+          setDiffDiagnosis(null);
+        }
+      } else {
+        setDiffDiagnosis(null);
+      }
+
+      const cachedReport = localStorage.getItem(`patient_ai_report_${selectedPatient.id}`);
+      const cachedReportText = localStorage.getItem(`patient_ai_report_text_${selectedPatient.id}`);
+      if (cachedReport && cachedReportText) {
+        try {
+          setClinicalReport(JSON.parse(cachedReport));
+          setEditedReportText(cachedReportText);
+        } catch (e) {
+          setClinicalReport(null);
+          setEditedReportText('');
+        }
+      } else {
+        setClinicalReport(null);
+        setEditedReportText('');
+      }
+
       setComparisonResult(null);
-      setMedsEvaluation(null);
-      setDiffDiagnosis(null);
-      setClinicalReport(null);
       setChatMessages([]);
     }
   }, [selectedPatient]);
@@ -242,29 +400,29 @@ Retorne um objeto JSON contendo:
       const ai = await geminiService.askAICopilot(context, [], prompt);
       const parsed = JSON.parse(ai.response);
       setClinicalSummary(parsed);
+      if (selectedPatient) {
+        localStorage.setItem(`patient_ai_summary_${selectedPatient.id}`, JSON.stringify(parsed));
+      }
       showNotification('Resumo clínico atualizado com IA.', 'success');
     } catch (e: any) {
       console.error(e);
       // Fallback structure if parsing fails
-      setClinicalSummary({
+      const fallback = {
         activeProblems: ["Hipertensão Arterial Sistémica", "Sintomas de fadiga recente"],
         activeTreatments: ["Amlodipina 5mg ID", "Adesão parcial às consultas"],
         highRisks: ["Risco de pico hipertensivo se descontinuar medicação"],
         nextSteps: ["Solicitar Perfil Renal e ECG de repouso", "Agendar monitorização de 24h (MAPA)"],
         criticalAlerts: ["Última leitura de pressão sistólica elevada (145 mmHg)"],
         evolutionText: "O paciente mostra uma resposta parcial ao tratamento atual, mantendo valores de pressão arterial limítrofes. Queixa-se de astenia e falta de energia após iniciar o bloqueador de canais de cálcio."
-      });
+      };
+      setClinicalSummary(fallback);
+      if (selectedPatient) {
+        localStorage.setItem(`patient_ai_summary_${selectedPatient.id}`, JSON.stringify(fallback));
+      }
     } finally {
       setLoadingStates(prev => ({ ...prev, summary: false }));
     }
   };
-
-  // Run automatically on load if empty
-  useEffect(() => {
-    if (selectedPatient && !clinicalSummary) {
-      handleGenerateSummary();
-    }
-  }, [selectedPatient]);
 
   // File to base64 helper
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -389,6 +547,9 @@ Retorne um objeto JSON contendo:
       
       const res = await geminiService.evaluateMedications(context.profile, currentMeds, patientPrescriptions);
       setMedsEvaluation(res);
+      if (selectedPatient) {
+        localStorage.setItem(`patient_ai_meds_${selectedPatient.id}`, JSON.stringify(res));
+      }
       showNotification('Segurança farmacológica analisada.', 'success');
     } catch (e: any) {
       console.error(e);
@@ -398,13 +559,6 @@ Retorne um objeto JSON contendo:
     }
   };
 
-  // Run automatically if tab selected and empty
-  useEffect(() => {
-    if (activeModule === 'meds' && !medsEvaluation) {
-      handleEvaluateMeds();
-    }
-  }, [activeModule]);
-
   // Differential Diagnosis
   const handleGetDifferential = async () => {
     setLoadingStates(prev => ({ ...prev, diff: true }));
@@ -412,6 +566,9 @@ Retorne um objeto JSON contendo:
       const context = getPatientContext();
       const res = await geminiService.suggestDifferentialDiagnoses(context);
       setDiffDiagnosis(res);
+      if (selectedPatient) {
+        localStorage.setItem(`patient_ai_diff_${selectedPatient.id}`, JSON.stringify(res));
+      }
       showNotification('Diagnósticos diferenciais sugeridos.', 'success');
     } catch (e: any) {
       console.error(e);
@@ -420,12 +577,6 @@ Retorne um objeto JSON contendo:
       setLoadingStates(prev => ({ ...prev, diff: false }));
     }
   };
-
-  useEffect(() => {
-    if (activeModule === 'diff' && !diffDiagnosis) {
-      handleGetDifferential();
-    }
-  }, [activeModule]);
 
   // Clinical Report
   const handleGenerateReport = async () => {
@@ -476,6 +627,10 @@ Assinatura Digitalizada do Profissional Responsável
 Código de Validação: DOCTA-AI-${Math.random().toString(36).substring(2, 8).toUpperCase()}
 `;
       setEditedReportText(text);
+      if (selectedPatient) {
+        localStorage.setItem(`patient_ai_report_${selectedPatient.id}`, JSON.stringify(res));
+        localStorage.setItem(`patient_ai_report_text_${selectedPatient.id}`, text);
+      }
       showNotification('Relatório Clínico estruturado com sucesso.', 'success');
     } catch (e: any) {
       console.error(e);
@@ -1043,7 +1198,33 @@ Código de Validação: DOCTA-AI-${Math.random().toString(36).substring(2, 8).to
                     <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-1.5">Exame Anterior (Base de Comparação)</label>
                     <select
                       value={selectedOldExamId}
-                      onChange={(e) => setSelectedOldExamId(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedOldExamId(val);
+                        if (val) {
+                          const selectedExam = examsList.find(exam => exam.id === val);
+                          if (selectedExam) {
+                            // Find another exam of the same subType that is NOT the same exam
+                            const matchingRecent = examsList.find(exam => 
+                              exam.id !== val && 
+                              exam.subType.toLowerCase() === selectedExam.subType.toLowerCase()
+                            );
+                            if (matchingRecent) {
+                              setSelectedNewExamId(matchingRecent.id);
+                            } else {
+                              // Fallback: match by partial name
+                              const partialRecent = examsList.find(exam =>
+                                exam.id !== val &&
+                                (exam.subType.toLowerCase().includes(selectedExam.subType.toLowerCase()) ||
+                                 selectedExam.subType.toLowerCase().includes(exam.subType.toLowerCase()))
+                              );
+                              if (partialRecent) {
+                                setSelectedNewExamId(partialRecent.id);
+                              }
+                            }
+                          }
+                        }
+                      }}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-purple-600 focus:outline-none"
                     >
                       <option value="">Selecione o exame mais antigo...</option>
@@ -1056,7 +1237,33 @@ Código de Validação: DOCTA-AI-${Math.random().toString(36).substring(2, 8).to
                     <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-1.5">Exame Recente (Atual)</label>
                     <select
                       value={selectedNewExamId}
-                      onChange={(e) => setSelectedNewExamId(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedNewExamId(val);
+                        if (val) {
+                          const selectedExam = examsList.find(exam => exam.id === val);
+                          if (selectedExam) {
+                            // Find another exam of the same subType that is NOT the same exam
+                            const matchingOld = examsList.find(exam => 
+                              exam.id !== val && 
+                              exam.subType.toLowerCase() === selectedExam.subType.toLowerCase()
+                            );
+                            if (matchingOld) {
+                              setSelectedOldExamId(matchingOld.id);
+                            } else {
+                              // Fallback: match by partial name
+                              const partialOld = examsList.find(exam =>
+                                exam.id !== val &&
+                                (exam.subType.toLowerCase().includes(selectedExam.subType.toLowerCase()) ||
+                                 selectedExam.subType.toLowerCase().includes(exam.subType.toLowerCase()))
+                              );
+                              if (partialOld) {
+                                setSelectedOldExamId(partialOld.id);
+                              }
+                            }
+                          }
+                        }
+                      }}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-purple-600 focus:outline-none"
                     >
                       <option value="">Selecione o exame mais recente...</option>
@@ -1286,7 +1493,16 @@ Código de Validação: DOCTA-AI-${Math.random().toString(36).substring(2, 8).to
                     </div>
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <div className="py-20 text-center bg-gray-50 rounded-3xl border border-gray-100">
+                  <Pill className="w-16 h-16 text-rose-200 mx-auto mb-4" />
+                  <h5 className="text-sm font-black text-rose-950 uppercase mb-1">Pronto para Analisar Segurança Farmacológica</h5>
+                  <p className="text-xs text-gray-400 max-w-xs mx-auto mb-4">Analise interações, duplicidades e riscos orgânicos do esquema medicamentoso com base na IA.</p>
+                  <button onClick={handleEvaluateMeds} className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-md shadow-rose-500/10">
+                    Analisar Segurança Farmacológica
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -1380,7 +1596,16 @@ Código de Validação: DOCTA-AI-${Math.random().toString(36).substring(2, 8).to
                     </div>
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <div className="py-20 text-center bg-gray-50 rounded-3xl border border-gray-100">
+                  <BarChart3 className="w-16 h-16 text-indigo-200 mx-auto mb-4" />
+                  <h5 className="text-sm font-black text-indigo-950 uppercase mb-1">Pronto para Calcular Diagnósticos Diferenciais</h5>
+                  <p className="text-xs text-gray-400 max-w-xs mx-auto mb-4">Determine hipóteses diagnósticas e exames complementares com mais assertividade utilizando a IA.</p>
+                  <button onClick={handleGetDifferential} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-md shadow-indigo-500/10">
+                    Calcular Diagnósticos Diferenciais
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -1443,7 +1668,12 @@ Código de Validação: DOCTA-AI-${Math.random().toString(36).substring(2, 8).to
                   
                   <textarea
                     value={editedReportText}
-                    onChange={(e) => setEditedReportText(e.target.value)}
+                    onChange={(e) => {
+                      setEditedReportText(e.target.value);
+                      if (selectedPatient) {
+                        localStorage.setItem(`patient_ai_report_text_${selectedPatient.id}`, e.target.value);
+                      }
+                    }}
                     className="w-full min-h-[440px] bg-slate-50 border border-slate-200 rounded-3xl p-6 font-mono text-[11px] leading-relaxed text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-inner"
                   />
                 </div>
