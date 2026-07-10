@@ -352,5 +352,407 @@ Por favor, faça uma correlação precisa entre:
     });
 
     return JSON.parse(response.text || '{}');
+  },
+
+  /**
+   * Interprets laboratory exams using Gemini 3.5 Flash.
+   */
+  async interpretLabExam(examType: string, content: string, base64Image?: string, patientContext?: any): Promise<AILabExamResult> {
+    const ai = getAI();
+    let prompt = `Interprete o seguinte exame de laboratório:
+Tipo do Exame: ${examType}
+Dados do Exame (texto/resultados):
+${content}
+`;
+    if (patientContext) {
+      prompt += `\nContexto Clínico do Paciente: ${JSON.stringify(patientContext, null, 2)}`;
+    }
+
+    const contents: any[] = [];
+    if (base64Image) {
+      contents.push({
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: base64Image
+        }
+      });
+      prompt += `\n(Uma imagem do exame foi enviada e está anexada acima para análise visual/multimodal)`;
+    }
+    contents.push({ text: prompt });
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents,
+      config: {
+        systemInstruction: "Você é um patologista clínico e especialista médico sênior. Forneça uma interpretação precisa e profissional do exame de laboratório, destacando valores alterados, hipóteses diagnósticas e recomendações. Identifique as limitações e o nível de urgência.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            summary: { type: Type.STRING },
+            mainAlterations: { type: Type.ARRAY, items: { type: Type.STRING } },
+            alteredValues: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  parameter: { type: Type.STRING },
+                  value: { type: Type.STRING },
+                  referenceRange: { type: Type.STRING },
+                  level: { type: Type.STRING, enum: ["normal", "altered", "critical"] }
+                },
+                required: ["parameter", "value", "level"]
+              }
+            },
+            clinicalInterpretation: { type: Type.STRING },
+            hypotheses: { type: Type.ARRAY, items: { type: Type.STRING } },
+            differentialDiagnoses: { type: Type.ARRAY, items: { type: Type.STRING } },
+            complementaryExams: { type: Type.ARRAY, items: { type: Type.STRING } },
+            recommendations: { type: Type.ARRAY, items: { type: Type.STRING } },
+            urgency: { type: Type.STRING, enum: ["low", "medium", "high", "critical"] },
+            limitations: { type: Type.STRING },
+            confidence: { type: Type.INTEGER }
+          },
+          required: ["summary", "mainAlterations", "alteredValues", "clinicalInterpretation", "hypotheses", "recommendations", "urgency", "confidence"]
+        }
+      }
+    });
+
+    return JSON.parse(response.text || '{}');
+  },
+
+  /**
+   * Interprets image exams (multimodal) using Gemini 3.5 Flash.
+   */
+  async interpretImageExam(examType: string, base64Image: string, textContext?: string, patientContext?: any): Promise<AIImageExamResult> {
+    const ai = getAI();
+    let prompt = `Interprete este exame de imagem médica:
+Tipo de Imagem: ${examType}
+Observações clínicas adicionais/Sintomas: ${textContext || 'Nenhum'}
+`;
+    if (patientContext) {
+      prompt += `\nContexto Clínico do Paciente: ${JSON.stringify(patientContext, null, 2)}`;
+    }
+
+    const contents = [
+      {
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: base64Image
+        }
+      },
+      {
+        text: prompt
+      }
+    ];
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents,
+      config: {
+        systemInstruction: "Você é um radiologista e especialista em diagnóstico por imagem sênior. Forneça uma análise multimodal precisa e profissional da imagem, descrevendo os achados radiológicos, conclusão clínica e nível de confiança. Descreva áreas suspeitas quando houver.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            findings: { type: Type.STRING },
+            conclusion: { type: Type.STRING },
+            confidence: { type: Type.INTEGER },
+            annotatedRegions: { type: Type.STRING }
+          },
+          required: ["findings", "conclusion", "confidence"]
+        }
+      }
+    });
+
+    return JSON.parse(response.text || '{}');
+  },
+
+  /**
+   * Compares an older exam with a newer exam using Gemini 3.5 Flash.
+   */
+  async compareExams(oldExam: any, currentExam: any): Promise<AIExamComparisonResult> {
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [
+        {
+          text: `Compare o exame anterior com o exame atual e identifique a evolução clínica do paciente.
+Exame Anterior:
+${JSON.stringify(oldExam, null, 2)}
+
+Exame Atual:
+${JSON.stringify(currentExam, null, 2)}`
+        }
+      ],
+      config: {
+        systemInstruction: "Você é um assistente médico especialista de alto nível. Analise a evolução temporal entre os dois exames e determine de forma detalhada o que melhorou, o que piorou, a percentagem de evolução estimada global, e gere pontos de comparação claros e estruturados.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            improved: { type: Type.ARRAY, items: { type: Type.STRING } },
+            worsened: { type: Type.ARRAY, items: { type: Type.STRING } },
+            evolutionPercentage: { type: Type.INTEGER },
+            summary: { type: Type.STRING },
+            comparisonPoints: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  parameter: { type: Type.STRING },
+                  oldVal: { type: Type.STRING },
+                  newVal: { type: Type.STRING },
+                  changeType: { type: Type.STRING, enum: ["better", "worse", "neutral"] }
+                },
+                required: ["parameter", "oldVal", "newVal", "changeType"]
+              }
+            }
+          },
+          required: ["improved", "worsened", "evolutionPercentage", "summary", "comparisonPoints"]
+        }
+      }
+    });
+
+    return JSON.parse(response.text || '{}');
+  },
+
+  /**
+   * Diagnósticos Diferenciais com base em todo o contexto do paciente.
+   */
+  async suggestDifferentialDiagnoses(patientData: any): Promise<AIDifferentialDiagnosisResult> {
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [
+        {
+          text: `Com base em todas as informações clínicas disponíveis do paciente, formule hipóteses diagnósticas diferenciais fundamentadas:
+Dados Clínicos do Paciente:
+${JSON.stringify(patientData, null, 2)}`
+        }
+      ],
+      config: {
+        systemInstruction: "Você é um clínico especialista sênior. Formule o diagnóstico mais provável e hipóteses alternativas detalhando a probabilidade de cada uma e a justificação clínica fundamentada na literatura médica.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            mostProbable: {
+              type: Type.OBJECT,
+              properties: {
+                name: { type: Type.STRING },
+                probability: { type: Type.INTEGER },
+                justification: { type: Type.STRING }
+              },
+              required: ["name", "probability", "justification"]
+            },
+            alternatives: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  probability: { type: Type.INTEGER },
+                  justification: { type: Type.STRING }
+                },
+                required: ["name", "probability", "justification"]
+              }
+            }
+          },
+          required: ["mostProbable", "alternatives"]
+        }
+      }
+    });
+
+    return JSON.parse(response.text || '{}');
+  },
+
+  /**
+   * Avaliação de Medicações.
+   */
+  async evaluateMedications(patientProfile: any, currentMeds: string[], ongoingPrescriptions?: any[]): Promise<AIMedicationEvaluationResult> {
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [
+        {
+          text: `Avalie o perfil de medicamentos do paciente.
+Perfil do Paciente: ${JSON.stringify(patientProfile, null, 2)}
+Lista de Medicamentos em uso: ${currentMeds.join(', ')}
+Receitas Registadas: ${JSON.stringify(ongoingPrescriptions, null, 2)}`
+        }
+      ],
+      config: {
+        systemInstruction: "Você é um farmacologista clínico e especialista médico sênior. Avalie o perfil de medicações, identificando interações medicamentosas graves, duplicações de terapia, contraindicações, doses potencialmente inadequadas e riscos específicos (hepático/renal). Sugira alertas de segurança para o médico.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            interactions: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  drugs: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  severity: { type: Type.STRING, enum: ["low", "medium", "high"] },
+                  description: { type: Type.STRING }
+                },
+                required: ["drugs", "severity", "description"]
+              }
+            },
+            duplications: { type: Type.ARRAY, items: { type: Type.STRING } },
+            contraindications: { type: Type.ARRAY, items: { type: Type.STRING } },
+            inappropriateDoses: { type: Type.ARRAY, items: { type: Type.STRING } },
+            renalRisk: { type: Type.STRING },
+            hepaticRisk: { type: Type.STRING },
+            alerts: { type: Type.ARRAY, items: { type: Type.STRING } }
+          },
+          required: ["interactions", "duplications", "contraindications", "inappropriateDoses", "renalRisk", "hepaticRisk", "alerts"]
+        }
+      }
+    });
+
+    return JSON.parse(response.text || '{}');
+  },
+
+  /**
+   * Gera um relatório clínico estruturado e pronto para exportação.
+   */
+  async generateClinicalReport(patientContext: any, aiResults: any): Promise<AIClinicalReportResult> {
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: [
+        {
+          text: `Gere um Relatório Clínico profissional compilando os seguintes dados:
+Contexto do Paciente:
+${JSON.stringify(patientContext, null, 2)}
+
+Resultados de Análises Inteligentes:
+${JSON.stringify(aiResults, null, 2)}`
+        }
+      ],
+      config: {
+        systemInstruction: "Você é um assistente médico especialista de alto nível de uma clínica premium. Escreva um relatório clínico detalhado, profissional, elegante e formal adequado para partilhar com outros especialistas ou incluir no prontuário oficial.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            summary: { type: Type.STRING },
+            findings: { type: Type.STRING },
+            interpretation: { type: Type.STRING },
+            hypotheses: { type: Type.ARRAY, items: { type: Type.STRING } },
+            plan: { type: Type.STRING },
+            recommendations: { type: Type.ARRAY, items: { type: Type.STRING } },
+            observations: { type: Type.STRING }
+          },
+          required: ["summary", "findings", "interpretation", "hypotheses", "plan", "recommendations", "observations"]
+        }
+      }
+    });
+
+    return JSON.parse(response.text || '{}');
+  },
+
+  /**
+   * Responde a perguntas sobre o paciente no Chat Inteligente.
+   */
+  async askAICopilot(patientContext: any, messageHistory: { role: 'user' | 'model'; parts: { text: string }[] }[], question: string): Promise<AIChatResponse> {
+    const ai = getAI();
+    
+    // Convert to proper structure
+    const systemInstruction = `Você é o Copiloto Clínico Inteligente da plataforma THE DOCTA. Você ajuda o médico na tomada de decisões com base em evidências.
+Você possui todo o histórico do paciente abaixo:
+${JSON.stringify(patientContext, null, 2)}
+
+Importante:
+1. Responda de forma concisa, objetiva, científica e fundamentada na medicina moderna.
+2. NUNCA mencione que você é apenas uma IA sem conhecimento físico ou que substitui um médico - o médico já sabe disso. Seja seu braço direito clínico.
+3. Use formatação Markdown elegante para facilitar a leitura rápida.
+4. Sugira sempre 3 perguntas relevantes complementares que o médico pode querer fazer a seguir.`;
+
+    const chatContents = [...messageHistory];
+    chatContents.push({
+      role: 'user',
+      parts: [{ text: question }]
+    });
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: chatContents,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            response: { type: Type.STRING },
+            suggestedQuestions: { type: Type.ARRAY, items: { type: Type.STRING } }
+          },
+          required: ["response", "suggestedQuestions"]
+        }
+      }
+    });
+
+    return JSON.parse(response.text || '{}');
   }
 };
+
+export interface AILabExamResult {
+  summary: string;
+  mainAlterations: string[];
+  alteredValues: { parameter: string; value: string; referenceRange: string; level: 'normal' | 'altered' | 'critical' }[];
+  clinicalInterpretation: string;
+  hypotheses: string[];
+  differentialDiagnoses: string[];
+  complementaryExams: string[];
+  recommendations: string[];
+  urgency: 'low' | 'medium' | 'high' | 'critical';
+  limitations: string;
+  confidence: number;
+}
+
+export interface AIImageExamResult {
+  findings: string;
+  conclusion: string;
+  confidence: number;
+  annotatedRegions?: string;
+}
+
+export interface AIExamComparisonResult {
+  improved: string[];
+  worsened: string[];
+  evolutionPercentage: number;
+  summary: string;
+  comparisonPoints: { parameter: string; oldVal: string; newVal: string; changeType: 'better' | 'worse' | 'neutral' }[];
+}
+
+export interface AIDifferentialDiagnosisResult {
+  mostProbable: { name: string; probability: number; justification: string };
+  alternatives: { name: string; probability: number; justification: string }[];
+}
+
+export interface AIMedicationEvaluationResult {
+  interactions: { drugs: string[]; severity: 'low' | 'medium' | 'high'; description: string }[];
+  duplications: string[];
+  contraindications: string[];
+  inappropriateDoses: string[];
+  renalRisk: string;
+  hepaticRisk: string;
+  alerts: string[];
+}
+
+export interface AIClinicalReportResult {
+  summary: string;
+  findings: string;
+  interpretation: string;
+  hypotheses: string[];
+  plan: string;
+  recommendations: string[];
+  observations: string;
+}
+
+export interface AIChatResponse {
+  response: string;
+  suggestedQuestions: string[];
+}

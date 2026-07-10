@@ -56,6 +56,7 @@ import { cn, sanitizeAvatarUrl } from '../lib/utils';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Header } from '../components/layout/Header';
 import { geminiService, type AIEvolutionResult } from '../services/geminiService';
+import AiCopilotDashboard from '../components/AiCopilotDashboard';
 import { 
   BarChart, 
   Bar, 
@@ -1980,162 +1981,13 @@ export default function ProfessionalDashboard() {
                                 )}
 
                                 {patientTab === 'ai' && (
-                                    <div className="space-y-6">
-                                        <div className="flex justify-between items-center">
-                                            <div>
-                                                <h4 className="text-sm font-black text-purple-900 uppercase tracking-widest flex items-center gap-2">
-                                                    <Brain className="w-5 h-5 text-purple-600 animate-pulse" />
-                                                    <span>Análise de Evolução Clínica IA</span>
-                                                </h4>
-                                                <p className="text-xs text-gray-400 mt-1">Evolução preditiva e mapeamento de padrões com Inteligência Artificial</p>
-                                            </div>
-                                        </div>
-
-                                        {patientHistories.length === 0 ? (
-                                            <div className="py-16 text-center bg-gray-50 rounded-3xl border border-dashed border-gray-200 p-8">
-                                                <AlertCircle className="w-12 h-12 text-purple-300 mx-auto mb-4" />
-                                                <p className="font-black text-purple-900 uppercase text-xs tracking-widest">Registos Insuficientes</p>
-                                                <p className="text-sm text-gray-400 mt-2 max-w-xs mx-auto mb-6">
-                                                    São necessários registos clínicos anteriores para que a Inteligência Artificial possa cruzar os dados de evolução do paciente.
-                                                </p>
-                                                <Link
-                                                    to={`/professional/clinical-history/${selectedPatient.id}`}
-                                                    className="inline-flex items-center space-x-2 bg-[#006747] text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-md cursor-pointer"
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                    <span>Criar Registo Clínico</span>
-                                                </Link>
-                                            </div>
-                                        ) : aiAnalyzing ? (
-                                            <div className="py-20 text-center bg-gray-50 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center">
-                                                <div className="relative w-20 h-20 mb-6">
-                                                    <div className="absolute inset-0 border-4 border-purple-100 rounded-full" />
-                                                    <div className="absolute inset-0 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
-                                                    <Brain className="absolute inset-0 m-auto w-8 h-8 text-purple-600 animate-pulse" />
-                                                </div>
-                                                <h4 className="text-lg font-black text-purple-900 uppercase mb-2">Processamento de Inteligência Artificial</h4>
-                                                <p className="text-sm text-gray-400 max-w-xs mx-auto animate-pulse">
-                                                    A extrair padrões, tendências de sinais vitais e sugerindo recomendações personalizadas...
-                                                </p>
-                                            </div>
-                                        ) : patientAiResult ? (
-                                            <motion.div 
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="space-y-6"
-                                            >
-                                                {/* Summary Box */}
-                                                <div className="bg-purple-50/50 p-6 rounded-3xl border border-purple-100/60 shadow-sm relative overflow-hidden">
-                                                    <div className="absolute -right-8 -top-8 w-24 h-24 bg-purple-100/20 rounded-full blur-xl" />
-                                                    <div className="flex items-center space-x-2 text-purple-900 font-black uppercase text-[10px] tracking-wider mb-3">
-                                                        <Sparkles className="w-4 h-4 text-purple-600" />
-                                                        <span>Sumário de Evolução e Prognóstico</span>
-                                                    </div>
-                                                    <p className="text-xs font-semibold leading-relaxed text-purple-950">{patientAiResult.summary}</p>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {/* Left column: Patterns & Trends */}
-                                                    <div className="space-y-6">
-                                                        <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 shadow-sm">
-                                                            <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-200/50 pb-2">Padrões Identificados</h5>
-                                                            <ul className="space-y-3">
-                                                                {patientAiResult.patterns?.map((pattern: string, i: number) => (
-                                                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
-                                                                        <span className="w-1.5 h-1.5 bg-purple-500 rounded-full shrink-0 mt-1.5" />
-                                                                        <span className="leading-relaxed font-medium">{pattern}</span>
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                        <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 shadow-sm">
-                                                            <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-200/50 pb-2">Tendências de Parâmetros</h5>
-                                                            <ul className="space-y-3">
-                                                                {patientAiResult.trends?.map((trend: string, i: number) => (
-                                                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
-                                                                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0 mt-1.5" />
-                                                                        <span className="leading-relaxed font-medium">{trend}</span>
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Right column: Meds & Exams */}
-                                                    <div className="space-y-6">
-                                                        <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 shadow-sm">
-                                                            <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-200/50 pb-2">Últimas Medicações em Curso</h5>
-                                                            <ul className="space-y-3">
-                                                                {patientAiResult.lastMedications?.map((med: string, i: number) => (
-                                                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
-                                                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 mt-1.5" />
-                                                                        <span className="leading-relaxed font-medium">{med}</span>
-                                                                    </li>
-                                                                ))}
-                                                                {(!patientAiResult.lastMedications || patientAiResult.lastMedications.length === 0) && (
-                                                                    <p className="text-xs text-gray-400 italic">Nenhuma medicação identificada.</p>
-                                                                )}
-                                                            </ul>
-                                                        </div>
-                                                        <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 shadow-sm">
-                                                            <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider mb-4 border-b border-gray-200/50 pb-2">Últimos Exames Analisados</h5>
-                                                            <ul className="space-y-3">
-                                                                {patientAiResult.lastExams?.map((exam: string, i: number) => (
-                                                                    <li key={i} className="flex items-start space-x-2.5 text-xs text-gray-700">
-                                                                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full shrink-0 mt-1.5" />
-                                                                        <span className="leading-relaxed font-medium">{exam}</span>
-                                                                    </li>
-                                                                ))}
-                                                                {(!patientAiResult.lastExams || patientAiResult.lastExams.length === 0) && (
-                                                                    <p className="text-xs text-gray-400 italic">Nenhum exame identificado.</p>
-                                                                )}
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Recommendations */}
-                                                <div className="bg-gray-50 p-6 rounded-3xl border border-purple-100 shadow-sm">
-                                                    <h5 className="font-black text-purple-900 text-xs uppercase tracking-wider mb-4 border-b border-purple-100/50 pb-2 flex items-center gap-1.5">
-                                                        <Sparkles className="w-4 h-4 text-purple-600" />
-                                                        <span>Recomendações Médicas IA sugeridas</span>
-                                                    </h5>
-                                                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        {patientAiResult.recommendations?.map((rec: string, i: number) => (
-                                                            <li key={i} className="flex items-start space-x-3 bg-white p-3 rounded-xl border border-purple-100/30 text-xs text-gray-700 leading-relaxed font-medium shadow-sm">
-                                                                <span className="flex items-center justify-center w-5 h-5 bg-purple-100 text-purple-700 rounded-md text-[10px] font-black shrink-0 mt-0.5">{i+1}</span>
-                                                                <span>{rec}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-
-                                                {/* Recalculate AI Button */}
-                                                <button
-                                                    onClick={handleAnalyzeEvolution}
-                                                    className="w-full bg-purple-600 text-white py-4 rounded-[2rem] font-black uppercase tracking-widest hover:bg-purple-700 active:scale-[0.99] transition-all flex items-center justify-center space-x-2 shadow-lg shadow-purple-500/20 cursor-pointer"
-                                                >
-                                                    <Brain className="w-4 h-4" />
-                                                    <span>Recalcular Análise IA</span>
-                                                </button>
-                                            </motion.div>
-                                        ) : (
-                                            <div className="bg-gray-50 rounded-3xl border border-gray-100 shadow-sm p-8 text-center flex flex-col items-center justify-center py-16">
-                                                <Brain className="w-16 h-16 text-purple-200 mb-4 animate-pulse" />
-                                                <h5 className="font-black text-purple-900 text-sm uppercase tracking-widest mb-2">Pronto para Analisar</h5>
-                                                <p className="text-sm text-gray-400 max-w-sm mx-auto mb-6">
-                                                    Clique abaixo para que a nossa Inteligência Artificial examine todas as {patientHistories.length} anamneses e determine o progresso do paciente, detetando padrões silenciosos.
-                                                </p>
-                                                <button
-                                                    onClick={handleAnalyzeEvolution}
-                                                    className="bg-purple-600 text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 active:scale-[0.98] transition-all flex items-center space-x-2 shadow-lg shadow-purple-200 cursor-pointer"
-                                                >
-                                                    <Sparkles className="w-4 h-4 text-purple-200 animate-pulse" />
-                                                    <span>Iniciar Análise Clínica IA</span>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
+                                    <AiCopilotDashboard
+                                        selectedPatient={selectedPatient}
+                                        patientHistories={patientHistories}
+                                        patientPrescriptions={patientPrescriptions}
+                                        privateNotes={privateNotes}
+                                        showNotification={showNotification}
+                                    />
                                 )}
 
                                 {patientTab === 'prescriptions' && (
