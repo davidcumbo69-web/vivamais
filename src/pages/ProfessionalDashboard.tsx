@@ -38,7 +38,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { cn, sanitizeAvatarUrl } from '../lib/utils';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Header } from '../components/layout/Header';
@@ -94,7 +94,15 @@ export default function ProfessionalDashboard() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'products' | 'pharmacies' | 'patients' | 'analytics'>('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const activeTab = (urlTab && ['overview', 'services', 'products', 'pharmacies', 'patients', 'analytics'].includes(urlTab))
+    ? (urlTab as 'overview' | 'services' | 'products' | 'pharmacies' | 'patients' | 'analytics')
+    : 'overview';
+
+  const setActiveTab = (newTab: 'overview' | 'services' | 'products' | 'pharmacies' | 'patients' | 'analytics') => {
+    setSearchParams({ tab: newTab });
+  };
   const [subTab, setSubTab] = useState<string>('list');
   const [myPharmacies, setMyPharmacies] = useState<any[]>([]);
   const [patients, setPatients] = useState<Profile[]>([]);
@@ -730,45 +738,7 @@ export default function ProfessionalDashboard() {
             )}
         </div>
 
-        {/* Secondary Navigation - Professional Tabs */}
-        <div className="sticky top-4 z-40 flex bg-white/90 backdrop-blur-md p-1.5 rounded-[2rem] border border-gray-100 mb-8 overflow-x-auto scrollbar-hide shadow-lg">
-            <TabButton 
-                active={activeTab === 'overview'} 
-                onClick={() => { setActiveTab('overview'); setSubTab('default'); }}
-                icon={<LayoutDashboard className="w-4 h-4" />}
-                label="Geral"
-            />
-            <TabButton 
-                active={activeTab === 'services'} 
-                onClick={() => { setActiveTab('services'); setSubTab('list'); }}
-                icon={<Stethoscope className="w-4 h-4" />}
-                label="Serviços"
-            />
-            <TabButton 
-                active={activeTab === 'products'} 
-                onClick={() => { setActiveTab('products'); setSubTab('list'); }}
-                icon={<ShoppingBag className="w-4 h-4" />}
-                label="Produtos"
-            />
-            <TabButton 
-                active={activeTab === 'pharmacies'} 
-                onClick={() => { setActiveTab('pharmacies'); setSubTab('list'); }}
-                icon={<Hospital className="w-4 h-4" />}
-                label="Farmácias"
-            />
-            <TabButton 
-                active={activeTab === 'patients'} 
-                onClick={() => { setActiveTab('patients'); setSubTab('default'); }}
-                icon={<Users className="w-4 h-4" />}
-                label="Pacientes"
-            />
-            <TabButton 
-                active={activeTab === 'analytics'} 
-                onClick={() => { setActiveTab('analytics'); setSubTab('default'); }}
-                icon={<TrendingUp className="w-4 h-4" />}
-                label="Análises"
-            />
-        </div>
+        {/* Secondary Navigation is now handled by the professional sidebar */}
 
         {loading ? (
             <div className="space-y-8">

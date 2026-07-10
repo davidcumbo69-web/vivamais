@@ -50,8 +50,8 @@ export default function Login() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#dae0e6] px-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-bold text-[#006747] mb-2 tracking-tighter">VIVA+</h1>
-          <p className="text-gray-500 font-medium tracking-wide">A Rede de Saúde do SNS</p>
+          <h1 className="text-5xl font-bold text-[#006747] mb-2 tracking-tighter">THE DOCTA</h1>
+          <p className="text-gray-500 font-medium tracking-wide">A Rede de Saúde THE DOCTA</p>
         </div>
 
         {!isConfigured && (

@@ -64,7 +64,7 @@ function AppContent() {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#dae0e6]">
         <div className="flex flex-col items-center">
-           <h1 className="text-4xl font-bold text-[#006747] animate-pulse">VIVA+</h1>
+           <h1 className="text-4xl font-bold text-[#006747] animate-pulse">THE DOCTA</h1>
            <div className="mt-4 w-12 h-1 bg-gray-200 rounded-full overflow-hidden">
               <div className="h-full bg-[#006747] animate-progress w-full" />
            </div>
