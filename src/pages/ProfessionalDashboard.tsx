@@ -126,7 +126,7 @@ export default function ProfessionalDashboard() {
   
   // Patient details state
   const [selectedPatient, setSelectedPatient] = useState<Profile | null>(null);
-  const [patientTab, setPatientTab] = useState<'history' | 'ai' | 'prescriptions' | 'notes' | 'medications' | 'evolution' | 'alerts'>('history');
+  const [patientTab, setPatientTab] = useState<'panel' | 'history' | 'ai' | 'prescriptions' | 'notes' | 'medications'>('panel');
   const [patientHistories, setPatientHistories] = useState<any[]>([]);
   const [patientPrescriptions, setPatientPrescriptions] = useState<any[]>([]);
   const [historiesLoading, setHistoriesLoading] = useState(false);
@@ -1858,6 +1858,19 @@ export default function ProfessionalDashboard() {
                             {/* Subtabs Navigation */}
                             <div className="bg-white/40 backdrop-blur-sm p-1.5 rounded-2xl border border-gray-100 flex items-center space-x-1 overflow-x-auto no-scrollbar w-fit">
                                 <button
+                                    onClick={() => setPatientTab('panel')}
+                                    className={cn(
+                                        "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
+                                        patientTab === 'panel' 
+                                            ? "bg-[#006747] text-white shadow-md shadow-emerald-900/10" 
+                                            : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+                                    )}
+                                >
+                                    <LayoutDashboard className="w-4 h-4" />
+                                    <span>Painel</span>
+                                </button>
+
+                                <button
                                     onClick={() => setPatientTab('history')}
                                     className={cn(
                                         "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
@@ -1866,8 +1879,8 @@ export default function ProfessionalDashboard() {
                                             : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
                                     )}
                                 >
-                                    <History className="w-4 h-4" />
-                                    <span>Painel</span>
+                                    <ClipboardList className="w-4 h-4" />
+                                    <span>Historial Clínico</span>
                                     {patientHistories.length > 0 && (
                                         <span className={cn(
                                             "ml-1.5 px-2 py-0.5 rounded-md text-[8px]",
@@ -1878,40 +1891,6 @@ export default function ProfessionalDashboard() {
                                     )}
                                 </button>
                                 
-                                <button
-                                    onClick={() => setPatientTab('evolution')}
-                                    className={cn(
-                                        "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
-                                        patientTab === 'evolution' 
-                                            ? "bg-blue-600 text-white shadow-md shadow-blue-900/10" 
-                                            : "text-gray-400 hover:text-blue-600 hover:bg-blue-50/50"
-                                    )}
-                                >
-                                    <LineChartIcon className="w-4 h-4" />
-                                    <span>Evolução</span>
-                                </button>
-
-                                <button
-                                    onClick={() => setPatientTab('alerts')}
-                                    className={cn(
-                                        "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
-                                        patientTab === 'alerts' 
-                                            ? "bg-red-600 text-white shadow-md shadow-red-900/10" 
-                                            : "text-gray-400 hover:text-red-600 hover:bg-red-50/50"
-                                    )}
-                                >
-                                    <AlertCircle className="w-4 h-4" />
-                                    <span>Alertas</span>
-                                    {getSmartAlerts().filter(a => a.severity === 'critical' || a.severity === 'warning').length > 0 && (
-                                        <span className={cn(
-                                            "ml-1.5 px-2 py-0.5 rounded-md text-[8px]",
-                                            patientTab === 'alerts' ? "bg-white/20 text-white" : "bg-red-100 text-red-600"
-                                        )}>
-                                            {getSmartAlerts().filter(a => a.severity === 'critical' || a.severity === 'warning').length}
-                                        </span>
-                                    )}
-                                </button>
-
                                 <button
                                     onClick={() => setPatientTab('ai')}
                                     className={cn(
@@ -1976,7 +1955,7 @@ export default function ProfessionalDashboard() {
 
                             {/* Subtabs Body */}
                             <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                                {patientTab === 'history' && (
+                                {patientTab === 'panel' && (
                                     <div className="space-y-8 animate-in fade-in duration-300">
                                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                                             {/* Coluna da Esquerda: Evolução Clínico-Terapêutica IA */}
@@ -2196,8 +2175,129 @@ export default function ProfessionalDashboard() {
                                                 )}
                                             </div>
 
-                                            {/* Coluna da Direita: Historial de Consultas */}
-                                            <div className="lg:col-span-7 space-y-6">
+                                            {/* Coluna da Direita: Alertas & Sinais Vitais */}
+                                            <div className="lg:col-span-7 space-y-8">
+                                                {/* Section 1: Alertas e Riscos */}
+                                                <div className="bg-white p-6 rounded-3xl border border-gray-150 shadow-sm space-y-4">
+                                                    <div>
+                                                        <h4 className="text-xs font-black text-gray-950 uppercase tracking-widest text-left">Mapeamento de Alertas e Riscos Sistémicos</h4>
+                                                        <p className="text-[10px] text-gray-400 mt-0.5 font-semibold text-left">Algoritmo clínico de varredura proativa em busca de sinais de degradação aguda</p>
+                                                    </div>
+                                                    
+                                                    <div className="space-y-3 max-h-[300px] overflow-y-auto no-scrollbar pr-1">
+                                                        {getSmartAlerts().length === 0 ? (
+                                                            <p className="text-[11px] text-gray-400 italic text-left">Nenhum alerta crítico ativo para o paciente.</p>
+                                                        ) : (
+                                                            getSmartAlerts().map((alert, idx) => (
+                                                                <div key={idx} className={cn(
+                                                                    "p-4 rounded-2xl border flex items-start space-x-3 text-left",
+                                                                    alert.severity === 'critical' ? "bg-red-50/50 border-red-100" :
+                                                                    alert.severity === 'warning' ? "bg-amber-50/50 border-amber-100" :
+                                                                    "bg-gray-50 border-gray-100"
+                                                                )}>
+                                                                    <div className={cn(
+                                                                        "p-2 rounded-xl flex items-center justify-center shrink-0",
+                                                                        alert.severity === 'critical' ? "bg-red-100 text-red-600" :
+                                                                        alert.severity === 'warning' ? "bg-amber-100 text-amber-600" :
+                                                                        "bg-blue-100 text-blue-600"
+                                                                    )}>
+                                                                        <AlertCircle className="w-4 h-4" />
+                                                                    </div>
+                                                                    <div className="space-y-0.5 min-w-0 flex-1">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <h5 className={cn(
+                                                                                "font-black text-[10px] uppercase truncate",
+                                                                                alert.severity === 'critical' ? "text-red-950" :
+                                                                                alert.severity === 'warning' ? "text-amber-950" :
+                                                                                "text-gray-950"
+                                                                            )}>{alert.title}</h5>
+                                                                            <span className="text-[8px] font-bold text-gray-400 uppercase font-mono shrink-0 ml-2">{alert.date}</span>
+                                                                        </div>
+                                                                        <p className="text-[11px] text-gray-600 leading-relaxed font-semibold">{alert.desc}</p>
+                                                                    </div>
+                                                                </div>
+                                                            ))
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Section 2: Gráficos de Evolução */}
+                                                <div className="bg-white p-6 rounded-3xl border border-gray-150 shadow-sm space-y-4">
+                                                    <div>
+                                                        <h4 className="text-xs font-black text-gray-950 uppercase tracking-widest text-left">Evolução de Parâmetros Clínicos</h4>
+                                                        <p className="text-[10px] text-gray-400 mt-0.5 font-semibold text-left">Visualização gráfica de sinais vitais ao longo de consultas anteriores</p>
+                                                    </div>
+
+                                                    {patientHistories.length === 0 ? (
+                                                        <div className="py-12 text-center bg-gray-50 rounded-2xl">
+                                                            <LineChartIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                                                            <p className="text-[10px] text-gray-400 font-semibold">Dados insuficientes para traçar gráficos de tendências temporais.</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 gap-6">
+                                                            {/* Blood pressure trend */}
+                                                            <div className="space-y-2 text-left">
+                                                                <h5 className="font-black text-gray-800 text-[10px] uppercase tracking-wider border-b pb-1">Pressão Arterial (Sistólica/Diastólica)</h5>
+                                                                <div className="h-[140px]">
+                                                                    <ResponsiveContainer width="100%" height="100%">
+                                                                        <AreaChart data={getEvolutionChartData()}>
+                                                                            <defs>
+                                                                                <linearGradient id="sysColorProfPanel" x1="0" y1="0" x2="0" y2="1">
+                                                                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/>
+                                                                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                                                                                </linearGradient>
+                                                                                <linearGradient id="diaColorProfPanel" x1="0" y1="0" x2="0" y2="1">
+                                                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                                                                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                                                                </linearGradient>
+                                                                            </defs>
+                                                                            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                                                                            <XAxis dataKey="date" stroke="#9ca3af" fontSize={9} />
+                                                                            <YAxis stroke="#9ca3af" fontSize={9} domain={[40, 200]} />
+                                                                            <Tooltip />
+                                                                            <Area type="monotone" dataKey="sys" name="Sistólica" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#sysColorProfPanel)" />
+                                                                            <Area type="monotone" dataKey="dia" name="Diastólica" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#diaColorProfPanel)" />
+                                                                        </AreaChart>
+                                                                    </ResponsiveContainer>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Heart rate and Oxygen Sat */}
+                                                            <div className="space-y-2 text-left">
+                                                                <h5 className="font-black text-gray-800 text-[10px] uppercase tracking-wider border-b pb-1">Frequência Cardíaca (bpm) & Saturação (%)</h5>
+                                                                <div className="h-[140px]">
+                                                                    <ResponsiveContainer width="100%" height="100%">
+                                                                        <AreaChart data={getEvolutionChartData()}>
+                                                                            <defs>
+                                                                                <linearGradient id="spo2ColorProfPanel" x1="0" y1="0" x2="0" y2="1">
+                                                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                                                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                                                                </linearGradient>
+                                                                                <linearGradient id="fcColorProfPanel" x1="0" y1="0" x2="0" y2="1">
+                                                                                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                                                                                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                                                                                </linearGradient>
+                                                                            </defs>
+                                                                            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                                                                            <XAxis dataKey="date" stroke="#9ca3af" fontSize={9} />
+                                                                            <YAxis stroke="#9ca3af" fontSize={9} domain={[40, 120]} />
+                                                                            <Tooltip />
+                                                                            <Area type="monotone" dataKey="spo2" name="Saturação SpO2 %" stroke="#10b981" strokeWidth={1.5} fillOpacity={1} fill="url(#spo2ColorProfPanel)" />
+                                                                            <Area type="monotone" dataKey="fc" name="Frequência Cardíaca" stroke="#8b5cf6" strokeWidth={1.5} fillOpacity={1} fill="url(#fcColorProfPanel)" />
+                                                                        </AreaChart>
+                                                                    </ResponsiveContainer>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {patientTab === 'history' && (
+                                    <div className="space-y-6 animate-in fade-in duration-300">
                                                 <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                                                     <div>
                                                         <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest text-left">Consultas e Historial Médico</h4>
@@ -2500,9 +2600,7 @@ export default function ProfessionalDashboard() {
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
-                                    </div>
-                                )}
+                                        )}
 
                                 {patientTab === 'ai' && (
                                     <AiCopilotDashboard
@@ -2512,119 +2610,6 @@ export default function ProfessionalDashboard() {
                                         privateNotes={privateNotes}
                                         showNotification={showNotification}
                                     />
-                                )}
-
-                                {patientTab === 'evolution' && (
-                                    <div className="space-y-6 animate-in fade-in duration-300">
-                                        <div>
-                                            <h4 className="text-sm font-black text-gray-900 uppercase tracking-wider">Evolução de Parâmetros Clínicos</h4>
-                                            <p className="text-xs text-gray-400 mt-0.5 font-semibold">Visualização gráfica do histórico de sinais vitais registados em consultas anteriores</p>
-                                        </div>
-
-                                        {patientHistories.length === 0 ? (
-                                            <div className="py-20 text-center bg-gray-50 rounded-3xl">
-                                                <LineChartIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                                <p className="text-xs text-gray-400 font-semibold">Dados insuficientes para traçar gráficos de tendências temporais.</p>
-                                            </div>
-                                        ) : (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                {/* Blood pressure trend */}
-                                                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                                                    <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider border-b pb-2">Pressão Arterial (Sistólica/Diastólica)</h5>
-                                                    <div className="h-[220px]">
-                                                        <ResponsiveContainer width="100%" height="100%">
-                                                            <AreaChart data={getEvolutionChartData()}>
-                                                                <defs>
-                                                                    <linearGradient id="sysColorProf" x1="0" y1="0" x2="0" y2="1">
-                                                                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/>
-                                                                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                                                                    </linearGradient>
-                                                                    <linearGradient id="diaColorProf" x1="0" y1="0" x2="0" y2="1">
-                                                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                                                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                                                    </linearGradient>
-                                                                </defs>
-                                                                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                                                                <XAxis dataKey="date" stroke="#9ca3af" fontSize={10} />
-                                                                <YAxis stroke="#9ca3af" fontSize={10} domain={[40, 200]} />
-                                                                <Tooltip />
-                                                                <Area type="monotone" dataKey="sys" name="Sistólica" stroke="#ef4444" strokeWidth={2.5} fillOpacity={1} fill="url(#sysColorProf)" />
-                                                                <Area type="monotone" dataKey="dia" name="Diastólica" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#diaColorProf)" />
-                                                            </AreaChart>
-                                                        </ResponsiveContainer>
-                                                    </div>
-                                                </div>
-
-                                                {/* Heart rate and Oxygen Sat */}
-                                                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                                                    <h5 className="font-black text-gray-900 text-xs uppercase tracking-wider border-b pb-2">Frequência Cardíaca (bpm) & Saturação (%)</h5>
-                                                    <div className="h-[220px]">
-                                                        <ResponsiveContainer width="100%" height="100%">
-                                                            <AreaChart data={getEvolutionChartData()}>
-                                                                <defs>
-                                                                    <linearGradient id="spo2ColorProf" x1="0" y1="0" x2="0" y2="1">
-                                                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                                                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                                                    </linearGradient>
-                                                                    <linearGradient id="fcColorProf" x1="0" y1="0" x2="0" y2="1">
-                                                                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.1}/>
-                                                                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                                                                    </linearGradient>
-                                                                </defs>
-                                                                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                                                                <XAxis dataKey="date" stroke="#9ca3af" fontSize={10} />
-                                                                <YAxis stroke="#9ca3af" fontSize={10} domain={[40, 120]} />
-                                                                <Tooltip />
-                                                                <Area type="monotone" dataKey="spo2" name="Saturação SpO2 %" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#spo2ColorProf)" />
-                                                                <Area type="monotone" dataKey="fc" name="Frequência Cardíaca" stroke="#8b5cf6" strokeWidth={2} fillOpacity={1} fill="url(#fcColorProf)" />
-                                                            </AreaChart>
-                                                        </ResponsiveContainer>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {patientTab === 'alerts' && (
-                                    <div className="space-y-6 animate-in fade-in duration-300">
-                                        <div>
-                                            <h4 className="text-sm font-black text-gray-900 uppercase tracking-wider">Mapeamento de Alertas e Riscos Sistémicos</h4>
-                                            <p className="text-xs text-gray-400 mt-0.5 font-semibold">Algoritmo clínico de varredura proativa em busca de sinais de degradação aguda</p>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            {getSmartAlerts().map((alert, idx) => (
-                                                <div key={idx} className={cn(
-                                                    "p-5 rounded-3xl border flex items-start space-x-4",
-                                                    alert.severity === 'critical' ? "bg-red-50/50 border-red-100" :
-                                                    alert.severity === 'warning' ? "bg-amber-50/50 border-amber-100" :
-                                                    "bg-gray-50 border-gray-100"
-                                                )}>
-                                                    <div className={cn(
-                                                        "p-3 rounded-2xl flex items-center justify-center shrink-0",
-                                                        alert.severity === 'critical' ? "bg-red-100 text-red-600" :
-                                                        alert.severity === 'warning' ? "bg-amber-100 text-amber-600" :
-                                                        "bg-blue-100 text-blue-600"
-                                                    )}>
-                                                        <AlertCircle className="w-5 h-5" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <div className="flex items-center space-x-2">
-                                                            <h5 className={cn(
-                                                                "font-black text-xs uppercase",
-                                                                alert.severity === 'critical' ? "text-red-950" :
-                                                                alert.severity === 'warning' ? "text-amber-950" :
-                                                                "text-gray-950"
-                                                            )}>{alert.title}</h5>
-                                                            <span className="text-[8px] font-bold text-gray-400 uppercase font-mono">{alert.date}</span>
-                                                        </div>
-                                                        <p className="text-xs text-gray-600 leading-relaxed font-semibold">{alert.desc}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
                                 )}
 
                                 {patientTab === 'prescriptions' && (
