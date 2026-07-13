@@ -52,9 +52,9 @@ const DEFAULT_SLIDES: Slide[] = [
     id: 'default-1',
     slide_order: 1,
     title: 'VIVA+ SAÚDE',
-    subtitle: 'Ecossistema Inteligente de Saúde de Portugal para a Europa',
+    subtitle: 'Ecossistema Inteligente de Saúde Global',
     category: 'Identificação',
-    content: '• Introdução: Plataforma digital pan-europeia de saúde que conecta pacientes digitalmente ativos, profissionais de saúde e farmácias num único ecossistema ágil e seguro, cobrindo todo o Portugal e expandindo-se estrategicamente para a Europa.\n• Cronograma Interativo: Tecnologia assistiva que permite ao profissional clicar no cronograma e verificar instantaneamente que o paciente já foi medicado com total rastreabilidade.\n• Influença Certificada: Apenas promotores e profissionais de saúde com registo e documentos validados pela plataforma podem atuar como criadores de conteúdos de saúde, tornando a rede totalmente segura contra fake news.\n• Grupos Académicos: Espaços de debate criados exclusivamente por profissionais licenciados para debates, esclarecimento personalizado e promoção da saúde.',
+    content: '• Introdução: Plataforma digital global de saúde que conecta pacientes digitalmente ativos, profissionais de saúde e farmácias num único ecossistema ágil e seguro, cobrindo todo o mundo e expandindo-se estrategicamente.\n• Cronograma Interativo: Tecnologia assistiva que permite ao profissional clicar no cronograma e verificar instantaneamente que o paciente já foi medicado com total rastreabilidade.\n• Influença Certificada: Apenas promotores e profissionais de saúde com registo e documentos validados pela plataforma podem atuar como criadores de conteúdos de saúde, tornando a rede totalmente segura contra fake news.\n• Grupos Académicos: Espaços de debate criados exclusivamente por profissionais licenciados para debates, esclarecimento personalizado e promoção da saúde.',
     duration_seconds: 40
   },
   {
@@ -63,7 +63,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'A Oportunidade e o Problema',
     subtitle: 'Desinformação, Desconexão e Falha de Controlo de Tomas',
     category: 'Identificação',
-    content: '• Conteúdo Sem Certificação: Proliferação perigosa de pseudo-influenciadores da saúde no digital sem verificação oficial de ordens profissionais.\n• Falta de Rastreamento: Ausência de monitorização interativa de medicação pelos cuidadores e clínicos em tempo real.\n• Descarte Tecnológico Sénior: Perda de foco ao forçar canais digitais ao público sénior não digitalizado, sendo necessário priorizar a população operacionalmente digital.\n• Fronteiras Sob Consulta: Dificuldade histórica de interoperabilidade de prescrições e dados de saúde que respeitem as normas locais em toda a União Europeia.',
+    content: '• Conteúdo Sem Certificação: Proliferação perigosa de pseudo-influenciadores da saúde no digital sem verificação oficial de ordens profissionais.\n• Falta de Rastreamento: Ausência de monitorização interativa de medicação pelos cuidadores e clínicos em tempo real.\n• Descarte Tecnológico Sénior: Perda de foco ao forçar canais digitais ao público sénior não digitalizado, sendo necessário priorizar a população operacionalmente digital.\n• Fronteiras Sob Consulta: Dificuldade histórica de interoperabilidade de prescrições e dados de saúde que respeitem as normas locais em todo o mundo.',
     duration_seconds: 45
   },
   {
@@ -72,7 +72,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'O Produto e Serviço VIVA+',
     subtitle: 'Inovação em Acompanhamento Farmacoterapêutico e Educação',
     category: 'Identificação',
-    content: '• Cronograma Assistido: Ao premir um horário no cronograma de medicação assistido de forma interativa, o profissional de saúde visualiza instantaneamente que o paciente já foi medicado.\n• Feed da Saúde Seguro: Canal integrado de Reels informativos curados onde apenas utilizadores com cédula e registos homologados criam conteúdos verificados de saúde pública.\n• Debates & Grupos de Elite: Fóruns criados restritamente por profissionais para mentoria académica de estudantes de saúde e esclarecimento ético e personalizado a cidadãos.\n• Receitas & Encomendas: Emissão de prescrições em PDF partilhadas síncronas que cruzam bases de farmácias para aviamento célere no mercado nacional e europeu.',
+    content: '• Cronograma Assistido: Ao premir um horário no cronograma de medicação assistido de forma interativa, o profissional de saúde visualiza instantaneamente que o paciente já foi medicado.\n• Feed da Saúde Seguro: Canal integrado de Reels informativos curados onde apenas utilizadores com cédula e registos homologados criam conteúdos verificados de saúde pública.\n• Debates & Grupos de Elite: Fóruns criados restritamente por profissionais para mentoria académica de estudantes de saúde e esclarecimento ético e personalizado a cidadãos.\n• Receitas & Encomendas: Emissão de prescrições em PDF partilhadas síncronas que cruzam bases de farmácias para aviamento célere no mercado global.',
     duration_seconds: 45
   },
   {
@@ -81,7 +81,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'Inovação da Empresa',
     subtitle: 'Diferencial Tecnológico de Rigor e Foco Dinâmico',
     category: 'Inovação',
-    content: '• Tecnologia Síncrona Registada: Primeiro e-cronograma médico bidirecional focado em verificação direta de adesão entre médicos e utentes.\n• Filtro de Influenciadores Doc: Verificação rigorosa em tempo real de documentos de acreditação médica antes de libertar funcionalidades de influencer, estabelecendo o padrão ouro em Portugal.\n• Foco Digital Dedicado: Direcionamento total do UX para utilizadores e cuidadores ativos digitalmente, assegurando máxima retenção na plataforma.\n• Multi-Regulação Integrada: Estrutura desenhada para Portugal inteiro de raiz, escalável para a Europa adaptando as regras e leis locais de cada país.',
+    content: '• Tecnologia Síncrona Registada: Primeiro e-cronograma médico bidirecional focado em verificação direta de adesão entre médicos e utentes.\n• Filtro de Influenciadores Doc: Verificação rigorosa em tempo real de documentos de acreditação médica antes de libertar funcionalidades de influencer, estabelecendo o padrão ouro global.\n• Foco Digital Dedicado: Direcionamento total do UX para utilizadores e cuidadores ativos digitalmente, assegurando máxima retenção na plataforma.\n• Multi-Regulação Integrada: Estrutura desenhada para o mundo inteiro de raiz, escalável internacionalmente adaptando as regras e leis locais de cada país.',
     duration_seconds: 45
   },
   {
@@ -90,7 +90,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'Business Model Canvas - Clientes & Proposta',
     subtitle: 'Unindo Valor Terapêutico e Operação Escalável',
     category: 'Business Canvas',
-    content: '• Proposta de Valor: Oferecer rigor científico de saúde, garantia de conformidade com RGPD, facilidade de controlo assistido de fármacos e debates académicos.\n• Persona Principal: População digitalmente operacional interessada em acompanhamento de saúde rápido e fiável em Portugal e Europa.\n• Segmento Académico: Estudantes do ensino superior de saúde que utilizam as comunidades profissionais para partilha de conhecimento e crescimento científico.\n• Pro de Vanguarda: Profissionais licenciados e farmácias que adquirem visibilidade qualificada e ferramentas inovadoras SaaS.',
+    content: '• Proposta de Valor: Oferecer rigor científico de saúde, garantia de conformidade com privacidade de dados, facilidade de controlo assistido de fármacos e debates académicos.\n• Persona Principal: População digitalmente operacional interessada em acompanhamento de saúde rápido e fiável em todo o mundo.\n• Segmento Académico: Estudantes do ensino superior de saúde que utilizam as comunidades profissionais para partilha de conhecimento e crescimento científico.\n• Pro de Vanguarda: Profissionais licenciados e farmácias que adquirem visibilidade qualificada e ferramentas inovadoras SaaS.',
     duration_seconds: 40
   },
   {
@@ -99,16 +99,16 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'BMC - Canais, Relação e Receitas',
     subtitle: 'Monetização de Alto Impacto para Lucro Recorrente',
     category: 'Business Canvas',
-    content: '• Canais: WebApp robusta com cronograma de medicação partilhado e feed de saúde científica homologada de fácil acesso.\n• Relacionamento: Grupos especializados criados exclusivamente por médicos para conversas personalizadas e proximidade com utentes.\n• Subscrição VIVA+ Pro: Planos mensais SaaS para clínicos e centros de saúde geriátricos ou de telemedicina em toda a Europa.\n• Marketplace e Parcerias: Margem ativa sobre aviamento na Loja VIVA e publicidade ética de laboratórios devidamente credenciados.',
+    content: '• Canais: WebApp robusta com cronograma de medicação partilhado e feed de saúde científica homologada de fácil acesso.\n• Relacionamento: Grupos especializados criados exclusivamente por médicos para conversas personalizadas e proximidade com utentes.\n• Subscrição VIVA+ Pro: Planos mensais SaaS para clínicos e centros de saúde geriátricos ou de telemedicina em todo o mundo.\n• Marketplace e Parcerias: Margem ativa sobre aviamento na Loja VIVA e publicidade ética de laboratórios devidamente credenciados.',
     duration_seconds: 45
   },
   {
     id: 'default-7',
     slide_order: 7,
     title: 'Missão, Visão e Valores',
-    subtitle: 'Alinhados com a Ciência de Vanguarda e Escala Pan-Europeia',
+    subtitle: 'Alinhados com a Ciência de Vanguarda e Escala Global',
     category: 'Missão & Valores',
-    content: '• Missão: Garantir a promoção da saúde e o controlo terapêutico assente em canais rápidos de conhecimento fidedigno, usando tecnologia inteligente assistiva.\n• Visão: Ser o maior canal pan-europeu de saúde digital verificado de Portugal para a Europa, promovendo a partilha segura e debates de integridade e ética indubitável.\n• Valores: Responsabilidade jurídica sólida, validação científica rigorosa, celeridade na comunicação médica e ética profissional protetora.',
+    content: '• Missão: Garantir a promoção da saúde e o controlo terapêutico assente em canais rápidos de conhecimento fidedigno, usando tecnologia inteligente assistiva.\n• Visão: Ser o maior canal global de saúde digital verificado, promovendo a partilha segura e debates de integridade e ética indubitável.\n• Valores: Responsabilidade jurídica sólida, validação científica rigorosa, celeridade na comunicação médica e ética profissional protetora.',
     duration_seconds: 40
   },
   {
@@ -117,7 +117,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'Forma Jurídica e Finanças',
     subtitle: 'Projetos Estruturados com Governação Corporativa',
     category: 'Forma Jurídica',
-    content: '• Direção do Ecossistema: Impulsionado por David Cumbo (Fundador e Diretor) e equipa técnica de healthtech com experiência no setor.\n• Forma de Constituição: Sociedade por Quotas (LDA) constituída legalmente em Portugal, desenhada para captar investimento institucional.\n• Alocação de Ativos: 70% detidos por David Cumbo, com 30% reservados a co-promotores de alto relevo.\n• Foco de Custos: Infraestrutura de validação de influencers certificadores, engenharia do cronograma de medicação interativo e expansão à UE.',
+    content: '• Direção do Ecossistema: Impulsionado por David Cumbo (Fundador e Diretor) e equipa técnica de healthtech com experiência no setor.\n• Forma de Constituição: Sociedade constituída legalmente com abrangência internacional, desenhada para captar investimento institucional.\n• Alocação de Ativos: 70% detidos por David Cumbo, com 30% reservados a co-promotores de alto relevo.\n• Foco de Custos: Infraestrutura de validação de influencers certificadores, engenharia do cronograma de medicação interativo e expansão internacional.',
     duration_seconds: 40
   },
   {
@@ -126,7 +126,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'Porquê Investir na VIVA+?',
     subtitle: 'Inovação de Saúde Sem Barreiras e Escalável',
     category: 'Investimento',
-    content: '• Combate à Desinformação: A primeira e única plataforma com influencers 100% verificados por documentos reais, captando anunciantes éticos premium.\n• Acompanhamento Diferenciado: O clique interativo no cronograma de medicação garante adesão e revoluciona o acompanhamento clínico rápido no ecossistema.\n• Escala Digital Europeia: Uma solução robusta para toda a extensão territorial portuguesa e escalabilidade imediata para mercados europeus com conformidade legislativa local.',
+    content: '• Combate à Desinformação: A primeira e única plataforma com influencers 100% verificados por documentos reais, captando anunciantes éticos premium.\n• Acompanhamento Diferenciado: O clique interativo no cronograma de medicação garante adesão e revoluciona o acompanhamento clínico rápido no ecossistema.\n• Escala Digital Global: Uma solução robusta para toda a extensão territorial global e escalabilidade imediata para novos mercados com conformidade legislativa local.',
     duration_seconds: 45
   },
   {
@@ -135,7 +135,7 @@ const DEFAULT_SLIDES: Slide[] = [
     title: 'Agradecimentos & Contactos',
     subtitle: 'Construa o Futuro do Impacto Clínico Connosco',
     category: 'Encerramento',
-    content: '• Líder Executivo: David Cumbo (Fundador e Diretor Geral)\n• Contacto Direto: davidcumbo69@gmail.com\n• Sede e Hub Legal: Lisboa, Portugal (Polo de Desenvolvimento e Escala de Portugal para a Europa)\n• Visão Final: "Unindo celeridade, rigor científico com influencers credenciados e tecnologia assistiva para redefinir o cuidado médico inteligente de Portugal para a Europa."',
+    content: '• Líder Executivo: David Cumbo (Fundador e Diretor Geral)\n• Contacto Direto: davidcumbo69@gmail.com\n• Sede e Hub Legal: Polo de Desenvolvimento e Escala Global\n• Visão Final: "Unindo celeridade, rigor científico com influencers credenciados e tecnologia assistiva para redefinir o cuidado médico inteligente globalmente."',
     duration_seconds: 35
   }
 ];
@@ -584,7 +584,7 @@ export default function Sobre() {
         title: "🔋 DICA 1: Introdução à VIVA+",
         points: [
           "Cumprimente o júri com confiança e olhar firme.",
-          "Foque que a VIVA+ cobre todo o Portugal de raiz, desenhada sob escalabilidade ágil para a Europa.",
+          "Foque que a VIVA+ cobre todo o ecossistema de raiz, desenhada sob escalabilidade ágil global.",
           "Destaque o tripé: utentes tecnologicamente ativos, médicos licenciados e farmácias integradas."
         ]
       },
@@ -685,8 +685,8 @@ export default function Sobre() {
       const parsed = parseTopics(content);
       let introText = "Uma plataforma digital de saúde inovadora que conecta pacientes, profissionais de saúde e farmácias num único ecossistema inteligente, moderno e seguro.";
       let hubs = [
-        { title: "Pacientes", desc: "Inclusão digital avançada, acompanhamento inteligente e alertas de medicação em tempo real em Portugal e na Europa.", check: "✓ Foco no Utente" },
-        { title: "Médicos & SNS", desc: "Telemedicina ágil integrada, prescrições eletrónicas e interligação com clínicas e hospitais nacionais.", check: "✓ Celeridade" },
+        { title: "Pacientes", desc: "Inclusão digital avançada, acompanhamento inteligente e alertas de medicação em tempo real em todo o mundo.", check: "✓ Foco no Utente" },
+        { title: "Médicos & Clínicas", desc: "Telemedicina ágil integrada, prescrições eletrónicas e interligação com clínicas e hospitais globais.", check: "✓ Celeridade" },
         { title: "Farmácias", desc: "Integração inteligente de stocks e aviamento rápido de receitas de bem-estar com cobertura universal.", check: "✓ Logística Ágil" }
       ];
 
@@ -1037,7 +1037,7 @@ export default function Sobre() {
                     <span className="text-xs sm:text-sm md:text-base font-black text-emerald-300 uppercase tracking-wider">{title}</span>
                   </div>
                   <p className="text-xs sm:text-sm md:text-base text-white/95 leading-relaxed font-normal">
-                    {textContent || "Garantir inclusão digital, saúde célere preventiva e ética exemplar em Portugal e na Europa."}
+                    {textContent || "Garantir inclusão digital, saúde célere preventiva e ética exemplar globalmente."}
                   </p>
                 </div>
               </div>
@@ -1054,8 +1054,8 @@ export default function Sobre() {
       let teamPct = 30;
       let teamName = "Equipa & Consultores";
       let capitalSocial = "10.000 €";
-      let sede = "Lisboa, Portugal";
-      let formaJuridica = "Sociedade por Quotas (LDA)";
+      let sede = "Sede Global";
+      let formaJuridica = "Sociedade de Tecnologia de Saúde";
       let promotores = "David Cumbo e Equipa";
       const aplFundos: string[] = [];
 
@@ -1242,13 +1242,13 @@ export default function Sobre() {
                     <span className="text-[8px] text-white/40 uppercase font-mono tracking-wider block">Sede Registal</span>
                     <span className="text-white font-bold mt-0.5 block">{sede}</span>
                   </div>
-                  <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] px-1.5 py-0.5 rounded-full font-extrabold tracking-widest uppercase font-mono">PT</span>
+                  <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] px-1.5 py-0.5 rounded-full font-extrabold tracking-widest uppercase font-mono">GL</span>
                 </div>
               </div>
             </div>
 
             <div className="text-[9px] text-white/30 mt-3 pt-2 border-t border-white/5 flex justify-between items-center font-mono">
-              <span>Jurisdição: Portugal (UE)</span>
+              <span>Jurisdição: Internacional (Global)</span>
               <span>Ativo 100%</span>
             </div>
           </div>
@@ -1266,7 +1266,7 @@ export default function Sobre() {
                 {finalApl.slice(0, 3).map((item, idx) => {
                   const colors = [
                     { border: "border-emerald-500/20", bg: "bg-emerald-500/10", text: "text-emerald-400", label: "01. MVP" },
-                    { border: "border-blue-500/20", bg: "bg-blue-500/10", text: "text-blue-400", label: "02. RGPD" },
+                    { border: "border-blue-500/20", bg: "bg-blue-500/10", text: "text-blue-400", label: "02. PRIVACIDADE" },
                     { border: "border-amber-500/20", bg: "bg-amber-500/10", text: "text-amber-400", label: "03. GO-TO-MARKET" }
                   ];
                   const scheme = colors[idx % colors.length];
@@ -1287,7 +1287,7 @@ export default function Sobre() {
 
             <div className="bg-white/5 text-white/50 text-[9px] p-2 rounded-xl flex items-center justify-center gap-1 mt-3 font-mono">
               <span className="text-amber-400">⚡</span>
-              <span>Escalar nacional e europeu</span>
+              <span>Escalar globalmente</span>
             </div>
           </div>
         </div>
@@ -1297,9 +1297,9 @@ export default function Sobre() {
     // Slide 9 Layout (Index 8): Investor Conviction & Pitch Conclusion
     if (cleanIndex === 8) {
       const defaultPillars = [
-        { title: "Escalabilidade Europeia", text: "Iniciando com piloto ágil no Alto Tâmega, projetado para rápida expansão por todo o Portugal e escalabilidade subsequente na Europa.", badge: "Escala & Crescimento" },
-        { title: "Previsibilidade SaaS", text: "Modelo financeiro robusto baseado em subscrições clínicas (SaaS) e comissões sobre transações farmacêuticas e consultas particulares na UE.", badge: "EBITDA Saudável" },
-        { title: "Alto Valor Social / ESG", text: "Combate ativo à exclusão digital e isolamento geográfico na Europa. Totalmente elegível para fundos europeus de inovação e coesão.", badge: "Impacto Global" }
+        { title: "Escalabilidade Global", text: "Projetado para rápida expansão global e escalabilidade ilimitada em múltiplos países.", badge: "Escala & Crescimento" },
+        { title: "Previsibilidade SaaS", text: "Modelo financeiro robusto baseado em subscrições clínicas (SaaS) e comissões sobre transações farmacêuticas e consultas particulares globalmente.", badge: "EBITDA Saudável" },
+        { title: "Alto Valor Social / ESG", text: "Combate ativo à exclusão digital e isolamento geográfico no acesso a cuidados de saúde. Totalmente elegível para fundos globais de inovação e coesão.", badge: "Impacto Global" }
       ];
 
       const pillars = lines.length >= 3 ? lines.slice(0, 3).map((line, i) => {
@@ -1355,8 +1355,8 @@ export default function Sobre() {
       let fName = "David Cumbo";
       let fRole = "Fundador & Core Promotor";
       let fEmail = "davidcumbo69@gmail.com";
-      let fSede = "Lisboa, Portugal (Hub de Escala para a Europa)";
-      let fQuote = "Unindo inovação de excelência, segurança extrema de dados clínicos e empatia humana para garantir que ninguém seja deixado para trás no futuro da saúde digital em Portugal e na Europa.";
+      let fSede = "Polo de Desenvolvimento e Escala Global";
+      let fQuote = "Unindo inovação de excelência, segurança extrema de dados clínicos e empatia humana para garantir que ninguém seja deixado para trás no futuro da saúde digital global.";
 
       lines.forEach(line => {
         const cleaned = line.replace(/^[•\-\s]+/, '').trim();
@@ -1972,17 +1972,17 @@ export default function Sobre() {
                 <button
                   type="button"
                   onClick={async () => {
-                    if (window.confirm("Pretende restaurar a apresentação oficial para os slides padrão (Portugal todo e Europa)? Isto irá substituir as modificações atuais no Supabase.")) {
+                    if (window.confirm("Pretende restaurar a apresentação oficial para os slides padrão globais? Isto irá substituir as modificações atuais no Supabase.")) {
                       setSlides(DEFAULT_SLIDES);
                       await syncToSupabase(DEFAULT_SLIDES);
                       setCurrentSlideIndex(0);
                     }
                   }}
                   className="bg-amber-50 hover:bg-amber-100 text-[#b45309] px-3.5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all flex items-center space-x-1.5 border border-amber-100/75 w-full justify-center shadow-sm"
-                  title="Restaura os slides originais do Pitch cobrindo Portugal e Europa"
+                  title="Restaura os slides originais do Pitch padrão global"
                 >
                   <RotateCcw className="w-3.5 h-3.5 shrink-0" />
-                  <span>Restaurar Slides Padrão (Portugal & Europa)</span>
+                  <span>Restaurar Slides Padrão Globais</span>
                 </button>
               )}
             </div>

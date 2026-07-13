@@ -114,17 +114,6 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="flex items-center space-x-4 py-2">
-            <div className="flex-1 border-t border-gray-200" />
-            <span className="text-xs text-gray-400 font-bold uppercase">Ou</span>
-            <div className="flex-1 border-t border-gray-200" />
-          </div>
-
-          <button className="w-full bg-black text-white py-3 rounded-lg font-bold text-sm flex items-center justify-center space-x-2 hover:bg-gray-900 transition-colors">
-            <ShieldCheck className="w-5 h-5 text-yellow-400" />
-            <span>Chave Móvel Digital</span>
-          </button>
-
           {message && (
             <p className="text-center text-xs text-[#006747] mt-4 font-medium leading-relaxed bg-emerald-50 p-2 rounded">
               {message}
@@ -149,8 +138,7 @@ export default function Login() {
       </div>
 
       <div className="mt-auto py-8 flex flex-col items-center space-y-4">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/SNS_Logotipo.svg" alt="SNS Logo" className="h-8 opacity-60 grayscale brightness-0" />
-          <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Ministério da Saúde • Portugal</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">THE DOCTA • Plataforma Global de Saúde</p>
       </div>
     </div>
   );

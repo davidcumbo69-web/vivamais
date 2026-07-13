@@ -58,6 +58,8 @@ import {
   type AIChatResponse 
 } from '../services/geminiService';
 import { cn } from '../lib/utils';
+import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
 
 interface AiCopilotDashboardProps {
   selectedPatient: any;
@@ -78,6 +80,55 @@ interface SavedExam {
   base64Image?: string;
   interpretation?: AILabExamResult;
   imageInterpretation?: AIImageExamResult;
+}
+
+function dbRowToSavedExam(row: any): SavedExam {
+  return {
+    id: row.id,
+    date: new Date(row.created_at || row.date).toLocaleDateString('pt-PT'),
+    type: row.exam_type === 'Laboratório' ? 'laboratory' : 'imaging',
+    subType: row.sub_type,
+    source: row.source === 'image' ? 'file' : row.source,
+    rawContent: row.raw_content || '',
+    base64Image: row.file_url || undefined,
+    interpretation: row.interpretation || undefined,
+    imageInterpretation: row.image_interpretation || undefined,
+  };
+}
+
+function parseLocalDateToISO(dateStr: string): string {
+  try {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      return new Date(year, month, day, 12, 0, 0).toISOString();
+    }
+  } catch (e) {
+    console.error("Error parsing date", dateStr, e);
+  }
+  return new Date().toISOString();
+}
+
+function savedExamToDbRow(exam: SavedExam, patientId: string, professionalId: string): any {
+  return {
+    patient_id: patientId,
+    professional_id: professionalId,
+    exam_type: exam.type === 'laboratory' ? 'Laboratório' : 'Imagem',
+    sub_type: exam.subType,
+    source: exam.source === 'file' ? 'file' : exam.source,
+    raw_content: exam.rawContent,
+    file_url: exam.base64Image || null,
+    interpretation: exam.interpretation || null,
+    image_interpretation: exam.imageInterpretation || null,
+    ...(exam.date ? { created_at: parseLocalDateToISO(exam.date) } : {})
+  };
+}
+
+function isValidUUID(id: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
 }
 
 function getDefaultMockExams(patientId: string): SavedExam[] {
@@ -194,6 +245,8 @@ export default function AiCopilotDashboard({
   privateNotes,
   showNotification
 }: AiCopilotDashboardProps) {
+  const { user } = useAuth();
+
   // Tabs within AI Dashboard
   // Modules: Summary, Lab interpretation, Comparison, Medications, Differential, Report, Evolution, Alerts, Chat
   const [activeModule, setActiveModule] = useState<'summary' | 'exams' | 'compare' | 'meds' | 'diff' | 'report' | 'evolution' | 'alerts' | 'chat'>('summary');
@@ -250,78 +303,163 @@ export default function AiCopilotDashboard({
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Load saved exams and cached AI results from LocalStorage on mount/patient change
+  // Load saved exams and cached AI results from Supabase (fallback to LocalStorage) on mount/patient change
   useEffect(() => {
     if (selectedPatient) {
-      const saved = localStorage.getItem(`patient_exams_${selectedPatient.id}`);
-      let loadedExams: SavedExam[] = [];
-      if (saved) {
-        try {
-          loadedExams = JSON.parse(saved);
-        } catch (e) {
-          console.error("Error loading exams", e);
-        }
-      }
-      
-      // If no exams exist for this patient, initialize them with default mock exams
-      if (loadedExams.length === 0) {
-        loadedExams = getDefaultMockExams(selectedPatient.id);
-        localStorage.setItem(`patient_exams_${selectedPatient.id}`, JSON.stringify(loadedExams));
-      }
-      
-      setExamsList(loadedExams);
-      
-      // Load previous cached AI analyses if they exist
-      const cachedSummary = localStorage.getItem(`patient_ai_summary_${selectedPatient.id}`);
-      if (cachedSummary) {
-        try {
-          setClinicalSummary(JSON.parse(cachedSummary));
-        } catch (e) {
-          setClinicalSummary(null);
-        }
-      } else {
-        setClinicalSummary(null);
-      }
-
-      const cachedMeds = localStorage.getItem(`patient_ai_meds_${selectedPatient.id}`);
-      if (cachedMeds) {
-        try {
-          setMedsEvaluation(JSON.parse(cachedMeds));
-        } catch (e) {
-          setMedsEvaluation(null);
-        }
-      } else {
-        setMedsEvaluation(null);
-      }
-
-      const cachedDiff = localStorage.getItem(`patient_ai_diff_${selectedPatient.id}`);
-      if (cachedDiff) {
-        try {
-          setDiffDiagnosis(JSON.parse(cachedDiff));
-        } catch (e) {
-          setDiffDiagnosis(null);
-        }
-      } else {
-        setDiffDiagnosis(null);
-      }
-
-      const cachedReport = localStorage.getItem(`patient_ai_report_${selectedPatient.id}`);
-      const cachedReportText = localStorage.getItem(`patient_ai_report_text_${selectedPatient.id}`);
-      if (cachedReport && cachedReportText) {
-        try {
-          setClinicalReport(JSON.parse(cachedReport));
-          setEditedReportText(cachedReportText);
-        } catch (e) {
-          setClinicalReport(null);
-          setEditedReportText('');
-        }
-      } else {
-        setClinicalReport(null);
-        setEditedReportText('');
-      }
-
       setComparisonResult(null);
       setChatMessages([]);
+
+      const fetchExams = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('patient_exams')
+            .select('*')
+            .eq('patient_id', selectedPatient.id)
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            const mapped = data.map(dbRowToSavedExam);
+            setExamsList(mapped);
+            localStorage.setItem(`patient_exams_${selectedPatient.id}`, JSON.stringify(mapped));
+          } else {
+            // Se não houver exames, carregamos os mocks padrões e os inserimos no banco para persistência total
+            const mocks = getDefaultMockExams(selectedPatient.id);
+            const professionalId = user?.id || selectedPatient.id;
+            const rowsToInsert = mocks.map(m => savedExamToDbRow(m, selectedPatient.id, professionalId));
+
+            const { data: insertedData, error: insertError } = await supabase
+              .from('patient_exams')
+              .insert(rowsToInsert)
+              .select('*');
+
+            if (insertError) {
+              console.error("Error inserting mock exams into db:", insertError);
+              setExamsList(mocks);
+              localStorage.setItem(`patient_exams_${selectedPatient.id}`, JSON.stringify(mocks));
+            } else if (insertedData && insertedData.length > 0) {
+              const mapped = insertedData.map(dbRowToSavedExam);
+              setExamsList(mapped);
+              localStorage.setItem(`patient_exams_${selectedPatient.id}`, JSON.stringify(mapped));
+            } else {
+              setExamsList(mocks);
+              localStorage.setItem(`patient_exams_${selectedPatient.id}`, JSON.stringify(mocks));
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching patient exams from Supabase:", err);
+          const saved = localStorage.getItem(`patient_exams_${selectedPatient.id}`);
+          if (saved) {
+            try {
+              setExamsList(JSON.parse(saved));
+            } catch (e) {
+              setExamsList(getDefaultMockExams(selectedPatient.id));
+            }
+          } else {
+            const mocks = getDefaultMockExams(selectedPatient.id);
+            setExamsList(mocks);
+            localStorage.setItem(`patient_exams_${selectedPatient.id}`, JSON.stringify(mocks));
+          }
+        }
+      };
+
+      const fetchAiData = async () => {
+        try {
+          // 1. Fetch summaries
+          const { data: summaryData, error: summaryErr } = await supabase
+            .from('clinical_summaries')
+            .select('*')
+            .eq('patient_id', selectedPatient.id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (!summaryErr && summaryData && summaryData.length > 0) {
+            const row = summaryData[0];
+            setClinicalSummary({
+              activeProblems: row.active_problems,
+              activeTreatments: row.active_treatments,
+              highRisks: row.high_risks,
+              nextSteps: row.next_steps,
+              criticalAlerts: row.critical_alerts,
+              evolutionText: row.evolution_text
+            });
+          } else {
+            const cachedSummary = localStorage.getItem(`patient_ai_summary_${selectedPatient.id}`);
+            if (cachedSummary) setClinicalSummary(JSON.parse(cachedSummary));
+            else setClinicalSummary(null);
+          }
+
+          // 2. Fetch medication evaluations
+          const { data: medsData, error: medsErr } = await supabase
+            .from('medication_evaluations')
+            .select('*')
+            .eq('patient_id', selectedPatient.id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (!medsErr && medsData && medsData.length > 0) {
+            setMedsEvaluation(medsData[0].evaluation_result);
+          } else {
+            const cachedMeds = localStorage.getItem(`patient_ai_meds_${selectedPatient.id}`);
+            if (cachedMeds) setMedsEvaluation(JSON.parse(cachedMeds));
+            else setMedsEvaluation(null);
+          }
+
+          // 3. Fetch differential diagnoses
+          const { data: diffData, error: diffErr } = await supabase
+            .from('differential_diagnoses')
+            .select('*')
+            .eq('patient_id', selectedPatient.id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (!diffErr && diffData && diffData.length > 0) {
+            setDiffDiagnosis(diffData[0].differential_result);
+          } else {
+            const cachedDiff = localStorage.getItem(`patient_ai_diff_${selectedPatient.id}`);
+            if (cachedDiff) setDiffDiagnosis(JSON.parse(cachedDiff));
+            else setDiffDiagnosis(null);
+          }
+
+          // 4. Fetch reports
+          const { data: reportData, error: reportErr } = await supabase
+            .from('clinical_reports')
+            .select('*')
+            .eq('patient_id', selectedPatient.id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (!reportErr && reportData && reportData.length > 0) {
+            const row = reportData[0];
+            setClinicalReport({
+              summary: row.summary,
+              findings: row.findings,
+              interpretation: row.interpretation,
+              hypotheses: row.hypotheses,
+              plan: row.plan,
+              recommendations: row.recommendations,
+              observations: row.observations
+            });
+            setEditedReportText(row.full_report_text || '');
+          } else {
+            const cachedReport = localStorage.getItem(`patient_ai_report_${selectedPatient.id}`);
+            const cachedReportText = localStorage.getItem(`patient_ai_report_text_${selectedPatient.id}`);
+            if (cachedReport && cachedReportText) {
+              setClinicalReport(JSON.parse(cachedReport));
+              setEditedReportText(cachedReportText);
+            } else {
+              setClinicalReport(null);
+              setEditedReportText('');
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching AI caching data from Supabase:", err);
+        }
+      };
+
+      fetchExams();
+      fetchAiData();
     }
   }, [selectedPatient]);
 
@@ -402,6 +540,20 @@ Retorne um objeto JSON contendo:
       setClinicalSummary(parsed);
       if (selectedPatient) {
         localStorage.setItem(`patient_ai_summary_${selectedPatient.id}`, JSON.stringify(parsed));
+        try {
+          await supabase.from('clinical_summaries').insert({
+            patient_id: selectedPatient.id,
+            professional_id: user?.id || selectedPatient.id,
+            active_problems: parsed.activeProblems || [],
+            active_treatments: parsed.activeTreatments || [],
+            high_risks: parsed.highRisks || [],
+            next_steps: parsed.nextSteps || [],
+            critical_alerts: parsed.criticalAlerts || [],
+            evolution_text: parsed.evolutionText || ''
+          });
+        } catch (dbErr) {
+          console.error("Error saving clinical summary to Supabase:", dbErr);
+        }
       }
       showNotification('Resumo clínico atualizado com IA.', 'success');
     } catch (e: any) {
@@ -418,6 +570,20 @@ Retorne um objeto JSON contendo:
       setClinicalSummary(fallback);
       if (selectedPatient) {
         localStorage.setItem(`patient_ai_summary_${selectedPatient.id}`, JSON.stringify(fallback));
+        try {
+          await supabase.from('clinical_summaries').insert({
+            patient_id: selectedPatient.id,
+            professional_id: user?.id || selectedPatient.id,
+            active_problems: fallback.activeProblems,
+            active_treatments: fallback.activeTreatments,
+            high_risks: fallback.highRisks,
+            next_steps: fallback.nextSteps,
+            critical_alerts: fallback.criticalAlerts,
+            evolution_text: fallback.evolutionText
+          });
+        } catch (dbErr) {
+          console.error("Error saving fallback clinical summary to Supabase:", dbErr);
+        }
       }
     } finally {
       setLoadingStates(prev => ({ ...prev, summary: false }));
@@ -487,8 +653,32 @@ Retorne um objeto JSON contendo:
         };
       }
 
-      const updatedExams = [saved, ...examsList];
-      saveExamsToLocal(updatedExams);
+      // Try to save to Supabase database
+      try {
+        const dbRow = savedExamToDbRow(saved, selectedPatient.id, user?.id || selectedPatient.id);
+        const { data: insertedRows, error: insertError } = await supabase
+          .from('patient_exams')
+          .insert([dbRow])
+          .select('*');
+
+        if (insertError) {
+          console.error("Error inserting exam to Supabase, saving locally:", insertError);
+          const updatedExams = [saved, ...examsList];
+          saveExamsToLocal(updatedExams);
+        } else if (insertedRows && insertedRows.length > 0) {
+          const savedFromDb = dbRowToSavedExam(insertedRows[0]);
+          const updatedExams = [savedFromDb, ...examsList];
+          saveExamsToLocal(updatedExams);
+        } else {
+          const updatedExams = [saved, ...examsList];
+          saveExamsToLocal(updatedExams);
+        }
+      } catch (dbErr) {
+        console.error("Supabase insert exception, saving locally:", dbErr);
+        const updatedExams = [saved, ...examsList];
+        saveExamsToLocal(updatedExams);
+      }
+
       setShowNewExamModal(false);
       setNewExamStep(1);
       setNewExamData({
@@ -509,7 +699,18 @@ Retorne um objeto JSON contendo:
   };
 
   // Delete an exam
-  const handleDeleteExam = (id: string) => {
+  const handleDeleteExam = async (id: string) => {
+    try {
+      if (isValidUUID(id)) {
+        const { error } = await supabase
+          .from('patient_exams')
+          .delete()
+          .eq('id', id);
+        if (error) throw error;
+      }
+    } catch (e) {
+      console.error("Error deleting exam from Supabase:", e);
+    }
     const filtered = examsList.filter(e => e.id !== id);
     saveExamsToLocal(filtered);
     showNotification('Exame removido.', 'success');
@@ -527,6 +728,24 @@ Retorne um objeto JSON contendo:
       const newExam = examsList.find(e => e.id === selectedNewExamId);
       const comp = await geminiService.compareExams(oldExam, newExam);
       setComparisonResult(comp);
+
+      // Save comparison to database
+      if (selectedPatient) {
+        try {
+          await supabase
+            .from('patient_exam_comparisons')
+            .insert({
+              patient_id: selectedPatient.id,
+              professional_id: user?.id || selectedPatient.id,
+              old_exam_id: isValidUUID(selectedOldExamId) ? selectedOldExamId : null,
+              new_exam_id: isValidUUID(selectedNewExamId) ? selectedNewExamId : null,
+              comparison_result: comp
+            });
+        } catch (dbErr) {
+          console.error("Error saving exam comparison to Supabase:", dbErr);
+        }
+      }
+
       showNotification('Comparação temporal gerada com sucesso.', 'success');
     } catch (e: any) {
       console.error(e);
@@ -549,6 +768,15 @@ Retorne um objeto JSON contendo:
       setMedsEvaluation(res);
       if (selectedPatient) {
         localStorage.setItem(`patient_ai_meds_${selectedPatient.id}`, JSON.stringify(res));
+        try {
+          await supabase.from('medication_evaluations').insert({
+            patient_id: selectedPatient.id,
+            professional_id: user?.id || selectedPatient.id,
+            evaluation_result: res
+          });
+        } catch (dbErr) {
+          console.error("Error saving medication evaluation to Supabase:", dbErr);
+        }
       }
       showNotification('Segurança farmacológica analisada.', 'success');
     } catch (e: any) {
@@ -568,6 +796,15 @@ Retorne um objeto JSON contendo:
       setDiffDiagnosis(res);
       if (selectedPatient) {
         localStorage.setItem(`patient_ai_diff_${selectedPatient.id}`, JSON.stringify(res));
+        try {
+          await supabase.from('differential_diagnoses').insert({
+            patient_id: selectedPatient.id,
+            professional_id: user?.id || selectedPatient.id,
+            differential_result: res
+          });
+        } catch (dbErr) {
+          console.error("Error saving differential diagnosis to Supabase:", dbErr);
+        }
       }
       showNotification('Diagnósticos diferenciais sugeridos.', 'success');
     } catch (e: any) {
@@ -591,6 +828,8 @@ Retorne um objeto JSON contendo:
       };
       const res = await geminiService.generateClinicalReport(context, aiResults);
       setClinicalReport(res);
+
+      const validationCode = `DOCTA-AI-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
       // Formulate textual report
       const text = `RELATÓRIO CLÍNICO DE EVOLUÇÃO E PARECER
@@ -624,12 +863,29 @@ ${res.observations}
 
 ------------------------------------------------------------
 Assinatura Digitalizada do Profissional Responsável
-Código de Validação: DOCTA-AI-${Math.random().toString(36).substring(2, 8).toUpperCase()}
+Código de Validação: ${validationCode}
 `;
       setEditedReportText(text);
       if (selectedPatient) {
         localStorage.setItem(`patient_ai_report_${selectedPatient.id}`, JSON.stringify(res));
         localStorage.setItem(`patient_ai_report_text_${selectedPatient.id}`, text);
+        try {
+          await supabase.from('clinical_reports').insert({
+            patient_id: selectedPatient.id,
+            professional_id: user?.id || selectedPatient.id,
+            summary: res.summary,
+            findings: res.findings,
+            interpretation: res.interpretation,
+            hypotheses: res.hypotheses || [],
+            plan: res.plan,
+            recommendations: res.recommendations || [],
+            observations: res.observations,
+            full_report_text: text,
+            validation_code: validationCode
+          });
+        } catch (dbErr) {
+          console.error("Error saving clinical report to Supabase:", dbErr);
+        }
       }
       showNotification('Relatório Clínico estruturado com sucesso.', 'success');
     } catch (e: any) {
@@ -1943,7 +2199,7 @@ Código de Validação: DOCTA-AI-${Math.random().toString(36).substring(2, 8).to
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
-                        onClick={() => setNewExamData(prev => ({ ...prev, type: 'laboratory' }))}
+                        onClick={() => setNewExamData(prev => ({ ...prev, type: 'laboratory', subType: 'Hemograma Completo' }))}
                         className={cn(
                           "p-4 rounded-2xl border text-center font-black text-xs uppercase cursor-pointer flex flex-col items-center justify-center space-y-2",
                           newExamData.type === 'laboratory' ? "bg-emerald-50 border-emerald-500 text-emerald-800" : "bg-white border-gray-200 text-gray-500"
@@ -1954,7 +2210,7 @@ Código de Validação: DOCTA-AI-${Math.random().toString(36).substring(2, 8).to
                       </button>
                       <button
                         type="button"
-                        onClick={() => setNewExamData(prev => ({ ...prev, type: 'imaging' }))}
+                        onClick={() => setNewExamData(prev => ({ ...prev, type: 'imaging', subType: 'Radiografia (Raio-X) de Tórax/Membros' }))}
                         className={cn(
                           "p-4 rounded-2xl border text-center font-black text-xs uppercase cursor-pointer flex flex-col items-center justify-center space-y-2",
                           newExamData.type === 'imaging' ? "bg-indigo-50 border-indigo-500 text-indigo-800" : "bg-white border-gray-200 text-gray-500"

@@ -798,7 +798,7 @@ export default function CommunityDetail() {
                     <h3 className="font-black text-gray-900 text-xl tracking-tight">Comunidade</h3>
                  </div>
                  <p className="text-sm text-gray-700 mb-6 leading-relaxed font-medium">
-                   {group.description || 'Uma comunidade dedicada à literacia de saúde e bem-estar em Portugal.'}
+                   {group.description || 'Uma comunidade dedicada à literacia de saúde e bem-estar.'}
                  </p>
                  
                  <div className="grid grid-cols-2 gap-4 border-y border-gray-100 py-6 mb-6">

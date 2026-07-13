@@ -973,7 +973,7 @@ export default function Home() {
                             <Plus className="w-8 h-8 text-gray-200" />
                          </div>
                          <h4 className="font-bold text-gray-400">Nenhum grupo encontrado</h4>
-                         <p className="text-xs text-gray-300 mt-2 max-w-[200px] mx-auto">Seja o primeiro a criar uma comunidade de saúde em Portugal.</p>
+                         <p className="text-xs text-gray-300 mt-2 max-w-[200px] mx-auto">Seja o primeiro a criar uma comunidade de saúde.</p>
                       </div>
                     )}
                   </div>
