@@ -238,6 +238,119 @@ function getDefaultMockExams(patientId: string): SavedExam[] {
   ];
 }
 
+const renderMessageContent = (text: string, isUser = false) => {
+  if (!text) return null;
+
+  // Replace br HTML tags with newline characters
+  const sanitizedText = text
+    .replace(/<br\s*\/?>\s*<br\s*\/?>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n');
+
+  const lines = sanitizedText.split('\n');
+  const elements: React.ReactNode[] = [];
+  let currentList: { type: 'ul' | 'ol'; items: React.ReactNode[] } | null = null;
+
+  const parseInlineStyles = (lineText: string) => {
+    const parts = lineText.split('**');
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return <strong key={index} className={cn("font-extrabold", isUser ? "text-white" : "text-purple-950")}>{part}</strong>;
+      }
+      return part;
+    });
+  };
+
+  const flushList = (key: string | number) => {
+    if (currentList) {
+      if (currentList.type === 'ul') {
+        elements.push(
+          <ul key={`ul-${key}`} className="list-disc ml-5 my-2 space-y-1 text-xs">
+            {currentList.items}
+          </ul>
+        );
+      } else {
+        elements.push(
+          <ol key={`ol-${key}`} className="list-decimal ml-5 my-2 space-y-1 text-xs">
+            {currentList.items}
+          </ol>
+        );
+      }
+      currentList = null;
+    }
+  };
+
+  lines.forEach((line, lineIdx) => {
+    const trimmed = line.trim();
+
+    // Check for bullet lists
+    const isBullet = trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ');
+    // Check for numbered lists
+    const isNumbered = /^\d+\.\s+/.test(trimmed);
+
+    if (isBullet) {
+      if (currentList && currentList.type !== 'ul') {
+        flushList(lineIdx);
+      }
+      if (!currentList) {
+        currentList = { type: 'ul', items: [] };
+      }
+      const itemContent = trimmed.replace(/^[*•\-]\s+/, '');
+      currentList.items.push(
+        <li key={`li-${lineIdx}`} className="leading-relaxed">
+          {parseInlineStyles(itemContent)}
+        </li>
+      );
+    } else if (isNumbered) {
+      if (currentList && currentList.type !== 'ol') {
+        flushList(lineIdx);
+      }
+      if (!currentList) {
+        currentList = { type: 'ol', items: [] };
+      }
+      const itemContent = trimmed.replace(/^\d+\.\s+/, '');
+      currentList.items.push(
+        <li key={`li-${lineIdx}`} className="leading-relaxed">
+          {parseInlineStyles(itemContent)}
+        </li>
+      );
+    } else {
+      flushList(lineIdx);
+
+      if (trimmed.startsWith('### ')) {
+        elements.push(
+          <h4 key={lineIdx} className={cn("text-xs font-black uppercase tracking-wider mt-3 mb-1", isUser ? "text-white" : "text-purple-950")}>
+            {parseInlineStyles(trimmed.substring(4))}
+          </h4>
+        );
+      } else if (trimmed.startsWith('## ')) {
+        elements.push(
+          <h3 key={lineIdx} className={cn("text-sm font-black uppercase tracking-wider mt-4 mb-2", isUser ? "text-white" : "text-purple-950")}>
+            {parseInlineStyles(trimmed.substring(3))}
+          </h3>
+        );
+      } else if (trimmed.startsWith('# ')) {
+        elements.push(
+          <h2 key={lineIdx} className={cn("text-base font-black uppercase tracking-wider mt-5 mb-3", isUser ? "text-white" : "text-purple-950")}>
+            {parseInlineStyles(trimmed.substring(2))}
+          </h2>
+        );
+      } else if (trimmed === '') {
+        elements.push(<div key={lineIdx} className="h-2" />);
+      } else {
+        elements.push(
+          <p key={lineIdx} className="mb-2 last:mb-0 leading-relaxed">
+            {parseInlineStyles(line)}
+          </p>
+        );
+      }
+    }
+  });
+
+  flushList('end');
+
+  return <div className="space-y-1">{elements}</div>;
+};
+
 export default function AiCopilotDashboard({
   selectedPatient,
   patientHistories,
@@ -480,6 +593,7 @@ export default function AiCopilotDashboard({
   const getPatientContext = () => {
     return {
       profile: {
+        ...selectedPatient,
         id: selectedPatient.id,
         name: selectedPatient.full_name || selectedPatient.username,
         age: selectedPatient.age || 'Não informada',
@@ -489,27 +603,102 @@ export default function AiCopilotDashboard({
       },
       histories: patientHistories.map(h => ({
         date: h.created_at,
-        diagnosis: h.diagnosis || h.main_diagnosis,
-        symptoms: h.symptoms || h.chief_complaint,
-        bloodPressure: h.blood_pressure || `${h.systolic_bp}/${h.diastolic_bp}`,
-        heartRate: h.heart_rate,
-        oxygen: h.oxygen_saturation || h.spo2,
-        weight: h.weight,
-        temperature: h.temperature,
-        notes: h.clinicalNotes || h.clinical_notes || h.detailedDescription,
-        smoking: h.smoking_habits,
-        alcohol: h.alcohol_consumption
+        patient_identification: {
+          fullName: h.full_name || h.fullName,
+          age: h.year,
+          gender: h.gender,
+          idNumber: h.id_number || h.idNumber,
+          contact: h.contact,
+          profession: h.profession,
+          maritalStatus: h.marital_status || h.maritalStatus,
+          address: h.address
+        },
+        primary_diagnosis: h.primary_diagnosis || h.primaryDiagnosis || h.diagnosis || h.main_diagnosis,
+        secondary_diagnosis: h.secondary_diagnosis || h.secondaryDiagnosis,
+        main_complaint: h.main_complaint || h.mainComplaint || h.symptoms || h.chief_complaint,
+        symptoms_start_date: h.symptoms_start_date || h.symptomsStartDate,
+        duration: h.duration,
+        pain_intensity: h.pain_intensity,
+        detailed_description: h.detailed_description || h.detailedDescription || h.notes,
+        previous_diseases: h.previous_diseases,
+        surgeries_history: h.surgeries_history,
+        allergies: h.allergies,
+        vaccination_status: h.vaccination_status || h.vaccinationStatus,
+        smoking_habits: h.smoking_habits || h.smoking,
+        alcohol_consumption: h.alcohol_consumption || h.alcohol,
+        habitual_medication: h.habitual_medication,
+        hereditary_diseases: h.hereditary_diseases,
+        vital_signs: {
+          weight: h.weight,
+          height: h.height,
+          imc: h.calculated_imc || h.imc,
+          temperature: h.temperature,
+          blood_pressure: h.blood_pressure || h.bloodPressure || `${h.systolic_bp}/${h.diastolic_bp}`,
+          heart_rate: h.heart_rate || h.heartRate,
+          respiratory_rate: h.respiratory_rate || h.respiratoryRate,
+          spo2: h.spo2 || h.oxygen_saturation
+        },
+        physical_exam_observations: h.physical_exam_observations,
+        requested_exams: h.requested_exams,
+        clinical_notes: h.clinical_notes || h.clinicalNotes,
+        next_appointment_date: h.next_appointment_date,
+        referral: h.referral
       })),
-      prescriptions: patientPrescriptions.map(p => ({
-        date: p.created_at,
-        diagnosis: p.diagnosis,
-        items: p.items?.map((it: any) => ({
-          name: it.medication_name || it.name,
-          dosage: it.dosage,
-          frequency: it.frequency,
-          duration: it.duration
-        })) || []
-      })),
+      prescriptions: patientPrescriptions.map(p => {
+        const items = Array.isArray(p.items) ? p.items : (typeof p.items === 'string' ? JSON.parse(p.items) : []);
+        
+        const parseDays = (durationStr: string) => {
+          if (!durationStr) return 1;
+          const d = durationStr.toString().toLowerCase();
+          const numMatch = d.match(/(\d+)/);
+          if (!numMatch) return 1;
+          const num = parseInt(numMatch[1]);
+          if (d.includes('semana') || d.includes('week')) return num * 7;
+          if (d.includes('mês') || d.includes('mes') || d.includes('month')) return num * 30;
+          return num;
+        };
+
+        const mappedItems = items.map((it: any, idx: number) => {
+          const medName = it.medication || it.medication_name || it.name || "Medicamento não identificado";
+          
+          // Calculate adherence / taken doses
+          const history = Object.entries(p.taken_doses || {})
+            .filter(([key, val]) => key.startsWith(`${idx}-`) && typeof val === 'string')
+            .map(([key, val]) => {
+              return { timestamp: val as string };
+            });
+
+          const takenCount = history.length;
+          const days = parseDays(it.duration);
+          const freqNum = parseInt(it.frequency) || (it.frequency?.match(/(\d+)/)?.[1]) || 3;
+          const totalPlanned = days * freqNum;
+          const adherencePercentage = totalPlanned > 0 ? (takenCount / totalPlanned) * 100 : 0;
+
+          return {
+            name: medName,
+            dosage: it.dosage,
+            frequency: it.frequency,
+            duration: it.duration,
+            form: it.form || 'comprimido',
+            tracking: {
+              totalPlannedDoses: totalPlanned,
+              takenDosesCount: takenCount,
+              adherencePercentage: parseFloat(adherencePercentage.toFixed(1)),
+              takenDosesTimestamps: history.map(h => h.timestamp)
+            }
+          };
+        });
+
+        return {
+          id: p.id,
+          date: p.created_at,
+          diagnosis: p.diagnosis,
+          items: mappedItems,
+          overallAdherencePercentage: mappedItems.length > 0 
+            ? parseFloat((mappedItems.reduce((acc: number, item: any) => acc + item.tracking.adherencePercentage, 0) / mappedItems.length).toFixed(1))
+            : 0
+        };
+      }),
       notes: privateNotes,
       savedExams: examsList.map(e => ({
         date: e.date,
@@ -2104,7 +2293,7 @@ Código de Validação: ${validationCode}
                           ? "bg-purple-950 text-white" 
                           : "bg-purple-50/50 text-purple-950 border border-purple-100"
                       )}>
-                        {msg.parts[0].text}
+                        {renderMessageContent(msg.parts[0].text, isUser)}
                       </div>
                     </div>
                   );
