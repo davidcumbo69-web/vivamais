@@ -306,7 +306,7 @@ export default function ProfessionalDashboard() {
       const savedNotes = localStorage.getItem(`patient_notes_${selectedPatient.id}`) || '';
       setPrivateNotes(savedNotes);
       setPatientAiResult(null);
-      setPatientTab('history');
+      setPatientTab('panel');
     }
   }, [selectedPatient]);
 
@@ -1822,23 +1822,39 @@ export default function ProfessionalDashboard() {
                         <div className="space-y-6">
                             {/* Header */}
                             <div className="p-8 bg-white border border-gray-100 rounded-[2.5rem] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="flex items-center space-x-4">
-                                    <Link to={`/perfil/${selectedPatient.id}`} className="w-16 h-16 bg-gray-100 rounded-3xl overflow-hidden shadow-md border-2 border-white relative hover:scale-105 transition-transform block">
+                                <div className="flex items-start md:items-center space-x-4">
+                                    <Link to={`/perfil/${selectedPatient.id}`} className="w-16 h-16 bg-gray-100 rounded-3xl overflow-hidden shadow-md border-2 border-white relative hover:scale-105 transition-transform block shrink-0">
                                         {sanitizeAvatarUrl(selectedPatient.avatar_url) ? (
                                             <img src={sanitizeAvatarUrl(selectedPatient.avatar_url)!} className="w-full h-full object-cover" alt="" />
                                         ) : (
                                             <CircleUser className="w-full h-full text-black stroke-[1.5px] p-3" />
                                         )}
                                     </Link>
-                                    <div>
-                                        <Link to={`/perfil/${selectedPatient.id}`} className="hover:text-[#006747] transition-colors block">
-                                            <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">
-                                                {selectedPatient.full_name || selectedPatient.username}
-                                            </h3>
-                                        </Link>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                            @{selectedPatient.username} • Paciente desde {new Date(selectedPatient.created_at || Date.now()).toLocaleDateString('pt-PT')}
-                                        </p>
+                                    <div className="space-y-2">
+                                        <div>
+                                            <Link to={`/perfil/${selectedPatient.id}`} className="hover:text-[#006747] transition-colors block">
+                                                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">
+                                                    {selectedPatient.full_name || selectedPatient.username}
+                                                </h3>
+                                            </Link>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                @{selectedPatient.username} • Paciente desde {new Date(selectedPatient.created_at || Date.now()).toLocaleDateString('pt-PT')}
+                                            </p>
+                                        </div>
+
+                                        {/* Painel Option Directly Under the Patient Info */}
+                                        <button
+                                            onClick={() => setPatientTab('panel')}
+                                            className={cn(
+                                                "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
+                                                patientTab === 'panel' 
+                                                    ? "bg-[#006747] text-white shadow-md shadow-emerald-900/10" 
+                                                    : "bg-gray-50 text-gray-400 hover:text-gray-600 border border-gray-100/80 hover:bg-gray-100"
+                                            )}
+                                        >
+                                            <LayoutDashboard className="w-4 h-4" />
+                                            <span>Painel</span>
+                                        </button>
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-3 self-end md:self-auto">
@@ -1855,21 +1871,8 @@ export default function ProfessionalDashboard() {
                                 </div>
                             </div>
 
-                            {/* Subtabs Navigation */}
+                            {/* Subtabs Navigation for Other Tabs */}
                             <div className="bg-white/40 backdrop-blur-sm p-1.5 rounded-2xl border border-gray-100 flex items-center space-x-1 overflow-x-auto no-scrollbar w-fit">
-                                <button
-                                    onClick={() => setPatientTab('panel')}
-                                    className={cn(
-                                        "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
-                                        patientTab === 'panel' 
-                                            ? "bg-[#006747] text-white shadow-md shadow-emerald-900/10" 
-                                            : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
-                                    )}
-                                >
-                                    <LayoutDashboard className="w-4 h-4" />
-                                    <span>Painel</span>
-                                </button>
-
                                 <button
                                     onClick={() => setPatientTab('history')}
                                     className={cn(
@@ -1904,7 +1907,7 @@ export default function ProfessionalDashboard() {
                                     <span>Análise IA</span>
                                     <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
                                 </button>
-
+                                
                                 <button
                                     onClick={() => setPatientTab('medications')}
                                     className={cn(
@@ -1924,18 +1927,18 @@ export default function ProfessionalDashboard() {
                                         "flex items-center space-x-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
                                         patientTab === 'prescriptions' 
                                             ? "bg-blue-600 text-white shadow-md shadow-blue-900/10" 
-                                             : "text-gray-400 hover:text-blue-600 hover:bg-blue-50/50"
+                                            : "text-gray-400 hover:text-blue-600 hover:bg-blue-50/50"
                                     )}
                                 >
                                     <Pill className="w-4 h-4" />
                                     <span>Receitas (e mais)</span>
                                     {patientPrescriptions.length > 0 && (
-                                         <span className={cn(
-                                             "ml-1.5 px-2 py-0.5 rounded-md text-[8px]",
-                                             patientTab === 'prescriptions' ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
-                                         )}>
-                                             {patientPrescriptions.length}
-                                         </span>
+                                        <span className={cn(
+                                            "ml-1.5 px-2 py-0.5 rounded-md text-[8px]",
+                                            patientTab === 'prescriptions' ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                                        )}>
+                                            {patientPrescriptions.length}
+                                        </span>
                                     )}
                                 </button>
 
@@ -1956,343 +1959,28 @@ export default function ProfessionalDashboard() {
                             {/* Subtabs Body */}
                             <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
                                 {patientTab === 'panel' && (
-                                    <div className="space-y-8 animate-in fade-in duration-300">
-                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                                            {/* Coluna da Esquerda: Evolução Clínico-Terapêutica IA */}
-                                            <div className="lg:col-span-5 space-y-6 bg-slate-50/50 p-6 rounded-3xl border border-slate-100/85">
-                                                <div className="flex items-center space-x-3 mb-2">
-                                                    <div className="p-2.5 bg-purple-50 rounded-2xl text-purple-600">
-                                                        <Brain className="w-5 h-5 animate-pulse" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-sm font-black text-gray-950 uppercase tracking-widest">Evolução do Paciente</h4>
-                                                        <p className="text-[10px] text-purple-600 font-extrabold uppercase tracking-wider">Médico de Família IA (80+ Anos Exp.)</p>
-                                                    </div>
-                                                </div>
+                                    <div className="animate-in fade-in duration-300">
+                                        <AiCopilotDashboard
+                                            selectedPatient={selectedPatient}
+                                            patientHistories={patientHistories}
+                                            patientPrescriptions={patientPrescriptions}
+                                            privateNotes={privateNotes}
+                                            showNotification={showNotification}
+                                            initialActiveModule="summary"
+                                            hideTabs={true}
+                                        />
+                                    </div>
+                                )}
 
-                                                {/* Biopsicossocial Identification Card */}
-                                                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-3">
-                                                    <h5 className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center">
-                                                        <CircleUser className="w-3.5 h-3.5 mr-1.5 text-gray-500" />
-                                                        Perfil Biopsicossocial & Familiar
-                                                    </h5>
-                                                    <div className="grid grid-cols-2 gap-3.5 text-left">
-                                                        <div className="p-2 bg-gray-50/75 rounded-xl">
-                                                            <p className="text-[7px] font-black text-gray-400 uppercase">Idade & Sexo</p>
-                                                            <p className="text-[11px] font-black text-gray-850">
-                                                                {patientHistories[0]?.year || 'Não informada'} • {patientHistories[0]?.gender || 'Não especificado'}
-                                                            </p>
-                                                        </div>
-                                                        <div className="p-2 bg-gray-50/75 rounded-xl">
-                                                            <p className="text-[7px] font-black text-gray-400 uppercase">Contacto</p>
-                                                            <p className="text-[11px] font-bold text-gray-800">
-                                                                {patientHistories[0]?.contact || 'Não informado'}
-                                                            </p>
-                                                        </div>
-                                                        <div className="p-2 bg-gray-50/75 rounded-xl col-span-2">
-                                                            <p className="text-[7px] font-black text-gray-400 uppercase">Residência / Região</p>
-                                                            <p className="text-[11px] font-bold text-gray-800 flex items-center">
-                                                                <MapPin className="w-3 h-3 mr-1 text-gray-400" />
-                                                                {patientHistories[0]?.address || 'Não especificada'}
-                                                            </p>
-                                                        </div>
-                                                        <div className="p-2 bg-gray-50/75 rounded-xl">
-                                                            <p className="text-[7px] font-black text-gray-400 uppercase">Profissão</p>
-                                                            <p className="text-[11px] font-bold text-gray-800 truncate">
-                                                                {patientHistories[0]?.profession || 'Não informada'}
-                                                            </p>
-                                                        </div>
-                                                        <div className="p-2 bg-gray-50/75 rounded-xl">
-                                                            <p className="text-[7px] font-black text-gray-400 uppercase">Estado Civil</p>
-                                                            <p className="text-[11px] font-bold text-gray-800">
-                                                                {patientHistories[0]?.marital_status || patientHistories[0]?.maritalStatus || 'Não informado'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Action / Trigger */}
-                                                {!patientAiResult && !aiAnalyzing && (
-                                                    <div className="bg-purple-50/30 border border-purple-100 p-5 rounded-2xl text-center space-y-4">
-                                                        <Sparkles className="w-7 h-7 text-purple-400 mx-auto animate-bounce" />
-                                                        <div>
-                                                            <p className="text-[11px] text-purple-950 font-black uppercase tracking-wider">Acompanhamento Evolutivo Ativo</p>
-                                                            <p className="text-[10px] text-gray-500 mt-1 max-w-xs mx-auto">
-                                                                Relacione de forma sistêmica as anamneses, sinais vitais, hábitos, alergias e receitas para traçar o plano evolutivo biopsicossocial do paciente.
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            onClick={handleAnalyzeEvolution}
-                                                            className="w-full flex items-center justify-center space-x-2 bg-purple-950 hover:bg-purple-900 text-white py-3 px-5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md shadow-purple-900/10 cursor-pointer animate-in fade-in"
-                                                        >
-                                                            <Brain className="w-4 h-4" />
-                                                            <span>Analisar Evolução do Paciente</span>
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                {aiAnalyzing && (
-                                                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm text-center space-y-4">
-                                                        <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto" />
-                                                        <div>
-                                                            <p className="text-xs font-black text-purple-950 uppercase tracking-widest animate-pulse">Cruzando dados de saúde do paciente...</p>
-                                                            <p className="text-[10px] text-gray-400 mt-2 max-w-xs mx-auto leading-relaxed">
-                                                                O Copiloto Familiar está a correlacionar anamneses antigas, dosagens de medicamentos, relatos de queixas e especificidades regionais para formular o parecer.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {patientAiResult && !aiAnalyzing && (
-                                                    <div className="space-y-5 animate-in fade-in duration-500">
-                                                        {/* Re-analyze Button */}
-                                                        <button
-                                                            onClick={handleAnalyzeEvolution}
-                                                            className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-50 text-purple-950 py-2.5 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest border border-purple-100 shadow-sm transition-all cursor-pointer"
-                                                        >
-                                                            <Brain className="w-3.5 h-3.5" />
-                                                            <span>Reanalisar Evolução Clínica</span>
-                                                        </button>
-
-                                                        {/* 1. Summary/Parecer */}
-                                                        <div className="bg-gradient-to-br from-purple-950 to-indigo-900 text-white p-5 rounded-2xl shadow-md space-y-2">
-                                                            <h5 className="text-[8px] font-black text-purple-300 uppercase tracking-widest">Parecer Evolutivo do Médico de Família</h5>
-                                                            <p className="text-[11px] leading-relaxed text-purple-50/95 font-medium whitespace-pre-wrap italic">
-                                                                "{patientAiResult.summary}"
-                                                            </p>
-                                                        </div>
-
-                                                        {/* 2. Recommendations / Plan of Care / Medications Adjustment / Cancellations */}
-                                                        <div className="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm space-y-4">
-                                                            <div>
-                                                                <h5 className="text-[9px] font-black text-[#006747] uppercase tracking-widest">Plano de Cuidado & Alertas Farmacológicos</h5>
-                                                                <p className="text-[8px] text-gray-400 mt-0.5">Orientações, suspensões ou desprescrições baseadas nos dados históricos</p>
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                {patientAiResult.recommendations?.map((rec, idx) => {
-                                                                    const isCancellation = /cancelamento|cancelar|suspender|parar|interromper|despresc|descontinuar|retirar|evitar|atent/i.test(rec);
-                                                                    return (
-                                                                        <div 
-                                                                            key={idx} 
-                                                                            className={cn(
-                                                                                "p-3 rounded-xl border flex items-start space-x-2.5 text-left text-[11px]",
-                                                                                isCancellation 
-                                                                                    ? "bg-red-50/50 border-red-100 text-red-950" 
-                                                                                    : "bg-emerald-50/20 border-emerald-50/50 text-gray-800"
-                                                                            )}
-                                                                        >
-                                                                            {isCancellation ? (
-                                                                                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                                                                            ) : (
-                                                                                <Check className="w-4 h-4 text-[#006747] shrink-0 mt-0.5" />
-                                                                            )}
-                                                                            <div className="space-y-0.5">
-                                                                                {isCancellation && (
-                                                                                    <span className="inline-block text-[7px] font-black uppercase tracking-widest bg-red-100 text-red-700 px-1.5 py-0.5 rounded mb-1">
-                                                                                        Cancelamento / Atenção
-                                                                                    </span>
-                                                                                )}
-                                                                                <p className="leading-relaxed font-medium">{rec}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 3. Patterns & Trends */}
-                                                        <div className="grid grid-cols-1 gap-4">
-                                                            <div className="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm space-y-3">
-                                                                <h5 className="text-[9px] font-black text-purple-950 uppercase tracking-widest flex items-center">
-                                                                    <Activity className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
-                                                                    Padrões Identificados
-                                                                </h5>
-                                                                <ul className="space-y-1.5 text-left text-[11px] text-gray-700">
-                                                                    {patientAiResult.patterns?.map((pat, idx) => (
-                                                                        <li key={idx} className="flex items-start space-x-2">
-                                                                            <span className="w-1.5 h-1.5 bg-purple-400 rounded-full shrink-0 mt-1.5" />
-                                                                            <span className="leading-tight">{pat}</span>
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            </div>
-
-                                                            <div className="bg-white p-5 rounded-2xl border border-gray-150 shadow-sm space-y-3">
-                                                                <h5 className="text-[9px] font-black text-blue-950 uppercase tracking-widest flex items-center">
-                                                                    <TrendingUp className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-                                                                    Tendências Clínicas
-                                                                </h5>
-                                                                <ul className="space-y-1.5 text-left text-[11px] text-gray-700">
-                                                                    {patientAiResult.trends?.map((trend, idx) => (
-                                                                        <li key={idx} className="flex items-start space-x-2">
-                                                                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5" />
-                                                                            <span className="leading-tight">{trend}</span>
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 4. Active Medications & Suggested Exams */}
-                                                        <div className="grid grid-cols-2 gap-4">
-                                                            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-2">
-                                                                <h5 className="text-[8px] font-black text-rose-600 uppercase tracking-widest flex items-center">
-                                                                    <Pill className="w-3 h-3 mr-1" />
-                                                                    Medicamentos
-                                                                </h5>
-                                                                <div className="space-y-1 text-left">
-                                                                    {patientAiResult.lastMedications?.length > 0 ? (
-                                                                        patientAiResult.lastMedications.map((med, idx) => (
-                                                                            <p key={idx} className="text-[10px] font-bold text-gray-700 leading-tight bg-rose-50/30 p-1.5 rounded-lg border border-rose-50/50 truncate" title={med}>
-                                                                                {med}
-                                                                            </p>
-                                                                        ))
-                                                                    ) : (
-                                                                        <p className="text-[10px] text-gray-400 italic">Nenhum registado</p>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-2">
-                                                                <h5 className="text-[8px] font-black text-emerald-600 uppercase tracking-widest flex items-center">
-                                                                    <FileText className="w-3 h-3 mr-1" />
-                                                                    Exames Alvo
-                                                                </h5>
-                                                                <div className="space-y-1 text-left">
-                                                                    {patientAiResult.lastExams?.length > 0 ? (
-                                                                        patientAiResult.lastExams.map((ex, idx) => (
-                                                                            <p key={idx} className="text-[10px] font-bold text-gray-700 leading-tight bg-emerald-50/30 p-1.5 rounded-lg border border-emerald-50/50 truncate" title={ex}>
-                                                                                {ex}
-                                                                            </p>
-                                                                        ))
-                                                                    ) : (
-                                                                        <p className="text-[10px] text-gray-400 italic">Nenhum registado</p>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Coluna da Direita: Alertas & Sinais Vitais */}
-                                            <div className="lg:col-span-7 space-y-8">
-                                                {/* Section 1: Alertas e Riscos */}
-                                                <div className="bg-white p-6 rounded-3xl border border-gray-150 shadow-sm space-y-4">
-                                                    <div>
-                                                        <h4 className="text-xs font-black text-gray-950 uppercase tracking-widest text-left">Mapeamento de Alertas e Riscos Sistémicos</h4>
-                                                        <p className="text-[10px] text-gray-400 mt-0.5 font-semibold text-left">Algoritmo clínico de varredura proativa em busca de sinais de degradação aguda</p>
-                                                    </div>
-                                                    
-                                                    <div className="space-y-3 max-h-[300px] overflow-y-auto no-scrollbar pr-1">
-                                                        {getSmartAlerts().length === 0 ? (
-                                                            <p className="text-[11px] text-gray-400 italic text-left">Nenhum alerta crítico ativo para o paciente.</p>
-                                                        ) : (
-                                                            getSmartAlerts().map((alert, idx) => (
-                                                                <div key={idx} className={cn(
-                                                                    "p-4 rounded-2xl border flex items-start space-x-3 text-left",
-                                                                    alert.severity === 'critical' ? "bg-red-50/50 border-red-100" :
-                                                                    alert.severity === 'warning' ? "bg-amber-50/50 border-amber-100" :
-                                                                    "bg-gray-50 border-gray-100"
-                                                                )}>
-                                                                    <div className={cn(
-                                                                        "p-2 rounded-xl flex items-center justify-center shrink-0",
-                                                                        alert.severity === 'critical' ? "bg-red-100 text-red-600" :
-                                                                        alert.severity === 'warning' ? "bg-amber-100 text-amber-600" :
-                                                                        "bg-blue-100 text-blue-600"
-                                                                    )}>
-                                                                        <AlertCircle className="w-4 h-4" />
-                                                                    </div>
-                                                                    <div className="space-y-0.5 min-w-0 flex-1">
-                                                                        <div className="flex items-center justify-between">
-                                                                            <h5 className={cn(
-                                                                                "font-black text-[10px] uppercase truncate",
-                                                                                alert.severity === 'critical' ? "text-red-950" :
-                                                                                alert.severity === 'warning' ? "text-amber-950" :
-                                                                                "text-gray-950"
-                                                                            )}>{alert.title}</h5>
-                                                                            <span className="text-[8px] font-bold text-gray-400 uppercase font-mono shrink-0 ml-2">{alert.date}</span>
-                                                                        </div>
-                                                                        <p className="text-[11px] text-gray-600 leading-relaxed font-semibold">{alert.desc}</p>
-                                                                    </div>
-                                                                </div>
-                                                            ))
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {/* Section 2: Gráficos de Evolução */}
-                                                <div className="bg-white p-6 rounded-3xl border border-gray-150 shadow-sm space-y-4">
-                                                    <div>
-                                                        <h4 className="text-xs font-black text-gray-950 uppercase tracking-widest text-left">Evolução de Parâmetros Clínicos</h4>
-                                                        <p className="text-[10px] text-gray-400 mt-0.5 font-semibold text-left">Visualização gráfica de sinais vitais ao longo de consultas anteriores</p>
-                                                    </div>
-
-                                                    {patientHistories.length === 0 ? (
-                                                        <div className="py-12 text-center bg-gray-50 rounded-2xl">
-                                                            <LineChartIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                                                            <p className="text-[10px] text-gray-400 font-semibold">Dados insuficientes para traçar gráficos de tendências temporais.</p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="grid grid-cols-1 gap-6">
-                                                            {/* Blood pressure trend */}
-                                                            <div className="space-y-2 text-left">
-                                                                <h5 className="font-black text-gray-800 text-[10px] uppercase tracking-wider border-b pb-1">Pressão Arterial (Sistólica/Diastólica)</h5>
-                                                                <div className="h-[140px]">
-                                                                    <ResponsiveContainer width="100%" height="100%">
-                                                                        <AreaChart data={getEvolutionChartData()}>
-                                                                            <defs>
-                                                                                <linearGradient id="sysColorProfPanel" x1="0" y1="0" x2="0" y2="1">
-                                                                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/>
-                                                                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                                                                                </linearGradient>
-                                                                                <linearGradient id="diaColorProfPanel" x1="0" y1="0" x2="0" y2="1">
-                                                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                                                                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                                                                </linearGradient>
-                                                                            </defs>
-                                                                            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                                                                            <XAxis dataKey="date" stroke="#9ca3af" fontSize={9} />
-                                                                            <YAxis stroke="#9ca3af" fontSize={9} domain={[40, 200]} />
-                                                                            <Tooltip />
-                                                                            <Area type="monotone" dataKey="sys" name="Sistólica" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#sysColorProfPanel)" />
-                                                                            <Area type="monotone" dataKey="dia" name="Diastólica" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#diaColorProfPanel)" />
-                                                                        </AreaChart>
-                                                                    </ResponsiveContainer>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Heart rate and Oxygen Sat */}
-                                                            <div className="space-y-2 text-left">
-                                                                <h5 className="font-black text-gray-800 text-[10px] uppercase tracking-wider border-b pb-1">Frequência Cardíaca (bpm) & Saturação (%)</h5>
-                                                                <div className="h-[140px]">
-                                                                    <ResponsiveContainer width="100%" height="100%">
-                                                                        <AreaChart data={getEvolutionChartData()}>
-                                                                            <defs>
-                                                                                <linearGradient id="spo2ColorProfPanel" x1="0" y1="0" x2="0" y2="1">
-                                                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                                                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                                                                </linearGradient>
-                                                                                <linearGradient id="fcColorProfPanel" x1="0" y1="0" x2="0" y2="1">
-                                                                                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.1}/>
-                                                                                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                                                                                </linearGradient>
-                                                                            </defs>
-                                                                            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                                                                            <XAxis dataKey="date" stroke="#9ca3af" fontSize={9} />
-                                                                            <YAxis stroke="#9ca3af" fontSize={9} domain={[40, 120]} />
-                                                                            <Tooltip />
-                                                                            <Area type="monotone" dataKey="spo2" name="Saturação SpO2 %" stroke="#10b981" strokeWidth={1.5} fillOpacity={1} fill="url(#spo2ColorProfPanel)" />
-                                                                            <Area type="monotone" dataKey="fc" name="Frequência Cardíaca" stroke="#8b5cf6" strokeWidth={1.5} fillOpacity={1} fill="url(#fcColorProfPanel)" />
-                                                                        </AreaChart>
-                                                                    </ResponsiveContainer>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
+                                {patientTab === 'ai' && (
+                                    <div className="animate-in fade-in duration-300">
+                                        <AiCopilotDashboard
+                                            selectedPatient={selectedPatient}
+                                            patientHistories={patientHistories}
+                                            patientPrescriptions={patientPrescriptions}
+                                            privateNotes={privateNotes}
+                                            showNotification={showNotification}
+                                        />
                                     </div>
                                 )}
 
@@ -2601,16 +2289,6 @@ export default function ProfessionalDashboard() {
                                                 )}
                                             </div>
                                         )}
-
-                                {patientTab === 'ai' && (
-                                    <AiCopilotDashboard
-                                        selectedPatient={selectedPatient}
-                                        patientHistories={patientHistories}
-                                        patientPrescriptions={patientPrescriptions}
-                                        privateNotes={privateNotes}
-                                        showNotification={showNotification}
-                                    />
-                                )}
 
                                 {patientTab === 'prescriptions' && (
                                     <div className="space-y-6">

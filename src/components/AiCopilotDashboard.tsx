@@ -67,6 +67,8 @@ interface AiCopilotDashboardProps {
   patientPrescriptions: any[];
   privateNotes: string;
   showNotification: (message: string, type?: 'success' | 'error') => void;
+  initialActiveModule?: 'summary' | 'exams' | 'compare' | 'meds' | 'diff' | 'report' | 'evolution' | 'alerts' | 'chat';
+  hideTabs?: boolean;
 }
 
 // Interfaces for our local state
@@ -356,13 +358,15 @@ export default function AiCopilotDashboard({
   patientHistories,
   patientPrescriptions,
   privateNotes,
-  showNotification
+  showNotification,
+  initialActiveModule,
+  hideTabs
 }: AiCopilotDashboardProps) {
   const { user } = useAuth();
 
   // Tabs within AI Dashboard
   // Modules: Summary, Lab interpretation, Comparison, Medications, Differential, Report, Evolution, Alerts, Chat
-  const [activeModule, setActiveModule] = useState<'summary' | 'exams' | 'compare' | 'meds' | 'diff' | 'report' | 'evolution' | 'alerts' | 'chat'>('summary');
+  const [activeModule, setActiveModule] = useState<'summary' | 'exams' | 'compare' | 'meds' | 'diff' | 'report' | 'evolution' | 'alerts' | 'chat'>(initialActiveModule || 'summary');
   
   // Loading states
   const [loadingStates, setLoadingStates] = useState({
@@ -1303,37 +1307,39 @@ Código de Validação: ${validationCode}
   return (
     <div id="ai_copilot_workspace" className="space-y-8">
       {/* Module Hub Nav */}
-      <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar pb-2 border-b border-gray-100">
-        {[
-          { id: 'summary', label: 'Painel Geral', icon: Brain, color: 'text-purple-600 bg-purple-50' },
-          { id: 'exams', label: 'Interpretar Exames', icon: FileUp, color: 'text-emerald-600 bg-emerald-50' },
-          { id: 'compare', label: 'Comparar', icon: TrendingUp, color: 'text-teal-600 bg-teal-50' },
-          { id: 'meds', label: 'Farmacologia', icon: Pill, color: 'text-rose-600 bg-rose-50' },
-          { id: 'diff', label: 'Diagnósticos Diferenciais', icon: BarChart3, color: 'text-indigo-600 bg-indigo-50' },
-          { id: 'report', label: 'Relatório Clínico', icon: FileText, color: 'text-amber-600 bg-amber-50' },
-          { id: 'evolution', label: 'Evolução', icon: LineChartIcon, color: 'text-blue-600 bg-blue-50' },
-          { id: 'alerts', label: 'Alertas IA', icon: ShieldAlert, color: 'text-red-600 bg-red-50' },
-          { id: 'chat', label: 'Copiloto Chat', icon: MessageSquare, color: 'text-sky-600 bg-sky-50' },
-        ].map(mod => {
-          const Icon = mod.icon;
-          const active = activeModule === mod.id;
-          return (
-            <button
-              key={mod.id}
-              onClick={() => setActiveModule(mod.id as any)}
-              className={cn(
-                "flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
-                active 
-                  ? "bg-purple-950 text-white shadow-lg shadow-purple-950/10" 
-                  : "text-gray-400 hover:text-gray-900 hover:bg-gray-50"
-              )}
-            >
-              <Icon className={cn("w-4 h-4", active ? "text-purple-300" : mod.color.split(' ')[0])} />
-              <span>{mod.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {!hideTabs && (
+        <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar pb-2 border-b border-gray-100">
+          {[
+            { id: 'summary', label: 'Painel Geral', icon: Brain, color: 'text-purple-600 bg-purple-50' },
+            { id: 'exams', label: 'Interpretar Exames', icon: FileUp, color: 'text-emerald-600 bg-emerald-50' },
+            { id: 'compare', label: 'Comparar', icon: TrendingUp, color: 'text-teal-600 bg-teal-50' },
+            { id: 'meds', label: 'Farmacologia', icon: Pill, color: 'text-rose-600 bg-rose-50' },
+            { id: 'diff', label: 'Diagnósticos Diferenciais', icon: BarChart3, color: 'text-indigo-600 bg-indigo-50' },
+            { id: 'report', label: 'Relatório Clínico', icon: FileText, color: 'text-amber-600 bg-amber-50' },
+            { id: 'evolution', label: 'Evolução', icon: LineChartIcon, color: 'text-blue-600 bg-blue-50' },
+            { id: 'alerts', label: 'Alertas IA', icon: ShieldAlert, color: 'text-red-600 bg-red-50' },
+            { id: 'chat', label: 'Copiloto Chat', icon: MessageSquare, color: 'text-sky-600 bg-sky-50' },
+          ].map(mod => {
+            const Icon = mod.icon;
+            const active = activeModule === mod.id;
+            return (
+              <button
+                key={mod.id}
+                onClick={() => setActiveModule(mod.id as any)}
+                className={cn(
+                  "flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
+                  active 
+                    ? "bg-purple-950 text-white shadow-lg shadow-purple-950/10" 
+                    : "text-gray-400 hover:text-gray-900 hover:bg-gray-50"
+                )}
+              >
+                <Icon className={cn("w-4 h-4", active ? "text-purple-300" : mod.color.split(' ')[0])} />
+                <span>{mod.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Main Workspace Frame */}
       <div className="min-h-[480px]">
