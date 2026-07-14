@@ -366,7 +366,7 @@ export default function AiCopilotDashboard({
 
   // Tabs within AI Dashboard
   // Modules: Summary, Lab interpretation, Comparison, Medications, Differential, Report, Evolution, Alerts, Chat
-  const [activeModule, setActiveModule] = useState<'summary' | 'exams' | 'compare' | 'meds' | 'diff' | 'report' | 'evolution' | 'alerts' | 'chat'>(initialActiveModule || 'summary');
+  const [activeModule, setActiveModule] = useState<'summary' | 'exams' | 'compare' | 'meds' | 'diff' | 'report' | 'evolution' | 'alerts' | 'chat'>(initialActiveModule || 'exams');
   
   // Loading states
   const [loadingStates, setLoadingStates] = useState({
@@ -1310,7 +1310,6 @@ Código de Validação: ${validationCode}
       {!hideTabs && (
         <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar pb-2 border-b border-gray-100">
           {[
-            { id: 'summary', label: 'Painel Geral', icon: Brain, color: 'text-purple-600 bg-purple-50' },
             { id: 'exams', label: 'Interpretar Exames', icon: FileUp, color: 'text-emerald-600 bg-emerald-50' },
             { id: 'compare', label: 'Comparar', icon: TrendingUp, color: 'text-teal-600 bg-teal-50' },
             { id: 'meds', label: 'Farmacologia', icon: Pill, color: 'text-rose-600 bg-rose-50' },
