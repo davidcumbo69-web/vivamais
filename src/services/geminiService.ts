@@ -657,9 +657,57 @@ ${JSON.stringify(aiResults, null, 2)}`
   /**
    * Responde a perguntas sobre o paciente no Chat Inteligente.
    */
-  async askAICopilot(patientContext: any, messageHistory: { role: 'user' | 'model'; parts: { text: string }[] }[], question: string): Promise<AIChatResponse> {
+  async askAICopilot(patientContext: any, messageHistory: { role: 'user' | 'model'; parts: { text: string }[] }[], question: string, orgId: string = 'default'): Promise<AIChatResponse> {
     const ai = getAI();
     
+    // 1. Search active protocols for the question and patient context
+    let searchQuery = question;
+    if (patientContext?.primaryDiagnosis) {
+      searchQuery += " " + patientContext.primaryDiagnosis;
+    } else if (patientContext?.clinicalHistory?.mainComplaint) {
+      searchQuery += " " + patientContext.clinicalHistory.mainComplaint;
+    }
+
+    let matched: any[] = [];
+    try {
+      const { protocolService } = await import('./protocolService');
+      matched = protocolService.searchProtocols(orgId, searchQuery);
+    } catch (e) {
+      console.error("Error doing RAG clinical protocol lookup:", e);
+    }
+
+    let protocolsInstruction = "";
+    if (matched && matched.length > 0) {
+      protocolsInstruction = "\n\n=== RECURSOS / PROTOCOLOS CLÍNICOS DA INSTITUIÇÃO ENCONTRADOS (RAG) ===\n";
+      matched.slice(0, 3).forEach((m, idx) => {
+        const p = m.protocol;
+        protocolsInstruction += `\n[Protocolo #${idx + 1}]
+Nome: ${p.name}
+Categoria: ${p.category}
+Origem: ${p.origin} (Hierarquia de Prioridade: ${idx + 1})
+Versão Atual: ${p.version}
+Idioma: ${p.language}
+Resumo Semântico: ${p.extractedData?.summary || ''}
+Conteúdo Relevante Extraído para Consulta:
+${m.matchedSections.join("\n")}
+`;
+      });
+
+      protocolsInstruction += `
+Rigorosamente prefira e cite as informações dos protocolos acima nas suas decisões. Se houver contradição entre protocolos, resolva utilizando a hierarquia: 1. Protocolo do Profissional, 2. Protocolo da Clínica ou Hospital, 3. Protocolos Institucionais, 4. Diretrizes Nacionais, 5. Diretrizes Internacionais. Mencione na resposta se resolveu um conflito dessa forma.
+
+Você deve obrigatoriamente fornecer as fontes e capítulos de forma transparente ao final do texto.
+Formato da citação de fontes consultadas:
+**Fontes consultadas:**
+✔ <Nome do Protocolo>, Versão <Versão>, Capítulo <Nome do Capítulo>, Página <Página ou N/A>
+`;
+    } else {
+      protocolsInstruction = `
+\n\n=== RECURSOS / PROTOCOLOS CLÍNICOS ===
+Nenhum protocolo clínico específico e ativo foi encontrado para esta busca na base de dados da sua clínica.
+Como nenhum protocolo está disponível, você pode utilizar conhecimentos médicos gerais de excelência. Declare claramente no texto ou nas notas: "Nenhum protocolo institucional foi encontrado para este tema."`;
+    }
+
     // Convert to proper structure
     const systemInstruction = `Você é o Copiloto Clínico Inteligente da plataforma THE DOCTA. Você atua como um médico de família de elite, altamente sábio e experiente (com o equivalente a mais de 80 anos de prática clínica humanizada e integrada). Você ajuda o médico assistente na tomada de decisões altamente precisas, seguras e personalizadas.
 
@@ -686,7 +734,7 @@ Diretrizes Clínicas e de Comunicação (Siga Rigorosamente):
 4. **ANÁLISE RELACIONAL E INTEGRADA DO PERFIL**: Cruze e correlacione ativamente todas as informações disponíveis no prontuário:
    - Dados demográficos (idade, gênero, morada, profissão, estado civil).
    - Histórico clínico preexistente, comorbidades e alergias conhecidas.
-   - Prescrições e receitas anteriores e atuais: você deve SEMPRE QUE POSSÍVEL citar nominalmente os medicamentos prescritos exatos que constam nas receitas do paciente (nomes comerciais ou genéricos conforme inseridos na receita).
+   - Prescrições e receitas anteriores e atuais: você deve SEMPRE QUE DOSSIBEL citar nominalmente os medicamentos prescritos exatos que constam nas receitas do paciente (nomes comerciais ou genéricos conforme inseridos na receita).
    - Acompanhamento e Estado da Medicação: analise minuciosamente como o paciente se medicou de fato de acordo com as informações de tracking ("tracking", "adherencePercentage", "takenDosesCount" e "totalPlannedDoses"). Mencione as taxas de adesão do paciente, se as doses estão sendo tomadas no horário/período correto, ou se há falhas de adesão ou doses perdidas que possam justificar a resposta clínica insatisfatória, relacionando isso diretamente com os sintomas descritos.
    - Datas das receitas, as medicações vigentes, suas dosagens precisas, frequências/horários de administração ("frequency") e tempo de tratamento ("duration"). Identifique possíveis interações farmacológicas, redundâncias ou incompatibilidades de horários e dosagens de acordo com a saúde renal/hepática descrita.
    - Sinais vitais históricos e recentes (pressão arterial, frequência cardíaca, saturação de oxigênio, peso, temperatura) e notas clínicas registradas.
@@ -700,7 +748,7 @@ Diretrizes Clínicas e de Comunicação (Siga Rigorosamente):
    - É ABSOLUTAMENTE PROIBIDO o uso de tags HTML de quebra de linha como <br>, <br/> ou <br><br>. Utilize apenas quebras de linha nativas (\\n ou \\n\\n).
    - Use formatação Markdown elegante (como **negrito** apenas em termos e parâmetros realmente cruciais), mantendo o texto limpo, livre de asteriscos excessivos ou poluição visual.
 
-7. **PERGUNTAS COMPLEMENTARES**: Sugira sempre exatamente 3 perguntas de acompanhamento relevantes e inteligentes que o médico pode fazer a seguir, baseando-se estritamente no caso clínico atual do paciente.`;
+7. **PERGUNTAS COMPLEMENTARES**: Sugira sempre exatamente 3 perguntas de acompanhamento relevantes e inteligentes que o médico pode fazer a seguir, baseando-se estritamente no caso clínico atual do paciente. ${protocolsInstruction}`;
 
     const chatContents = [...messageHistory];
     chatContents.push({

@@ -43,6 +43,7 @@ const PrescriptionSearch = lazy(() => import('./pages/PrescriptionSearch'));
 const EditProfile = lazy(() => import('./pages/EditProfile'));
 const Login = lazy(() => import('./pages/Login'));
 const Sobre = lazy(() => import('./pages/Sobre'));
+const ClinicalProtocols = lazy(() => import('./pages/ClinicalProtocols'));
 
 const PageLoader = () => (
   <div className="h-full w-full flex items-center justify-center p-20">
@@ -109,6 +110,7 @@ function AppContent() {
             <Route path="/perfil/editar" element={<EditProfile />} />
             <Route path="/perfil/:userId" element={<Profile />} />
             <Route path="/definicoes" element={<Settings />} />
+            <Route path="/definicoes/protocolos" element={<ClinicalProtocols />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/conquistas" element={<Gamification />} />
             <Route path="/consultas" element={<Appointments />} />

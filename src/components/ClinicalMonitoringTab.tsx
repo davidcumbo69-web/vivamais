@@ -10,6 +10,7 @@ import {
   CartesianGrid, LineChart, Line, Legend 
 } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
+import { supabase } from '../lib/supabase';
 
 interface ClinicalMonitoringTabProps {
   selectedPatient: any;
@@ -17,6 +18,8 @@ interface ClinicalMonitoringTabProps {
   patientPrescriptions: any[];
   privateNotes: string;
   showNotification: (msg: string, type: 'success' | 'error' | 'warning' | 'info') => void;
+  onlyInputs?: boolean;
+  onRefresh?: () => void;
 }
 
 export default function ClinicalMonitoringTab({
@@ -24,19 +27,55 @@ export default function ClinicalMonitoringTab({
   patientHistories = [],
   patientPrescriptions = [],
   privateNotes = '',
-  showNotification
+  showNotification,
+  onlyInputs = false,
+  onRefresh
 }: ClinicalMonitoringTabProps) {
   // Filters & Tabs
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y' | 'all'>('30d');
   const [activeChart, setActiveChart] = useState<'all' | 'fc' | 'bp' | 'temp' | 'spo2' | 'glycemia' | 'weight'>('all');
   
-  // Body Map symptoms state
+  // Vital signs form state
+  const [vitalsForm, setVitalsForm] = useState({
+    heart_rate: '',
+    systolic_bp: '',
+    diastolic_bp: '',
+    temperature: '',
+    oxygen_saturation: '',
+    glycemia: '',
+    respiratory_rate: '',
+    weight: '',
+  });
+  const [isSubmittingVitals, setIsSubmittingVitals] = useState(false);
+
+  // Body Map symptoms state loaded dynamically per patient
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
-  const [patientSymptoms, setPatientSymptoms] = useState<any[]>([
-    { id: '1', zone: 'chest', title: 'Aperto Torácico', severity: 'elevado', desc: 'Irradiação para braço esquerdo descrita na última consulta.', date: '12/07/2026' },
-    { id: '2', zone: 'head', title: 'Cefaleia Occipital', severity: 'moderado', desc: 'Associada a picos de tensão arterial de 150/95.', date: '10/07/2026' },
-    { id: '3', zone: 'abdomen', title: 'Dispepsia', severity: 'baixo', desc: 'Refluxo esporádico pós-prandial.', date: '05/07/2026' }
-  ]);
+  const [patientSymptoms, setPatientSymptoms] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (selectedPatient) {
+      const key = `patient_symptoms_${selectedPatient.id}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        setPatientSymptoms(JSON.parse(saved));
+      } else {
+        setPatientSymptoms([
+          { id: '1', zone: 'chest', title: 'Aperto Torácico', severity: 'elevado', desc: 'Irradiação para braço esquerdo descrita na última consulta.', date: '12/07/2026' },
+          { id: '2', zone: 'head', title: 'Cefaleia Occipital', severity: 'moderado', desc: 'Associada a picos de tensão arterial de 150/95.', date: '10/07/2026' },
+          { id: '3', zone: 'abdomen', title: 'Dispepsia', severity: 'baixo', desc: 'Refluxo esporádico pós-prandial.', date: '05/07/2026' }
+        ]);
+      }
+    }
+  }, [selectedPatient]);
+
+  const saveSymptoms = (newSymptoms: any[]) => {
+    setPatientSymptoms(newSymptoms);
+    if (selectedPatient) {
+      const key = `patient_symptoms_${selectedPatient.id}`;
+      localStorage.setItem(key, JSON.stringify(newSymptoms));
+    }
+  };
+
   const [newSymptomZone, setNewSymptomZone] = useState('chest');
   const [newSymptomTitle, setNewSymptomTitle] = useState('');
   const [newSymptomSeverity, setNewSymptomSeverity] = useState('baixo');
@@ -285,7 +324,8 @@ export default function ClinicalMonitoringTab({
       desc: newSymptomDesc || 'Nenhuma descrição detalhada providenciada.',
       date: new Date().toLocaleDateString('pt-PT')
     };
-    setPatientSymptoms(prev => [newSym, ...prev]);
+    const updated = [newSym, ...patientSymptoms];
+    saveSymptoms(updated);
     setNewSymptomTitle('');
     setNewSymptomDesc('');
     showNotification("Zona do sintoma mapeada com sucesso!", "success");
@@ -293,8 +333,71 @@ export default function ClinicalMonitoringTab({
 
   // Delete symptom
   const handleDeleteSymptom = (id: string) => {
-    setPatientSymptoms(prev => prev.filter(s => s.id !== id));
+    const updated = patientSymptoms.filter(s => s.id !== id);
+    saveSymptoms(updated);
     showNotification("Registo de sintoma removido do mapa.", "info");
+  };
+
+  // Submit vital signs form to Supabase
+  const handleSubmitVitals = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPatient) return;
+    
+    // Check if at least one vital sign is filled
+    const hasAnyValue = Object.values(vitalsForm).some(val => val.trim() !== '');
+    if (!hasAnyValue) {
+      showNotification("Por favor, preencha pelo menos um sinal vital para registar.", "error");
+      return;
+    }
+
+    setIsSubmittingVitals(true);
+    try {
+      const height = selectedPatient.height || 1.75;
+      const weightNum = Number(vitalsForm.weight);
+      let calculatedImc = null;
+      if (weightNum && height) {
+        calculatedImc = Number((weightNum / (height * height)).toFixed(1));
+      }
+
+      const { error } = await supabase
+        .from('clinical_histories')
+        .insert({
+          patient_id: selectedPatient.id,
+          heart_rate: vitalsForm.heart_rate ? Number(vitalsForm.heart_rate) : null,
+          systolic_bp: vitalsForm.systolic_bp ? Number(vitalsForm.systolic_bp) : null,
+          diastolic_bp: vitalsForm.diastolic_bp ? Number(vitalsForm.diastolic_bp) : null,
+          blood_pressure: vitalsForm.systolic_bp && vitalsForm.diastolic_bp ? `${vitalsForm.systolic_bp}/${vitalsForm.diastolic_bp}` : null,
+          temperature: vitalsForm.temperature ? Number(vitalsForm.temperature) : null,
+          oxygen_saturation: vitalsForm.oxygen_saturation ? Number(vitalsForm.oxygen_saturation) : null,
+          glycemia: vitalsForm.glycemia ? Number(vitalsForm.glycemia) : null,
+          respiratory_rate: vitalsForm.respiratory_rate ? Number(vitalsForm.respiratory_rate) : null,
+          weight: vitalsForm.weight ? Number(vitalsForm.weight) : null,
+          calculated_imc: calculatedImc,
+          clinical_notes: 'Registo de Monitorização de Sinais Vitais',
+          professional_name: 'Dr. David Cumbo',
+          created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      showNotification("Sinais vitais registados e atualizados com sucesso!", "success");
+      setVitalsForm({
+        heart_rate: '',
+        systolic_bp: '',
+        diastolic_bp: '',
+        temperature: '',
+        oxygen_saturation: '',
+        glycemia: '',
+        respiratory_rate: '',
+        weight: '',
+      });
+      if (onRefresh) onRefresh();
+    } catch (error: any) {
+      console.error("Erro ao registar sinais vitais:", error);
+      showNotification("Erro ao guardar os sinais vitais.", "error");
+    } finally {
+      setIsSubmittingVitals(false);
+    }
   };
 
   // Add Note Helper
@@ -321,6 +424,453 @@ export default function ClinicalMonitoringTab({
       showNotification(`Ficheiro '${file.name}' anexado provisoriamente.`, "info");
     }
   };
+
+  if (onlyInputs) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500 text-left">
+        {/* Header Block */}
+        <div className="flex flex-col md:flex-row justify-between md:items-center bg-white p-6 rounded-3xl border border-gray-100 gap-4">
+          <div className="flex items-center space-x-3.5">
+            <div className="p-3 bg-emerald-50 rounded-2xl text-[#006747]">
+              <Activity className="w-5 h-5 text-[#006747]" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-gray-950 uppercase tracking-wider">Registo de Parâmetros e Sinais Vitais</h3>
+              <p className="text-[11px] text-gray-400 font-semibold mt-0.5">Insira ou atualize os sinais vitais do paciente e faça o mapeamento anatómico de sintomas ativos.</p>
+            </div>
+          </div>
+          <div className="text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-[#006747] px-3.5 py-2 rounded-xl border border-emerald-100/50 flex items-center shrink-0 w-fit">
+            <span className="flex h-2 w-2 relative mr-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Ligação ao Prontuário Ativa</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+          
+          {/* LEFT: Vitals Entry Card */}
+          <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
+            <div>
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Registador de Sinais Vitais</h4>
+              <p className="text-lg font-black text-gray-900 mt-1">Atualização de Parâmetros Clínicos</p>
+            </div>
+
+            <form onSubmit={handleSubmitVitals} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-500 uppercase flex items-center tracking-wider">
+                    <Heart className="w-3.5 h-3.5 mr-1.5 text-rose-500 shrink-0" /> Freq. Cardíaca (bpm)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Ex: 72"
+                    value={vitalsForm.heart_rate}
+                    onChange={(e) => setVitalsForm(prev => ({ ...prev, heart_rate: e.target.value }))}
+                    className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-950 focus:ring-2 focus:ring-[#006747]/20 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-500 uppercase flex items-center tracking-wider">
+                    <Thermometer className="w-3.5 h-3.5 mr-1.5 text-amber-500 shrink-0" /> Temperatura (°C)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="Ex: 36.5"
+                    value={vitalsForm.temperature}
+                    onChange={(e) => setVitalsForm(prev => ({ ...prev, temperature: e.target.value }))}
+                    className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-950 focus:ring-2 focus:ring-[#006747]/20 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-500 uppercase flex items-center tracking-wider">
+                    <Activity className="w-3.5 h-3.5 mr-1.5 text-emerald-600 shrink-0" /> Pressão Sistólica (mmHg)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Ex: 120"
+                    value={vitalsForm.systolic_bp}
+                    onChange={(e) => setVitalsForm(prev => ({ ...prev, systolic_bp: e.target.value }))}
+                    className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-950 focus:ring-2 focus:ring-[#006747]/20 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-500 uppercase flex items-center tracking-wider">
+                    <Activity className="w-3.5 h-3.5 mr-1.5 text-emerald-500 shrink-0" /> Pressão Diastólica (mmHg)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Ex: 80"
+                    value={vitalsForm.diastolic_bp}
+                    onChange={(e) => setVitalsForm(prev => ({ ...prev, diastolic_bp: e.target.value }))}
+                    className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-950 focus:ring-2 focus:ring-[#006747]/20 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-500 uppercase flex items-center tracking-wider">
+                    <Activity className="w-3.5 h-3.5 mr-1.5 text-sky-500 shrink-0" /> Saturação SpO₂ (%)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Ex: 98"
+                    value={vitalsForm.oxygen_saturation}
+                    onChange={(e) => setVitalsForm(prev => ({ ...prev, oxygen_saturation: e.target.value }))}
+                    className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-950 focus:ring-2 focus:ring-[#006747]/20 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-500 uppercase flex items-center tracking-wider">
+                    <Droplet className="w-3.5 h-3.5 mr-1.5 text-purple-500 shrink-0" /> Glicose (mg/dL)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Ex: 95"
+                    value={vitalsForm.glycemia}
+                    onChange={(e) => setVitalsForm(prev => ({ ...prev, glycemia: e.target.value }))}
+                    className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-950 focus:ring-2 focus:ring-[#006747]/20 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-500 uppercase flex items-center tracking-wider">
+                    <Activity className="w-3.5 h-3.5 mr-1.5 text-indigo-500 shrink-0" /> Freq. Respiratória (rpm)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Ex: 16"
+                    value={vitalsForm.respiratory_rate}
+                    onChange={(e) => setVitalsForm(prev => ({ ...prev, respiratory_rate: e.target.value }))}
+                    className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-950 focus:ring-2 focus:ring-[#006747]/20 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-500 uppercase flex items-center tracking-wider">
+                    <Weight className="w-3.5 h-3.5 mr-1.5 text-teal-500 shrink-0" /> Peso Corporal (kg)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="Ex: 75.0"
+                    value={vitalsForm.weight}
+                    onChange={(e) => setVitalsForm(prev => ({ ...prev, weight: e.target.value }))}
+                    className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-950 focus:ring-2 focus:ring-[#006747]/20 outline-none"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmittingVitals}
+                className="w-full flex items-center justify-center space-x-2 bg-[#006747] hover:bg-emerald-950 text-white px-6 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isSubmittingVitals ? (
+                  <RefreshCw className="w-4 h-4 animate-spin mr-1.5" />
+                ) : (
+                  <CheckCircle className="w-4 h-4 mr-1.5" />
+                )}
+                <span>Registar e Atualizar Sinais Vitais</span>
+              </button>
+            </form>
+          </div>
+
+          {/* RIGHT: Anatomical Body Map */}
+          <div className="space-y-8">
+            <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm text-center relative">
+              <div className="absolute right-4 top-4 text-gray-300">
+                <Info className="w-4 h-4 cursor-help" />
+              </div>
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-left mb-1">Mapa Corporal Interativo</h4>
+              <p className="text-sm font-black text-gray-900 text-left mb-4">Mapeamento Topográfico de Sintomas</p>
+
+              {/* Stylized Human Outline SVG */}
+              <div className="w-52 h-80 mx-auto relative bg-slate-50 rounded-2xl p-4 border border-gray-100 flex items-center justify-center">
+                <svg viewBox="0 0 100 200" className="w-full h-full text-slate-200" fill="currentColor">
+                  {/* Head */}
+                  <circle cx="50" cy="25" r="12" className={`transition-colors cursor-pointer ${selectedZone === 'head' ? 'text-[#006747]' : 'hover:text-slate-300'}`} onClick={() => setSelectedZone('head')} />
+                  {/* Neck */}
+                  <rect x="47" y="37" width="6" height="6" className="transition-colors cursor-pointer" onClick={() => setSelectedZone('neck')} />
+                  {/* Chest */}
+                  <path d="M 38,44 L 62,44 L 59,85 L 41,85 Z" className={`transition-colors cursor-pointer ${selectedZone === 'chest' ? 'text-[#006747]' : 'hover:text-slate-300'}`} onClick={() => setSelectedZone('chest')} />
+                  {/* Abdomen */}
+                  <path d="M 41,85 L 59,85 L 56,120 L 44,120 Z" className={`transition-colors cursor-pointer ${selectedZone === 'abdomen' ? 'text-[#006747]' : 'hover:text-slate-300'}`} onClick={() => setSelectedZone('abdomen')} />
+                  {/* Left Arm */}
+                  <path d="M 36,44 Q 25,75 22,110 L 28,110 Q 31,80 38,50 Z" className={`transition-colors cursor-pointer ${selectedZone === 'l_arm' ? 'text-[#006747]' : 'hover:text-slate-300'}`} onClick={() => setSelectedZone('l_arm')} />
+                  {/* Right Arm */}
+                  <path d="M 64,44 Q 75,75 78,110 L 72,110 Q 69,80 62,50 Z" className={`transition-colors cursor-pointer ${selectedZone === 'r_arm' ? 'text-[#006747]' : 'hover:text-slate-300'}`} onClick={() => setSelectedZone('r_arm')} />
+                  {/* Pelvis */}
+                  <path d="M 44,120 L 56,120 L 58,135 L 42,135 Z" />
+                  {/* Left Leg */}
+                  <path d="M 42,135 L 48,135 L 44,195 L 38,195 Z" className={`transition-colors cursor-pointer ${selectedZone === 'l_leg' ? 'text-[#006747]' : 'hover:text-slate-300'}`} onClick={() => setSelectedZone('l_leg')} />
+                  {/* Right Leg */}
+                  <path d="M 52,135 L 58,135 L 62,195 L 56,195 Z" className={`transition-colors cursor-pointer ${selectedZone === 'r_leg' ? 'text-[#006747]' : 'hover:text-slate-300'}`} onClick={() => setSelectedZone('r_leg')} />
+                </svg>
+
+                {/* Pulse Rings Overlay on hotspots */}
+                {patientSymptoms.map((s) => {
+                  let coords = { top: '50%', left: '50%' };
+                  if (s.zone === 'head') coords = { top: '12%', left: '50%' };
+                  else if (s.zone === 'chest') coords = { top: '28%', left: '50%' };
+                  else if (s.zone === 'abdomen') coords = { top: '48%', left: '50%' };
+                  else if (s.zone === 'l_arm') coords = { top: '38%', left: '28%' };
+                  else if (s.zone === 'r_arm') coords = { top: '38%', left: '72%' };
+
+                  const severityColor = s.severity === 'crítico' ? 'bg-rose-500' : s.severity === 'elevado' ? 'bg-orange-500' : 'bg-amber-400';
+
+                  return (
+                    <div 
+                      key={s.id} 
+                      style={{ top: coords.top, left: coords.left }} 
+                      className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 group"
+                      onClick={() => setSelectedZone(s.zone)}
+                    >
+                      <span className="flex h-3.5 w-3.5 relative">
+                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${severityColor}`}></span>
+                        <span className={`relative inline-flex rounded-full h-3.5 w-3.5 shadow-sm border-2 border-white ${severityColor}`}></span>
+                      </span>
+                      
+                      <div className="hidden group-hover:block absolute left-1/2 bottom-5 transform -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold px-2 py-1 rounded shadow-md whitespace-nowrap z-20">
+                        {s.title}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex justify-between items-center mt-3">
+                <p className="text-[10px] text-gray-400 font-medium">
+                  Clique no modelo anatómico para filtrar sintomas por zona.
+                </p>
+                {selectedZone && (
+                  <button 
+                    onClick={() => setSelectedZone(null)}
+                    className="text-[10px] font-black text-rose-600 hover:underline uppercase tracking-widest"
+                  >
+                    Limpar Filtro ({selectedZone})
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
+              <div>
+                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sintomas Mapeados</h4>
+                <p className="text-lg font-black text-gray-900 mt-0.5">Histórico Regional do Modelo</p>
+              </div>
+
+              {/* Symptoms list */}
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-1 no-scrollbar">
+                {patientSymptoms
+                  .filter(s => !selectedZone || s.zone === selectedZone)
+                  .map((sym) => (
+                    <div key={sym.id} className="p-4 bg-slate-50/50 rounded-2xl border border-gray-100 flex items-start justify-between">
+                      <div className="flex items-start space-x-3.5">
+                        <div className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${
+                          sym.severity === 'crítico' ? 'bg-rose-500' : sym.severity === 'elevado' ? 'bg-orange-400' : 'bg-amber-400'
+                        }`} />
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h5 className="font-black text-xs text-gray-950">{sym.title}</h5>
+                            <span className="text-[8px] font-black uppercase tracking-widest bg-gray-200/60 text-gray-500 px-1.5 py-0.5 rounded">
+                              Zona: {sym.zone}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-0.5">{sym.desc}</p>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => handleDeleteSymptom(sym.id)}
+                        className="p-1.5 hover:bg-rose-50 rounded-lg text-gray-400 hover:text-rose-600 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+
+                {patientSymptoms.filter(s => !selectedZone || s.zone === selectedZone).length === 0 && (
+                  <p className="text-xs text-gray-400 text-center py-6 bg-slate-50 rounded-2xl border border-dashed border-gray-150">
+                    Nenhum sintoma mapeado nesta zona corporal.
+                  </p>
+                )}
+              </div>
+
+              {/* Quick Add Form */}
+              <div className="pt-6 border-t border-gray-100 space-y-4">
+                <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mapear Novo Sintoma Clínico</h5>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-gray-400 uppercase">Título do Sintoma</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Dor Lombar Crónica"
+                      value={newSymptomTitle}
+                      onChange={(e) => setNewSymptomTitle(e.target.value)}
+                      className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-[#006747]/20 outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-gray-400 uppercase">Zona Anatómica</label>
+                    <select
+                      value={newSymptomZone}
+                      onChange={(e) => setNewSymptomZone(e.target.value)}
+                      className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-[#006747]/20 outline-none"
+                    >
+                      <option value="head">Cabeça (Cefaleias)</option>
+                      <option value="chest">Peito / Toráxico</option>
+                      <option value="abdomen">Abdominal</option>
+                      <option value="l_arm">Braço Esquerdo</option>
+                      <option value="r_arm">Braço Direito</option>
+                      <option value="l_leg">Perna Esquerda</option>
+                      <option value="r_leg">Perna Direita</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-gray-400 uppercase">Nível de Gravidade</label>
+                    <select
+                      value={newSymptomSeverity}
+                      onChange={(e) => setNewSymptomSeverity(e.target.value)}
+                      className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-[#006747]/20 outline-none"
+                    >
+                      <option value="baixo">Baixo (Leve)</option>
+                      <option value="moderado">Moderado</option>
+                      <option value="elevado">Elevado (Grave)</option>
+                      <option value="crítico">Crítico</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-400 uppercase">Descrição Clínica detalhada</label>
+                  <textarea
+                    placeholder="Ex: Queixa-se de rigidez matinal..."
+                    value={newSymptomDesc}
+                    onChange={(e) => setNewSymptomDesc(e.target.value)}
+                    className="w-full bg-slate-50 border border-gray-100 rounded-xl p-3 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-[#006747]/20 outline-none min-h-[60px]"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddSymptom}
+                  className="w-full md:w-auto flex items-center justify-center space-x-2 bg-[#006747] hover:bg-emerald-900 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" />
+                  <span>Mapear Sintoma</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* 9. NOTAS EVOLUTIVAS WITH MODERN ATTACHMENT WRAPPER */}
+        <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
+          <div>
+            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Folha de Evolução e Notas de Progresso</h4>
+            <p className="text-lg font-black text-gray-900 mt-1">Registo Clínico Assinado</p>
+          </div>
+
+          {/* Text Area and file upload */}
+          <div className="space-y-4">
+            <textarea
+              placeholder="Escreva novas observações, anotações de progresso médico ou notas sobre os sinais vitais observados..."
+              value={newNoteText}
+              onChange={(e) => setNewNoteText(e.target.value)}
+              className="w-full bg-slate-50 border-none rounded-2xl p-4 text-xs font-bold text-gray-950 focus:ring-2 focus:ring-[#006747]/20 min-h-[110px]"
+            />
+
+            {/* Attachments preview */}
+            {noteAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {noteAttachments.map((f, i) => (
+                  <span key={i} className="bg-emerald-50 text-[#006747] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center border border-emerald-100">
+                    <FileText className="w-3.5 h-3.5 mr-1.5" />
+                    {f.name} ({f.size})
+                    <button 
+                      onClick={() => setNoteAttachments(prev => prev.filter((_, idx) => idx !== i))}
+                      className="ml-2 hover:text-red-600 font-bold"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+              {/* Custom file attachments upload */}
+              <div className="flex items-center space-x-2">
+                <label className="flex items-center justify-center space-x-2 bg-slate-100 hover:bg-slate-200 text-gray-700 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer">
+                  <Upload className="w-4 h-4 text-gray-500" />
+                  <span>Anexar Ficheiro (PDF/Imagem/Áudio)</span>
+                  <input
+                    type="file"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    accept="image/*,application/pdf,audio/*,video/*"
+                  />
+                </label>
+              </div>
+
+              <button
+                onClick={handleAddNote}
+                disabled={!newNoteText.trim()}
+                className="flex items-center justify-center space-x-2 bg-[#006747] hover:bg-emerald-950 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md shadow-emerald-900/10 disabled:opacity-40 cursor-pointer"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>Assinar Nota de Evolução</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Signed Evolution Notes Feed */}
+          <div className="pt-4 border-t border-gray-150 space-y-4">
+            <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Historial de Evolução Assinado</h5>
+            <div className="space-y-4">
+              {evolutionNotes.map((note) => (
+                <div key={note.id} className="p-5 bg-slate-50/50 rounded-2xl border border-gray-100 text-left space-y-3">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="font-black text-gray-900 flex items-center">
+                      <User className="w-3.5 h-3.5 mr-1.5 text-gray-400" /> {note.author}
+                    </span>
+                    <span className="font-bold text-gray-400 flex items-center">
+                      <Clock className="w-3 h-3 mr-1" /> {note.date} às {note.time}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-700 leading-relaxed">
+                    {note.text}
+                  </p>
+                  {note.files && note.files.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1.5">
+                      {note.files.map((f: any, idx: number) => (
+                        <span key={idx} className="bg-gray-100 text-gray-600 px-2.5 py-1 rounded text-[9px] font-semibold flex items-center border border-gray-200">
+                          <FileText className="w-3 h-3 mr-1" />
+                          {f.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-gray-100/60 flex items-center text-[8px] font-mono tracking-wider text-emerald-600">
+                    <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-500" />
+                    ASSINADO DIGITALMENTE • CONFORMIDADE PEP (RE-DOCTA)
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500 text-left">
@@ -1108,103 +1658,6 @@ export default function ClinicalMonitoringTab({
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* 9. NOTAS EVOLUTIVAS WITH MODERN ATTACHMENT WRAPPER */}
-      <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
-        <div>
-          <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Folha de Evolução e Notas de Progresso</h4>
-          <p className="text-lg font-black text-gray-900 mt-1">Registo Clínico Assinado</p>
-        </div>
-
-        {/* Text Area and file upload */}
-        <div className="space-y-4">
-          <textarea
-            placeholder="Escreva novas observações, anotações de progresso médico ou notas sobre os sinais vitais observados..."
-            value={newNoteText}
-            onChange={(e) => setNewNoteText(e.target.value)}
-            className="w-full bg-slate-50 border-none rounded-2xl p-4 text-xs font-bold text-gray-950 focus:ring-2 focus:ring-[#006747]/20 min-h-[110px]"
-          />
-
-          {/* Attachments preview */}
-          {noteAttachments.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {noteAttachments.map((f, i) => (
-                <span key={i} className="bg-emerald-50 text-[#006747] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center border border-emerald-100">
-                  <FileText className="w-3.5 h-3.5 mr-1.5" />
-                  {f.name} ({f.size})
-                  <button 
-                    onClick={() => setNoteAttachments(prev => prev.filter((_, idx) => idx !== i))}
-                    className="ml-2 hover:text-red-600 font-bold"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
-            {/* Custom file attachments upload */}
-            <div className="flex items-center space-x-2">
-              <label className="flex items-center justify-center space-x-2 bg-slate-100 hover:bg-slate-200 text-gray-700 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer">
-                <Upload className="w-4 h-4 text-gray-500" />
-                <span>Anexar Ficheiro (PDF/Imagem/Áudio)</span>
-                <input
-                  type="file"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  accept="image/*,application/pdf,audio/*,video/*"
-                />
-              </label>
-            </div>
-
-            <button
-              onClick={handleAddNote}
-              disabled={!newNoteText.trim()}
-              className="flex items-center justify-center space-x-2 bg-[#006747] hover:bg-emerald-950 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md shadow-emerald-900/10 disabled:opacity-40 cursor-pointer"
-            >
-              <CheckCircle className="w-4 h-4" />
-              <span>Assinar Nota de Evolução</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Signed Evolution Notes Feed */}
-        <div className="pt-4 border-t border-gray-100 space-y-4">
-          <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Historial de Evolução Assinado</h5>
-          <div className="space-y-4">
-            {evolutionNotes.map((note) => (
-              <div key={note.id} className="p-5 bg-slate-50/50 rounded-2xl border border-gray-100 text-left space-y-3">
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="font-black text-gray-900 flex items-center">
-                    <User className="w-3.5 h-3.5 mr-1.5 text-gray-400" /> {note.author}
-                  </span>
-                  <span className="font-bold text-gray-400 flex items-center">
-                    <Clock className="w-3 h-3 mr-1" /> {note.date} às {note.time}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-700 leading-relaxed">
-                  {note.text}
-                </p>
-                {note.files && note.files.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-1.5">
-                    {note.files.map((f: any, idx: number) => (
-                      <span key={idx} className="bg-gray-100 text-gray-600 px-2.5 py-1 rounded text-[9px] font-semibold flex items-center border border-gray-200">
-                        <FileText className="w-3 h-3 mr-1" />
-                        {f.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="pt-2 border-t border-gray-100/60 flex items-center text-[8px] font-mono tracking-wider text-emerald-600">
-                  <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-500" />
-                  ASSINADO DIGITALMENTE • CONFORMIDADE PEP (RE-DOCTA)
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 

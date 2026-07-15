@@ -46,6 +46,7 @@ export default function Settings() {
       items: [
         { icon: Store, label: 'Minhas Farmácias', path: '/settings/pharmacies', color: 'text-emerald-600' },
         { icon: Building2, label: 'Meus Estabelecimentos', path: '/settings/establishments', color: 'text-blue-600' },
+        { icon: Stethoscope, label: 'Protocolos Clínicos (CDSS)', path: '/definicoes/protocolos', color: 'text-teal-600' },
       ]
     }] : []),
     {
